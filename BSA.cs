@@ -12,20 +12,31 @@ namespace TaleOfTwoWastelands
     {
         public static void ExtractBSA(IProgress<string> progress, CancellationToken token, string bsaPath, string bsaOutputDir)
         {
-            throw new NotImplementedException();
+            using (var bsa = new BSAReader(File.OpenRead(bsaPath)))
+            {
+                var layout = bsa.Read();
+                foreach (var folder in layout)
+                {
+                    Directory.CreateDirectory(Path.Combine(bsaOutputDir, folder.Path));
+                    progress.Report("Created " + folder.Path);
+
+                    foreach (var file in folder.Children)
+                    {
+                        token.ThrowIfCancellationRequested();
+
+                        var filePath = Path.Combine(bsaOutputDir, file.Filename);
+                        File.WriteAllBytes(filePath, file.Data);
+
+                        progress.Report("Extracted " + file.Filename);
+                    }
+                }
+                progress.Report("ExtractBSA " + Path.GetFileNameWithoutExtension(bsaPath) + " done!");
+            }
         }
 
         public static void BuildBSA(IProgress<string> progress, CancellationToken token, string bsaPath, string bsaOutputDir)
         {
             throw new NotImplementedException();
-        }
-
-        private static IEnumerable<BSAFolder> GetLayout(string bsaPath)
-        {
-            using (var bsa = new BSAReader(File.OpenRead(bsaPath)))
-            {
-                return bsa.Read();
-            }
         }
     }
 }
