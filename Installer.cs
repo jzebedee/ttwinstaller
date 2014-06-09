@@ -265,16 +265,16 @@ namespace TaleOfTwoWastelands
                 Progress.Report("Building optional TaleOfTwoWastelands - SFX.bsa...");
 
 #if ASYNC
-                await BSAOpt.ExtractBSA_Async(progressLog, Token, Path.Combine(dirFO3Data, "Fallout - Sound.bsa", "sound", "songs"), Path.Combine(dirTTWMain, "sound", "songs"));
+                await BSA.ExtractBSA_Async(progressLog, Token, Path.Combine(dirFO3Data, "Fallout - Sound.bsa", "sound", "songs"), Path.Combine(dirTTWMain, "sound", "songs"));
 #else
-                BSAOpt.ExtractBSA(progressLog, Token, Path.Combine(dirFO3Data, "Fallout - Sound.bsa", "sound", "songs"), Path.Combine(dirTTWMain, "sound", "songs"));
+                BSA.ExtractBSA(progressLog, Token, Path.Combine(dirFO3Data, "Fallout - Sound.bsa", "sound", "songs"), Path.Combine(dirTTWMain, "sound", "songs"));
 #endif
                 Token.ThrowIfCancellationRequested();
 
 #if ASYNC
-                await BSAOpt.ExtractBSA_Async(progressLog, Token, Path.Combine(dirFO3Data, "Fallout - Sound.bsa", "sound", "fx", "ui"), Path.Combine(dirTemp, "sound", "fx", "ui"));
+                await BSA.ExtractBSA_Async(progressLog, Token, Path.Combine(dirFO3Data, "Fallout - Sound.bsa", "sound", "fx", "ui"), Path.Combine(dirTemp, "sound", "fx", "ui"));
 #else
-                BSAOpt.ExtractBSA(progressLog, Token, Path.Combine(dirFO3Data, "Fallout - Sound.bsa", "sound", "fx", "ui"), Path.Combine(dirTemp, "sound", "fx", "ui"));
+                BSA.ExtractBSA(progressLog, Token, Path.Combine(dirFO3Data, "Fallout - Sound.bsa", "sound", "fx", "ui"), Path.Combine(dirTemp, "sound", "fx", "ui"));
 #endif
                 Token.ThrowIfCancellationRequested();
 
@@ -288,9 +288,9 @@ namespace TaleOfTwoWastelands
                 }
 
 #if ASYNC
-                await BSAOpt.BuildBSA_Async(progressLog, Token, Path.Combine(dirTemp, "SFXBSA"), Path.Combine(dirTTWOptional, "Fallout3 Sound Effects", "TaleOfTwoWastelands - SFX.bsa"));
+                await BSA.BuildBSA_Async(progressLog, Token, Path.Combine(dirTemp, "SFXBSA"), Path.Combine(dirTTWOptional, "Fallout3 Sound Effects", "TaleOfTwoWastelands - SFX.bsa"));
 #else
-                BSAOpt.BuildBSA(progressLog, Token, Path.Combine(dirTemp, "SFXBSA"), Path.Combine(dirTTWOptional, "Fallout3 Sound Effects", "TaleOfTwoWastelands - SFX.bsa"));
+                BSA.BuildBSA(progressLog, Token, Path.Combine(dirTemp, "SFXBSA"), Path.Combine(dirTTWOptional, "Fallout3 Sound Effects", "TaleOfTwoWastelands - SFX.bsa"));
 #endif
                 Token.ThrowIfCancellationRequested();
 
@@ -307,23 +307,23 @@ namespace TaleOfTwoWastelands
             if (!File.Exists(Path.Combine(dirTTWOptional, "Fallout3 Player Voice", "TaleOfTwoWastelands - PlayerVoice.bsa")))
             {
 #if ASYNC
-                await BSAOpt.ExtractBSA_Async(progressLog, Token, Path.Combine(dirFO3Data, "Fallout - Voices.bsa", "sound", "voice", "fallout3.esm", "playervoicemale"), Path.Combine(dirTemp, "PlayerVoice", "sound", "voice", "falloutnv.esm", "playervoicemale"));
+                await BSA.ExtractBSA_Async(progressLog, Token, Path.Combine(dirFO3Data, "Fallout - Voices.bsa", "sound", "voice", "fallout3.esm", "playervoicemale"), Path.Combine(dirTemp, "PlayerVoice", "sound", "voice", "falloutnv.esm", "playervoicemale"));
 #else
-                BSAOpt.ExtractBSA(progressLog, Token, Path.Combine(dirFO3Data, "Fallout - Voices.bsa", "sound", "voice", "fallout3.esm", "playervoicemale"), Path.Combine(dirTemp, "PlayerVoice", "sound", "voice", "falloutnv.esm", "playervoicemale"));
+                BSA.ExtractBSA(progressLog, Token, Path.Combine(dirFO3Data, "Fallout - Voices.bsa", "sound", "voice", "fallout3.esm", "playervoicemale"), Path.Combine(dirTemp, "PlayerVoice", "sound", "voice", "falloutnv.esm", "playervoicemale"));
 #endif
                 Token.ThrowIfCancellationRequested();
 
 #if ASYNC
-                await BSAOpt.ExtractBSA_Async(progressLog, Token, Path.Combine(dirFO3Data, "Fallout - Voices.bsa", "sound", "voice", "fallout3.esm", "playervoicefemale"), Path.Combine(dirTemp, "PlayerVoice", "sound", "voice", "falloutnv.esm", "playervoicefemale"));
+                await BSA.ExtractBSA_Async(progressLog, Token, Path.Combine(dirFO3Data, "Fallout - Voices.bsa", "sound", "voice", "fallout3.esm", "playervoicefemale"), Path.Combine(dirTemp, "PlayerVoice", "sound", "voice", "falloutnv.esm", "playervoicefemale"));
 #else
-                BSAOpt.ExtractBSA(progressLog, Token, Path.Combine(dirFO3Data, "Fallout - Voices.bsa", "sound", "voice", "fallout3.esm", "playervoicefemale"), Path.Combine(dirTemp, "PlayerVoice", "sound", "voice", "falloutnv.esm", "playervoicefemale"));
+                BSA.ExtractBSA(progressLog, Token, Path.Combine(dirFO3Data, "Fallout - Voices.bsa", "sound", "voice", "fallout3.esm", "playervoicefemale"), Path.Combine(dirTemp, "PlayerVoice", "sound", "voice", "falloutnv.esm", "playervoicefemale"));
 #endif
                 Token.ThrowIfCancellationRequested();
 
 #if ASYNC
-                await BSAOpt.BuildBSA_Async(progressLog, Token, Path.Combine(dirTemp, "PlayerVoice"), Path.Combine(dirTTWOptional, "Fallout3 Player Voice", "TaleOfTwoWastelands - PlayerVoice.bsa"));
+                await BSA.BuildBSA_Async(progressLog, Token, Path.Combine(dirTemp, "PlayerVoice"), Path.Combine(dirTTWOptional, "Fallout3 Player Voice", "TaleOfTwoWastelands - PlayerVoice.bsa"));
 #else
-                BSAOpt.BuildBSA(progressLog, Token, Path.Combine(dirTemp, "PlayerVoice"), Path.Combine(dirTTWOptional, "Fallout3 Player Voice", "TaleOfTwoWastelands - PlayerVoice.bsa"));
+                BSA.BuildBSA(progressLog, Token, Path.Combine(dirTemp, "PlayerVoice"), Path.Combine(dirTTWOptional, "Fallout3 Player Voice", "TaleOfTwoWastelands - PlayerVoice.bsa"));
 #endif
                 Token.ThrowIfCancellationRequested();
             }

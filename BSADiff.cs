@@ -26,9 +26,9 @@ namespace TaleOfTwoWastelands
             newChkDict = new SortedDictionary<string, string>();
 
 #if ASYNC
-            await BSAOpt.ExtractBSA_Async(progress, token, oldBSA, BSADir);
+            await BSA.ExtractBSA_Async(progress, token, oldBSA, BSADir);
 #else
-            BSAOpt.ExtractBSA(progress, token, oldBSA, BSADir);
+            BSA.ExtractBSA(progress, token, oldBSA, BSADir);
 #endif
             token.ThrowIfCancellationRequested();
 
@@ -140,7 +140,7 @@ namespace TaleOfTwoWastelands
 #if ASYNC
             await BSAOpt.BuildBSA_Async(progress, token, BSADir, newBSA);
 #else
-            BSAOpt.BuildBSA(progress, token, BSADir, newBSA);
+            BSA.BuildBSA(progress, token, BSADir, newBSA);
 #endif
 
             return sbErrors.ToString();

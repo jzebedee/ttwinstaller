@@ -40,6 +40,9 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="BSAsharp">
+      <HintPath>.\BSAsharp.dll</HintPath>
+    </Reference>
     <Reference Include="ICSharpCode.SharpZipLib">
       <HintPath>..\..\..\..\Visual Studio 2013\Projects\BSDiff\trunk\lib\ICSharpCode.SharpZipLib.dll</HintPath>
     </Reference>
@@ -59,8 +62,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BinaryPatchUtility.cs" />
+    <Compile Include="BSA.cs" />
     <Compile Include="BSADiff.cs" />
-    <Compile Include="BSAOpt.cs" />
     <Compile Include="frm_Main.cs">
       <SubType>Form</SubType>
     </Compile>
