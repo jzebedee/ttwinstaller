@@ -131,11 +131,11 @@ namespace TaleOfTwoWastelands
                 }
             }
 
-            foreach (var file in oldChkDict.Where(kvp => newChkDict.ContainsKey(kvp.Key)).Select(kvp => kvp.Value))
-            {
-                var filePath = Path.Combine(BSADir, file);
-                File.Delete(filePath);
-            }
+            oldChkDict.Keys
+                .Where(file => !newChkDict.ContainsKey(file))
+                .Select(file => Path.Combine(BSADir, file))
+                .ToList()
+                .ForEach(filePath => File.Delete(filePath));
 
 #if ASYNC
             await BSAOpt.BuildBSA_Async(progress, token, BSADir, newBSA);

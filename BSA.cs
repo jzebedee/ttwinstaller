@@ -1,4 +1,5 @@
-﻿using System;
+﻿#define MMAP
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,7 +13,12 @@ namespace TaleOfTwoWastelands
     {
         public static void ExtractBSA(IProgress<string> progress, CancellationToken token, string bsaPath, string bsaOutputDir)
         {
+#if MMAP
+            var bsaInfo = new FileInfo(bsaPath);
+            using (var bsa = new MemoryMappedBSAReader(bsaPath, bsaInfo.Length))
+#else
             using (var bsa = new BSAReader(File.OpenRead(bsaPath)))
+#endif
             {
                 var layout = bsa.Read();
                 foreach (var folder in layout)
