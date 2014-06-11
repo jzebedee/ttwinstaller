@@ -59,11 +59,7 @@ namespace TaleOfTwoWastelands
             txt_TTWLocation.Text = _install.TTWSavePath;
         }
 
-#if ASYNC
-        private async void btn_Install_Click(object sender, EventArgs e)
-#else
         private void btn_Install_Click(object sender, EventArgs e)
-#endif
         {
             Action reset_install_btn = () =>
             {
@@ -76,11 +72,7 @@ namespace TaleOfTwoWastelands
                 _install_cts = new CancellationTokenSource();
 
                 btn_Install.Text = "Cancel";
-#if ASYNC
-                _install_task = _install.InstallAsync(_install_cts.Token);
-#else
                 _install_task = Task.Factory.StartNew(() => _install.Install(_install_cts.Token));
-#endif
                 _install_task.ContinueWith((task) =>
                 {
                     if (btn_Install.InvokeRequired)
@@ -94,11 +86,7 @@ namespace TaleOfTwoWastelands
             else
             {
                 _install_cts.Cancel();
-#if ASYNC
-                await _install_task;
-#else
                 _install_task.Wait();
-#endif
             }
         }
     }

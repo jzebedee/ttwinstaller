@@ -1,5 +1,4 @@
-﻿#define MMAP
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,38 +10,24 @@ namespace TaleOfTwoWastelands
 {
     public static class BSA
     {
-        public static void ExtractBSA(IProgress<string> progress, CancellationToken token, string bsaPath, string bsaOutputDir)
+        public static void ExtractBSA(IProgress<string> progress, CancellationToken token, IEnumerable<BSAFolder> folders, string bsaOutputDir)
         {
-#if MMAP
-            var bsaInfo = new FileInfo(bsaPath);
-            using (var bsa = new MemoryMappedBSAReader(bsaPath, bsaInfo.Length))
-#else
-            using (var bsa = new BSAReader(File.OpenRead(bsaPath)))
-#endif
+            foreach (var folder in folders)
             {
-                var layout = bsa.Read();
-                foreach (var folder in layout)
+                Directory.CreateDirectory(Path.Combine(bsaOutputDir, folder.Path));
+                progress.Report("Created " + folder.Path);
+
+                foreach (var file in folder)
                 {
-                    Directory.CreateDirectory(Path.Combine(bsaOutputDir, folder.Path));
-                    progress.Report("Created " + folder.Path);
+                    token.ThrowIfCancellationRequested();
 
-                    foreach (var file in folder.Children)
-                    {
-                        token.ThrowIfCancellationRequested();
+                    var filePath = Path.Combine(bsaOutputDir, file.Filename);
+                    File.WriteAllBytes(filePath, file.GetSaveData(true));
 
-                        var filePath = Path.Combine(bsaOutputDir, file.Filename);
-                        File.WriteAllBytes(filePath, file.Data);
-
-                        progress.Report("Extracted " + file.Filename);
-                    }
+                    progress.Report("Extracted " + file.Filename);
                 }
-                progress.Report("ExtractBSA " + Path.GetFileNameWithoutExtension(bsaPath) + " done!");
             }
-        }
-
-        public static void BuildBSA(IProgress<string> progress, CancellationToken token, string bsaPath, string bsaOutputDir)
-        {
-            throw new NotImplementedException();
+            progress.Report("ExtractBSA " + bsaOutputDir.Replace(Path.GetDirectoryName(bsaOutputDir), "").TrimEnd(Path.DirectorySeparatorChar) + " done!");
         }
     }
 }

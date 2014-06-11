@@ -8,28 +8,23 @@ using System.Security.Cryptography;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Windows.Forms;
 using System.Threading;
+using System.Diagnostics;
+using BSAsharp;
+using System.IO.MemoryMappedFiles;
 
 namespace TaleOfTwoWastelands
 {
     class BSADiff
     {
-#if ASYNC
-        public static async Task<string> PatchBSA_Async(IProgress<string> progress, CancellationToken token, string oldBSA, string newBSA, string BSADir, string patchDir)
-#else
-        public static string PatchBSA(IProgress<string> progress, CancellationToken token, string oldBSA, string newBSA, string BSADir, string patchDir)
-#endif
+        public static string PatchBSA(IProgress<string> progress, CancellationToken token, string oldBSA, string newBSA, string patchDir)
         {
             var sbErrors = new StringBuilder();
 
-            IDictionary<string, string> renameDict, newChkDict, oldChkDict;
+            IDictionary<string, string> renameDict, newChkDict;
             renameDict = new SortedDictionary<string, string>();
             newChkDict = new SortedDictionary<string, string>();
 
-#if ASYNC
-            await BSA.ExtractBSA_Async(progress, token, oldBSA, BSADir);
-#else
-            BSA.ExtractBSA(progress, token, oldBSA, BSADir);
-#endif
+            var BSA = new BSAWrapper(oldBSA);
             token.ThrowIfCancellationRequested();
 
             var renamePath = Path.Combine(patchDir, "RenameFiles.dict");
@@ -57,61 +52,63 @@ namespace TaleOfTwoWastelands
                 return sbErrors.ToString();
             }
 
+            var allFiles = BSA.SelectMany(folder => folder);
+
             foreach (var entry in renameDict)
             {
-                string oldFile = entry.Value;
-                string newFile = entry.Key;
+                string oldFilename = entry.Value;
+                string newFilename = entry.Key;
 
-                var oldPath = Path.Combine(BSADir, oldFile);
-                var newPath = Path.Combine(BSADir, newFile);
-
-                if (File.Exists(oldPath))
+                var oldBsaFile = allFiles.Where(file => file.Filename == oldFilename).SingleOrDefault();
+                if (oldBsaFile != null)
                 {
-                    Directory.CreateDirectory(Path.GetDirectoryName(newPath));
-                    File.Copy(oldPath, newPath);
+                    //var parentFolder = BSA.Where(folder => folder.IsParent(oldBsaFile)).SingleOrDefault();
+                    //Trace.Assert(parentFolder != null);
+
+                    //parentFolder.Remove(oldBsaFile);
+
+                    //var BSAfile = new BSAFile(Path.GetDirectoryName(newFilename), newFilename, BSA.Settings, oldBsaFile.GetSaveData(false), oldBsaFile.IsCompressed);
+                    //parentFolder.Add(BSAfile);
+                    oldBsaFile.UpdatePath(Path.GetDirectoryName(newFilename), newFilename);
                 }
                 else
                 {
-                    sbErrors.AppendLine("\tFile not found: " + oldFile);
-                    sbErrors.AppendLine("\t\tCannot create: " + newFile);
+                    sbErrors.AppendLine("\tFile not found: " + oldFilename);
+                    sbErrors.AppendLine("\t\tCannot create: " + newFilename);
                 }
             }
 
-            oldChkDict =
-                Directory.EnumerateFiles(BSADir, "*", SearchOption.AllDirectories).
-                ToDictionary(
-                    file => file.Replace(BSADir, "").TrimStart(Path.DirectorySeparatorChar),
-                    file => Util.GetChecksum(file)
-                );
-            //foreach (string file in Directory.EnumerateFiles(BSADir, "*", SearchOption.AllDirectories))
-            //{
-            //    oldChkDict.Add(file.Replace(BSADir, "").TrimStart(Path.DirectorySeparatorChar), GetChecksum(file));
-            //}
+            var oldChkDict = allFiles.ToDictionary(file => file.Filename, file => new { file, checksum = new Lazy<string>(() => Util.GetChecksum(file.GetSaveData(true))) });
 
             foreach (var entry in newChkDict)
             {
-                string oldChk;
                 string newChk = entry.Value;
                 string file = entry.Key;
-                string filePath = Path.Combine(BSADir, file);
 
-                if (oldChkDict.TryGetValue(file, out oldChk))
+                if (oldChkDict.ContainsKey(file))
                 {
+                    var anon = oldChkDict[file];
+
                     //file exists
-                    if (oldChk != newChk)
+                    if (anon.checksum.Value != newChk)
                     {
                         //file exists but is not up to date
-                        var diffPath = Path.Combine(patchDir, file + "." + oldChk + "." + newChk + ".diff");
-                        var tmpPath = filePath + ".tmp";
+                        var diffPath = Path.Combine(patchDir, file + "." + anon.checksum + "." + newChk + ".diff");
                         if (File.Exists(diffPath))
                         {
-                            //a patch exists for the file
-                            using (FileStream input = File.OpenRead(filePath), output = File.OpenWrite(tmpPath))
-                                BinaryPatchUtility.Apply(input, () => File.OpenRead(diffPath), output);
+                            byte[] patchedBytes;
 
-                            oldChk = Util.GetChecksum(tmpPath);
+                            //a patch exists for the file
+                            using (MemoryStream input = new MemoryStream(anon.file.GetSaveData(true)), output = new MemoryStream())
+                            {
+                                using (var mmfPatch = MemoryMappedFile.CreateFromFile(diffPath))
+                                    BinaryPatchUtility.Apply(input, () => mmfPatch.CreateViewStream(), output);
+                                patchedBytes = output.ToArray();
+                            }
+
+                            var oldChk = Util.GetChecksum(patchedBytes);
                             if (oldChk == newChk)
-                                File.Replace(tmpPath, filePath, null);
+                                anon.file.UpdateData(patchedBytes, false);
                             else
                                 sbErrors.AppendLine("\tPatching " + file + " has failed - " + oldChk);
 
@@ -119,7 +116,7 @@ namespace TaleOfTwoWastelands
                         else
                         {
                             //no patch exists for the file
-                            sbErrors.AppendLine("\tFile is of an unexpected version: " + file + " - " + oldChk);
+                            sbErrors.AppendLine("\tFile is of an unexpected version: " + file + " - " + anon.checksum);
                             sbErrors.AppendLine("\t\tThis file cannot be patched. Errors may occur.");
                         }
                     }
@@ -131,17 +128,16 @@ namespace TaleOfTwoWastelands
                 }
             }
 
-            oldChkDict.Keys
-                .Where(file => !newChkDict.ContainsKey(file))
-                .Select(file => Path.Combine(BSADir, file))
-                .ToList()
-                .ForEach(filePath => File.Delete(filePath));
+            var filesToRemove = new HashSet<BSAFile>(
+                oldChkDict
+                .Where(kvp => !newChkDict.ContainsKey(kvp.Key))
+                .Select(kvp => kvp.Value.file));
+            var filesRemoved = BSA.Sum(folder => folder.RemoveWhere(bsafile => filesToRemove.Contains(bsafile)));
 
-#if ASYNC
-            await BSAOpt.BuildBSA_Async(progress, token, BSADir, newBSA);
-#else
-            BSA.BuildBSA(progress, token, BSADir, newBSA);
-#endif
+            BSA.RemoveWhere(folder => folder.Count == 0);
+            BSA.Save(newBSA);
+
+            //BSA.BuildBSA(progress, token, BSADir, newBSA);
 
             return sbErrors.ToString();
         }

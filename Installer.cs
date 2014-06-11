@@ -8,13 +8,13 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using BSAsharp;
 
 namespace TaleOfTwoWastelands
 {
     class Installer
     {
         public const string
-            TempDir = "TempExtract",
             MainDir = "Main Files",
             OptDir = "Optional Files",
             AssetsDir = "resources";
@@ -63,7 +63,6 @@ namespace TaleOfTwoWastelands
         readonly Dictionary<string, string> CheckSums;
         readonly RegistryKey fo3Key, fnvKey, ttwKey;
 
-        private string dirTemp { get { return Path.Combine(TTWSavePath, TempDir); } }
         private string dirTTWMain { get { return Path.Combine(TTWSavePath, MainDir); } }
         private string dirTTWOptional { get { return Path.Combine(TTWSavePath, OptDir); } }
 
@@ -109,12 +108,12 @@ namespace TaleOfTwoWastelands
             //create or retrieve FO3 path
             fo3Key = bethKey.CreateSubKey("Fallout3");
             Fallout3Path = fo3Key.GetValue("Installed Path", "").ToString();
-            dirFO3Data = Path.Combine(Fallout3Path, @"Data\");
+            dirFO3Data = Path.Combine(Fallout3Path, "Data");
 
             //create or retrieve FNV path
             fnvKey = bethKey.CreateSubKey("FalloutNV");
             FalloutNVPath = fnvKey.GetValue("Installed Path", "").ToString();
-            dirFNVData = Path.Combine(FalloutNVPath, @"Data\");
+            dirFNVData = Path.Combine(FalloutNVPath, "Data");
 
             //create or retrieve TTW path
             ttwKey = bethKey.CreateSubKey("TaleOfTwoWastelands");
@@ -144,11 +143,7 @@ namespace TaleOfTwoWastelands
             TTWSavePath = FindByUserPrompt(save, "Tale of Two Wastelands", ttwKey, manual);
         }
 
-#if ASYNC
-        public async Task InstallAsync(CancellationToken inToken)
-#else
         public void Install(CancellationToken inToken)
-#endif
         {
             this.Token = inToken;
 
@@ -169,26 +164,11 @@ namespace TaleOfTwoWastelands
                 WriteLog("Creating FOMOD foundation.");
                 Util.CopyFolder(Path.Combine(AssetsDir, "TTW Data", "TTW Files"), TTWSavePath, (s) => WriteLog(s));
 
-                //build BSAs here
-#if ASYNC
-                await BuildBSAs();
-#else
                 BuildBSAs();
-#endif
 
-#if ASYNC
-                await BuildSFX();
-#else
                 BuildSFX();
-#endif
-                FlushTemp();
 
-#if ASYNC
-                await BuildVoice();
-#else
-                BuildVoice();
-#endif
-                FlushTemp(false);
+                //BuildVoice();
 
                 if (!File.Exists(Path.Combine(dirTTWMain, "TaleOfTwoWastelands.bsa")))
                     File.Copy(Path.Combine(AssetsDir, "TTW Data", "TaleOfTwoWastelands.bsa"), Path.Combine(dirTTWMain, "TaleOfTwoWastelands.bsa"));
@@ -220,19 +200,7 @@ namespace TaleOfTwoWastelands
             }
         }
 
-        private void FlushTemp(bool recreate = true)
-        {
-            if (Directory.Exists(dirTemp))
-                Directory.Delete(dirTemp, true);
-            if (recreate)
-                Directory.CreateDirectory(dirTemp);
-        }
-
-#if ASYNC
-        private async Task BuildBSAs()
-#else
         private void BuildBSAs()
-#endif
         {
             foreach (var KVP in BuildableBSAs)
             {
@@ -242,11 +210,7 @@ namespace TaleOfTwoWastelands
                 DialogResult buildResult;
                 do
                 {
-#if ASYNC
-                    buildResult = await BuildBSA_Async(Token, KVP.Key, KVP.Value);
-#else
                     buildResult = BuildBSA(Token, KVP.Key, KVP.Value);
-#endif
                 } while (!Token.IsCancellationRequested && buildResult == DialogResult.Retry);
 
                 if (Token.IsCancellationRequested || buildResult == DialogResult.Abort)
@@ -254,80 +218,60 @@ namespace TaleOfTwoWastelands
             }
         }
 
-#if ASYNC
-        private async Task BuildSFX()
-#else
         private void BuildSFX()
-#endif
         {
-            if (!File.Exists(Path.Combine(dirTTWOptional, "Fallout3 Sound Effects", "TaleOfTwoWastelands - SFX.bsa")))
+            var outBsaPath = Path.Combine(dirTTWOptional, "Fallout3 Sound Effects", "TaleOfTwoWastelands - SFX.bsa");
+            if (!File.Exists(outBsaPath))
             {
                 Progress.Report("Building optional TaleOfTwoWastelands - SFX.bsa...");
 
-#if ASYNC
-                await BSA.ExtractBSA_Async(progressLog, Token, Path.Combine(dirFO3Data, "Fallout - Sound.bsa", "sound", "songs"), Path.Combine(dirTTWMain, "sound", "songs"));
-#else
-                BSA.ExtractBSA(progressLog, Token, Path.Combine(dirFO3Data, "Fallout - Sound.bsa", "sound", "songs"), Path.Combine(dirTTWMain, "sound", "songs"));
-#endif
-                Token.ThrowIfCancellationRequested();
+                var fo3BsaPath = Path.Combine(dirFO3Data, "Fallout - Sound.bsa");
+                var inBsa = new BSAWrapper(fo3BsaPath);
 
-#if ASYNC
-                await BSA.ExtractBSA_Async(progressLog, Token, Path.Combine(dirFO3Data, "Fallout - Sound.bsa", "sound", "fx", "ui"), Path.Combine(dirTemp, "sound", "fx", "ui"));
-#else
-                BSA.ExtractBSA(progressLog, Token, Path.Combine(dirFO3Data, "Fallout - Sound.bsa", "sound", "fx", "ui"), Path.Combine(dirTemp, "sound", "fx", "ui"));
-#endif
-                Token.ThrowIfCancellationRequested();
+                var outBsa = new BSAWrapper(inBsa.Settings);
 
-                WriteLog("Building TaleOfTwoWastelands - SFX.bsa.");
-                foreach (var line in File.ReadLines(Path.Combine(AssetsDir, "TTW Data", "TTW_SFXCopy.txt")))
-                {
-                    var sfxPath = Path.Combine(dirTemp, "SFXBSA", line);
+                foreach (var folder in inBsa.Where(folder => folder.Path.StartsWith(Path.Combine("sound", "songs"))))
+                    outBsa.Add(folder);
 
-                    Directory.CreateDirectory(Path.GetDirectoryName(sfxPath));
-                    File.Move(Path.Combine(dirTemp, line), sfxPath);
-                }
+                //BSA.ExtractBSA(progressLog, Token, Path.Combine(dirFO3Data, "Fallout - Sound.bsa", "sound", "songs"), Path.Combine(dirTTWMain, "sound", "songs"));
+                //Token.ThrowIfCancellationRequested();
 
-#if ASYNC
-                await BSA.BuildBSA_Async(progressLog, Token, Path.Combine(dirTemp, "SFXBSA"), Path.Combine(dirTTWOptional, "Fallout3 Sound Effects", "TaleOfTwoWastelands - SFX.bsa"));
-#else
-                BSA.BuildBSA(progressLog, Token, Path.Combine(dirTemp, "SFXBSA"), Path.Combine(dirTTWOptional, "Fallout3 Sound Effects", "TaleOfTwoWastelands - SFX.bsa"));
-#endif
-                Token.ThrowIfCancellationRequested();
+                foreach (var folder in inBsa.Where(folder => folder.Path.StartsWith(Path.Combine("sound", "fx", "ui"))))
+                    outBsa.Add(folder);
+
+                //BSA.ExtractBSA(progressLog, Token, Path.Combine(dirFO3Data, "Fallout - Sound.bsa", "sound", "fx", "ui"), Path.Combine(dirTemp, "sound", "fx", "ui"));
+                //Token.ThrowIfCancellationRequested();
+
+                //WriteLog("Building TaleOfTwoWastelands - SFX.bsa.");
+                //foreach (var line in File.ReadLines(Path.Combine(AssetsDir, "TTW Data", "TTW_SFXCopy.txt")))
+                //{
+                //    var sfxPath = Path.Combine(dirTemp, "SFXBSA", line);
+
+                //    Directory.CreateDirectory(Path.GetDirectoryName(sfxPath));
+                //    File.Move(Path.Combine(dirTemp, line), sfxPath);
+                //}
+
+                //BSA.BuildBSA(progressLog, Token, Path.Combine(dirTemp, "SFXBSA"), Path.Combine(dirTTWOptional, "Fallout3 Sound Effects", "TaleOfTwoWastelands - SFX.bsa"));
+                //Token.ThrowIfCancellationRequested();
 
                 Progress.Report("Done\n");
             }
         }
 
-#if ASYNC
-        private async Task BuildVoice()
-#else
-        private void BuildVoice()
-#endif
-        {
-            if (!File.Exists(Path.Combine(dirTTWOptional, "Fallout3 Player Voice", "TaleOfTwoWastelands - PlayerVoice.bsa")))
-            {
-#if ASYNC
-                await BSA.ExtractBSA_Async(progressLog, Token, Path.Combine(dirFO3Data, "Fallout - Voices.bsa", "sound", "voice", "fallout3.esm", "playervoicemale"), Path.Combine(dirTemp, "PlayerVoice", "sound", "voice", "falloutnv.esm", "playervoicemale"));
-#else
-                BSA.ExtractBSA(progressLog, Token, Path.Combine(dirFO3Data, "Fallout - Voices.bsa", "sound", "voice", "fallout3.esm", "playervoicemale"), Path.Combine(dirTemp, "PlayerVoice", "sound", "voice", "falloutnv.esm", "playervoicemale"));
-#endif
-                Token.ThrowIfCancellationRequested();
+        //private void BuildVoice()
+        //{
+        //    if (!File.Exists(Path.Combine(dirTTWOptional, "Fallout3 Player Voice", "TaleOfTwoWastelands - PlayerVoice.bsa")))
+        //    {
+        //        BSA.ExtractBSA(progressLog, Token, Path.Combine(dirFO3Data, "Fallout - Voices.bsa", "sound", "voice", "fallout3.esm", "playervoicemale"), Path.Combine(dirTemp, "PlayerVoice", "sound", "voice", "falloutnv.esm", "playervoicemale"));
+        //        Token.ThrowIfCancellationRequested();
 
-#if ASYNC
-                await BSA.ExtractBSA_Async(progressLog, Token, Path.Combine(dirFO3Data, "Fallout - Voices.bsa", "sound", "voice", "fallout3.esm", "playervoicefemale"), Path.Combine(dirTemp, "PlayerVoice", "sound", "voice", "falloutnv.esm", "playervoicefemale"));
-#else
-                BSA.ExtractBSA(progressLog, Token, Path.Combine(dirFO3Data, "Fallout - Voices.bsa", "sound", "voice", "fallout3.esm", "playervoicefemale"), Path.Combine(dirTemp, "PlayerVoice", "sound", "voice", "falloutnv.esm", "playervoicefemale"));
-#endif
-                Token.ThrowIfCancellationRequested();
+        //        BSA.ExtractBSA(progressLog, Token, Path.Combine(dirFO3Data, "Fallout - Voices.bsa", "sound", "voice", "fallout3.esm", "playervoicefemale"), Path.Combine(dirTemp, "PlayerVoice", "sound", "voice", "falloutnv.esm", "playervoicefemale"));
+        //        Token.ThrowIfCancellationRequested();
 
-#if ASYNC
-                await BSA.BuildBSA_Async(progressLog, Token, Path.Combine(dirTemp, "PlayerVoice"), Path.Combine(dirTTWOptional, "Fallout3 Player Voice", "TaleOfTwoWastelands - PlayerVoice.bsa"));
-#else
-                BSA.BuildBSA(progressLog, Token, Path.Combine(dirTemp, "PlayerVoice"), Path.Combine(dirTTWOptional, "Fallout3 Player Voice", "TaleOfTwoWastelands - PlayerVoice.bsa"));
-#endif
-                Token.ThrowIfCancellationRequested();
-            }
-        }
+        //        BSA.BuildBSA(progressLog, Token, Path.Combine(dirTemp, "PlayerVoice"), Path.Combine(dirTTWOptional, "Fallout3 Player Voice", "TaleOfTwoWastelands - PlayerVoice.bsa"));
+        //        Token.ThrowIfCancellationRequested();
+        //    }
+        //}
 
         private bool PatchMasters()
         {
@@ -476,11 +420,7 @@ namespace TaleOfTwoWastelands
             }
         }
 
-#if ASYNC
-        private async Task<DialogResult> BuildBSA_Async(CancellationToken token, string inBSA, string outBSA)
-#else
         private DialogResult BuildBSA(CancellationToken token, string inBSA, string outBSA)
-#endif
         {
             string outBSAFile = Path.ChangeExtension(outBSA, ".bsa");
             string outBSAPath = Path.Combine(dirTTWMain, outBSAFile);
@@ -509,11 +449,7 @@ namespace TaleOfTwoWastelands
             string inBSAFile = Path.ChangeExtension(inBSA, ".bsa");
             string inBSAPath = Path.Combine(dirFO3Data, inBSAFile);
 
-#if ASYNC
-            var errors = await BSADiff.PatchBSA_Async(progressLog, token, inBSAPath, outBSAPath, dirTemp, Path.Combine(AssetsDir, "TTW Data", "TTW Patches", outBSA));
-#else
-            var errors = BSADiff.PatchBSA(progressLog, token, inBSAPath, outBSAPath, dirTemp, Path.Combine(AssetsDir, "TTW Data", "TTW Patches", outBSA));
-#endif
+            var errors = BSADiff.PatchBSA(progressLog, token, inBSAPath, outBSAPath, Path.Combine(AssetsDir, "TTW Data", "TTW Patches", outBSA));
 
             WriteLog(errors);
             Progress.Report(errors);
