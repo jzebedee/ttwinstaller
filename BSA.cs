@@ -10,7 +10,7 @@ namespace TaleOfTwoWastelands
 {
     public static class BSA
     {
-        public static void ExtractBSA(IProgress<string> progress, CancellationToken token, IEnumerable<BSAFolder> folders, string bsaOutputDir)
+        public static void ExtractBSA(IProgress<string> progress, CancellationToken token, IEnumerable<BSAFolder> folders, string bsaOutputDir, string bsaName = null)
         {
             foreach (var folder in folders)
             {
@@ -27,7 +27,7 @@ namespace TaleOfTwoWastelands
                     progress.Report("Extracted " + file.Filename);
                 }
             }
-            progress.Report("ExtractBSA " + bsaOutputDir.Replace(Path.GetDirectoryName(bsaOutputDir), "").TrimEnd(Path.DirectorySeparatorChar) + " done!");
+            progress.Report("Extract from " + bsaName ?? bsaOutputDir.Replace(Path.GetDirectoryName(bsaOutputDir), "").TrimEnd(Path.DirectorySeparatorChar) + " done!");
         }
     }
 }

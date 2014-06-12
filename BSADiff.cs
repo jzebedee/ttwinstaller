@@ -61,11 +61,12 @@ namespace TaleOfTwoWastelands
             {
                 string oldFilename = entry.Value;
                 string newFilename = entry.Key;
+                var newDirectory = Path.GetDirectoryName(newFilename);
 
                 var oldBsaFile = allFiles.Where(file => file.Filename == oldFilename).SingleOrDefault();
                 if (oldBsaFile != null)
                 {
-                    var destFolder = BSA.Where(folder => folder.Path == Path.GetDirectoryName(newFilename)).SingleOrDefault();
+                    var destFolder = BSA.Where(folder => folder.Path == newDirectory).SingleOrDefault();
                     if (destFolder == null)
                     {
                         destFolder = new BSAFolder(Path.GetDirectoryName(newFilename));
@@ -175,7 +176,6 @@ namespace TaleOfTwoWastelands
                     bsaFile.UpdateData(patchedBytes, false);
                 else
                     sbErrors.AppendLine("\tPatching " + bsaFile.Filename + " has failed - " + oldChk);
-
             }
             else
             {
