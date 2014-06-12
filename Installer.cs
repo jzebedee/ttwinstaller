@@ -89,6 +89,8 @@ namespace TaleOfTwoWastelands
             this.progressLog = new Progress<string>(log => logFile.WriteLine("[{0}]\t{1}", DateTime.Now, log));
             WriteLog = (s) => progressLog.Report(s);
 
+            BSADiff.PatchDir = Path.Combine(AssetsDir, "TTW Data", "TTW Patches");
+
             RegistryKey bethKey;
             //determine software reg path (depends on architecture)
             if (Environment.Is64BitOperatingSystem) //64-bit
@@ -449,7 +451,7 @@ namespace TaleOfTwoWastelands
             string inBSAFile = Path.ChangeExtension(inBSA, ".bsa");
             string inBSAPath = Path.Combine(dirFO3Data, inBSAFile);
 
-            var errors = BSADiff.PatchBSA(progressLog, token, inBSAPath, outBSAPath, Path.Combine(AssetsDir, "TTW Data", "TTW Patches", outBSA));
+            var errors = BSADiff.PatchBSA(progressLog, token, inBSAPath, outBSAPath);
 
             WriteLog(errors);
             Progress.Report(errors);

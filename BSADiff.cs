@@ -16,7 +16,9 @@ namespace TaleOfTwoWastelands
 {
     class BSADiff
     {
-        public static string PatchBSA(IProgress<string> progress, CancellationToken token, string oldBSA, string newBSA, string patchDir)
+        public static string PatchDir { get; set; }
+
+        public static string PatchBSA(IProgress<string> progress, CancellationToken token, string oldBSA, string newBSA)
         {
             var sbErrors = new StringBuilder();
 
@@ -27,7 +29,9 @@ namespace TaleOfTwoWastelands
             var BSA = new BSAWrapper(oldBSA);
             token.ThrowIfCancellationRequested();
 
-            var renamePath = Path.Combine(patchDir, "RenameFiles.dict");
+            var outFilename = Path.GetFileNameWithoutExtension(newBSA);
+
+            var renamePath = Path.Combine(PatchDir, outFilename, "RenameFiles.dict");
             if (File.Exists(renamePath))
             {
                 using (FileStream stream = new FileStream(renamePath, FileMode.Open))
@@ -37,7 +41,7 @@ namespace TaleOfTwoWastelands
                 }
             }
 
-            var checksumPath = Path.Combine(patchDir, "CheckSums.dict");
+            var checksumPath = Path.Combine(PatchDir, outFilename, "CheckSums.dict");
             if (File.Exists(checksumPath))
             {
                 using (FileStream stream = new FileStream(checksumPath, FileMode.Open))
@@ -53,7 +57,6 @@ namespace TaleOfTwoWastelands
             }
 
             var allFiles = BSA.SelectMany(folder => folder);
-
             foreach (var entry in renameDict)
             {
                 string oldFilename = entry.Value;
@@ -62,14 +65,17 @@ namespace TaleOfTwoWastelands
                 var oldBsaFile = allFiles.Where(file => file.Filename == oldFilename).SingleOrDefault();
                 if (oldBsaFile != null)
                 {
-                    //var parentFolder = BSA.Where(folder => folder.IsParent(oldBsaFile)).SingleOrDefault();
-                    //Trace.Assert(parentFolder != null);
+                    var destFolder = BSA.Where(folder => folder.Path == Path.GetDirectoryName(newFilename)).SingleOrDefault();
+                    if (destFolder == null)
+                    {
+                        destFolder = new BSAFolder(Path.GetDirectoryName(newFilename));
+                        Trace.Assert(BSA.Add(destFolder));
+                    }
 
-                    //parentFolder.Remove(oldBsaFile);
+                    var newBsaFile = oldBsaFile.DeepCopy();
+                    newBsaFile.UpdatePath(Path.GetDirectoryName(newFilename), Path.GetFileName(newFilename));
 
-                    //var BSAfile = new BSAFile(Path.GetDirectoryName(newFilename), newFilename, BSA.Settings, oldBsaFile.GetSaveData(false), oldBsaFile.IsCompressed);
-                    //parentFolder.Add(BSAfile);
-                    oldBsaFile.UpdatePath(Path.GetDirectoryName(newFilename), newFilename);
+                    destFolder.Add(newBsaFile);
                 }
                 else
                 {
@@ -77,6 +83,35 @@ namespace TaleOfTwoWastelands
                     sbErrors.AppendLine("\t\tCannot create: " + newFilename);
                 }
             }
+
+            //var allGroups = BSA.SelectMany(folder => folder.Select(file => new { folder, file }));
+
+            //var renamedToAdd =
+            //    (from entry in renameDict
+            //     let oldFilename = entry.Value
+            //     let newFilename = entry.Key
+            //     let oldBsaFile = allGroups.Where(a => a.file.Filename == oldFilename).SingleOrDefault()
+            //     select new { oldFilename, newFilename, oldBsaFile })
+            //     .Select(
+            //     fnGroup =>
+            //     {
+            //         var oldBsaFile = fnGroup.oldBsaFile.file;
+            //         if (oldBsaFile != null)
+            //         {
+            //             var newBsaFile = oldBsaFile.DeepCopy();
+            //             newBsaFile.UpdatePath(Path.GetDirectoryName(fnGroup.newFilename), Path.GetFileName(fnGroup.newFilename));
+
+            //             return new { fnGroup.oldBsaFile.folder, newBsaFile };
+            //         }
+            //         else
+            //         {
+            //             sbErrors.AppendLine("\tFile not found: " + fnGroup.oldFilename);
+            //             sbErrors.AppendLine("\t\tCannot create: " + fnGroup.newFilename);
+            //         }
+
+            //         return null;
+            //     })
+            //     .Where(bsaGroup => bsaGroup != null);
 
             var oldChkDict = allFiles.ToDictionary(file => file.Filename, file => new { file, checksum = new Lazy<string>(() => Util.GetChecksum(file.GetSaveData(true))) });
 
@@ -92,33 +127,8 @@ namespace TaleOfTwoWastelands
                     //file exists
                     if (anon.checksum.Value != newChk)
                     {
-                        //file exists but is not up to date
-                        var diffPath = Path.Combine(patchDir, file + "." + anon.checksum + "." + newChk + ".diff");
-                        if (File.Exists(diffPath))
-                        {
-                            byte[] patchedBytes;
-
-                            //a patch exists for the file
-                            using (MemoryStream input = new MemoryStream(anon.file.GetSaveData(true)), output = new MemoryStream())
-                            {
-                                using (var mmfPatch = MemoryMappedFile.CreateFromFile(diffPath))
-                                    BinaryPatchUtility.Apply(input, () => mmfPatch.CreateViewStream(), output);
-                                patchedBytes = output.ToArray();
-                            }
-
-                            var oldChk = Util.GetChecksum(patchedBytes);
-                            if (oldChk == newChk)
-                                anon.file.UpdateData(patchedBytes, false);
-                            else
-                                sbErrors.AppendLine("\tPatching " + file + " has failed - " + oldChk);
-
-                        }
-                        else
-                        {
-                            //no patch exists for the file
-                            sbErrors.AppendLine("\tFile is of an unexpected version: " + file + " - " + anon.checksum);
-                            sbErrors.AppendLine("\t\tThis file cannot be patched. Errors may occur.");
-                        }
+                        var patchErrors = PatchFile(outFilename, anon.file, anon.checksum.Value, newChk);
+                        sbErrors.Append(patchErrors);
                     }
                 }
                 else
@@ -138,6 +148,41 @@ namespace TaleOfTwoWastelands
             BSA.Save(newBSA);
 
             //BSA.BuildBSA(progress, token, BSADir, newBSA);
+
+            return sbErrors.ToString();
+        }
+
+        private static string PatchFile(string bsaPrefix, BSAFile bsaFile, string checksumA, string checksumB)
+        {
+            var sbErrors = new StringBuilder();
+
+            //file exists but is not up to date
+            var diffPath = Path.Combine(PatchDir, bsaPrefix, bsaFile.Filename + "." + checksumA + "." + checksumB + ".diff");
+            if (File.Exists(diffPath))
+            {
+                byte[] patchedBytes;
+
+                //a patch exists for the file
+                using (MemoryStream input = new MemoryStream(bsaFile.GetSaveData(true)), output = new MemoryStream())
+                {
+                    using (var mmfPatch = MemoryMappedFile.CreateFromFile(diffPath))
+                        BinaryPatchUtility.Apply(input, () => mmfPatch.CreateViewStream(), output);
+                    patchedBytes = output.ToArray();
+                }
+
+                var oldChk = Util.GetChecksum(patchedBytes);
+                if (oldChk == checksumB)
+                    bsaFile.UpdateData(patchedBytes, false);
+                else
+                    sbErrors.AppendLine("\tPatching " + bsaFile.Filename + " has failed - " + oldChk);
+
+            }
+            else
+            {
+                //no patch exists for the file
+                sbErrors.AppendLine("\tFile is of an unexpected version: " + bsaFile.Filename + " - " + checksumA);
+                sbErrors.AppendLine("\t\tThis file cannot be patched. Errors may occur.");
+            }
 
             return sbErrors.ToString();
         }
