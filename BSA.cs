@@ -10,7 +10,7 @@ namespace TaleOfTwoWastelands
 {
     public static class BSA
     {
-        public static void ExtractBSA(IProgress<string> progress, CancellationToken token, IEnumerable<BSAFolder> folders, string bsaOutputDir, string bsaName = null)
+        public static void ExtractBSA(IProgress<string> progress, CancellationToken token, IEnumerable<BSAFolder> folders, string bsaOutputDir, bool skipExisting, string bsaName = null)
         {
             foreach (var folder in folders)
             {
@@ -22,8 +22,13 @@ namespace TaleOfTwoWastelands
                     token.ThrowIfCancellationRequested();
 
                     var filePath = Path.Combine(bsaOutputDir, file.Filename);
-                    File.WriteAllBytes(filePath, file.GetSaveData(true));
+                    if (File.Exists(filePath) && skipExisting)
+                    {
+                        progress.Report("Skipped (already exists) " + file.Filename);
+                        continue;
+                    }
 
+                    File.WriteAllBytes(filePath, file.GetSaveData(true));
                     progress.Report("Extracted " + file.Filename);
                 }
             }

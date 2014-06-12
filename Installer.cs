@@ -15,13 +15,11 @@ namespace TaleOfTwoWastelands
 {
     class Installer
     {
-        public const string
-            MainDir = "Main Files",
-            OptDir = "Optional Files",
-            AssetsDir = "resources";
+        private const string MainDir = "Main Files", OptDir = "Optional Files";
+        public const string AssetsDir = "resources";
 
         static readonly HashSet<string> CheckedESMs = new HashSet<string>(new[] { "Fallout3.esm", "Anchorage.esm", "ThePitt.esm", "BrokenSteel.esm", "PointLookout.esm", "Zeta.esm" });
-        static readonly Dictionary<string, string> VoicePaths = new Dictionary<string,string> {
+        static readonly Dictionary<string, string> VoicePaths = new Dictionary<string, string> {
             {Path.Combine("sound", "voice", "fallout3.esm", "playervoicemale"), Path.Combine("PlayerVoice", "sound", "voice", "falloutnv.esm", "playervoicemale")},
             {Path.Combine("sound", "voice", "fallout3.esm", "playervoicefemale"), Path.Combine("PlayerVoice", "sound", "voice", "falloutnv.esm", "playervoicefemale")}
         };
@@ -207,6 +205,17 @@ namespace TaleOfTwoWastelands
             }
         }
 
+        private bool ShowSkipDialog(string description)
+        {
+            switch (MessageBox.Show(description + " already exist. Would you like to overwrite them?", "Overwrite Files", MessageBoxButtons.YesNo))
+            {
+                case DialogResult.Yes:
+                    return false;
+                default:
+                    return true;
+            }
+        }
+
         private void BuildBSAs()
         {
             foreach (var KVP in BuildableBSAs)
@@ -227,19 +236,24 @@ namespace TaleOfTwoWastelands
 
         private void BuildSFX()
         {
-            var outBsaPath = Path.Combine(dirTTWOptional, "Fallout3 Sound Effects", "TaleOfTwoWastelands - SFX.bsa");
-            if (File.Exists(outBsaPath))
-                return;
-
-            Progress.Report("Building optional TaleOfTwoWastelands - SFX.bsa...");
-
             var fo3BsaPath = Path.Combine(dirFO3Data, "Fallout - Sound.bsa");
 
             var inBsa = new BSAWrapper(fo3BsaPath);
             var outBsa = new BSAWrapper(inBsa.Settings);
 
+            Progress.Report("Extracting songs");
+
             var songsPath = Path.Combine("sound", "songs");
-            BSA.ExtractBSA(progressLog, Token, inBsa.Where(folder => folder.Path.StartsWith(songsPath)), MainDir, "Fallout - Sound");
+            bool skipExisting = false;
+            if (Directory.Exists(Path.Combine(dirTTWMain, songsPath)))
+                skipExisting = ShowSkipDialog("Fallout 3 songs");
+            BSA.ExtractBSA(progressLog, Token, inBsa.Where(folder => folder.Path.StartsWith(songsPath)), dirTTWMain, skipExisting, "Fallout - Sound");
+
+            var outBsaPath = Path.Combine(dirTTWOptional, "Fallout3 Sound Effects", "TaleOfTwoWastelands - SFX.bsa");
+            if (File.Exists(outBsaPath))
+                return;
+
+            Progress.Report("Building optional TaleOfTwoWastelands - SFX.bsa...");
 
             var fxuiPath = Path.Combine("sound", "fx", "ui");
 
@@ -280,7 +294,7 @@ namespace TaleOfTwoWastelands
             var includedFolders = inBsa
                 .Where(folder => VoicePaths.ContainsKey(folder.Path))
                 .Select(folder => new BSAFolder(VoicePaths[folder.Path], folder));
-            
+
             Trace.Assert(includedFolders.All(folder => outBsa.Add(folder)));
             outBsa.Save(outBsaPath);
         }
@@ -306,6 +320,8 @@ namespace TaleOfTwoWastelands
 
         private void FalloutLineCopy(string name, string path)
         {
+            bool skipExisting = false, asked = false;
+
             WriteLog("Copying " + name);
             Progress.Report("Copying " + name + "...");
             foreach (var line in File.ReadLines(path))
@@ -313,8 +329,20 @@ namespace TaleOfTwoWastelands
                 var linePath = Path.Combine(dirTTWMain, line);
                 var foLinePath = Path.Combine(dirFO3Data, line);
 
-                Directory.CreateDirectory(Path.GetDirectoryName(linePath));
+                var newDirectory = Path.GetDirectoryName(linePath);
+
+                if (Directory.Exists(newDirectory) && !asked)
+                {
+                    asked = true;
+                    skipExisting = ShowSkipDialog(name);
+                }
+
+                Directory.CreateDirectory(newDirectory);
                 if (File.Exists(foLinePath))
+                {
+                    if (File.Exists(linePath) && skipExisting)
+                        continue;
+
                     try
                     {
                         File.Copy(foLinePath, linePath, true);
@@ -323,6 +351,7 @@ namespace TaleOfTwoWastelands
                     {
                         WriteLog("ERROR: " + line + " did not copy successfully due to: Unauthorized Access Exception " + error.Source + ".");
                     }
+                }
                 else
                     WriteLog("File Not Found:\t" + foLinePath);
             }
