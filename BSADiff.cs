@@ -69,12 +69,12 @@ namespace TaleOfTwoWastelands
                     var destFolder = BSA.Where(folder => folder.Path == newDirectory).SingleOrDefault();
                     if (destFolder == null)
                     {
-                        destFolder = new BSAFolder(Path.GetDirectoryName(newFilename));
+                        destFolder = new BSAFolder(newDirectory);
                         Trace.Assert(BSA.Add(destFolder));
                     }
 
                     var newBsaFile = oldBsaFile.DeepCopy();
-                    newBsaFile.UpdatePath(Path.GetDirectoryName(newFilename), Path.GetFileName(newFilename));
+                    newBsaFile.UpdatePath(newDirectory, Path.GetFileName(newFilename));
 
                     destFolder.Add(newBsaFile);
                 }
