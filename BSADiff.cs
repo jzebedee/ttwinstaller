@@ -73,9 +73,7 @@ namespace TaleOfTwoWastelands
                         Trace.Assert(BSA.Add(destFolder));
                     }
 
-                    var newBsaFile = oldBsaFile.DeepCopy();
-                    newBsaFile.UpdatePath(newDirectory, Path.GetFileName(newFilename));
-
+                    var newBsaFile = oldBsaFile.DeepCopy(newDirectory, Path.GetFileName(newFilename));
                     destFolder.Add(newBsaFile);
                 }
                 else
