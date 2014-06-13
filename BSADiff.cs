@@ -56,64 +56,53 @@ namespace TaleOfTwoWastelands
                 return sbErrors.ToString();
             }
 
-            var allFiles = BSA.SelectMany(folder => folder);
-            foreach (var entry in renameDict)
+            var renameCopies = from folder in BSA.ToList()
+                               from file in folder
+                               join kvp in renameDict on file.Filename equals kvp.Value
+                               let newFilename = kvp.Key
+                               let newDirectory = Path.GetDirectoryName(newFilename)
+                               let a = new { folder, file, newFilename, newDirectory }
+                               let id = new { newFilename, newDirectory }
+                               group a by id into outs
+                               select outs;
+
+            var newBsaFolders = from g in renameCopies
+                                let folderAdded = BSA.Add(new BSAFolder(g.Key.newDirectory))
+                                select g;
+
+            var renameFixes = from g in newBsaFolders.ToList()
+                              join newFolder in BSA on g.Key.newDirectory equals newFolder.Path
+                              from a in g
+                              let newFile = a.file.DeepCopy(a.newDirectory, Path.GetFileName(a.newFilename))
+                              select new { a.folder, a.file, newFolder, newFile, g.Key.newFilename };
+
+            foreach (var fix in renameFixes)
             {
-                string oldFilename = entry.Value;
-                string newFilename = entry.Key;
-                var newDirectory = Path.GetDirectoryName(newFilename);
+                //don't say this too fast
+                var cleanedDict = renameDict.Remove(fix.newFilename);
 
-                var oldBsaFile = allFiles.Where(file => file.Filename == oldFilename).SingleOrDefault();
-                if (oldBsaFile != null)
-                {
-                    var destFolder = BSA.Where(folder => folder.Path == newDirectory).SingleOrDefault();
-                    if (destFolder == null)
-                    {
-                        destFolder = new BSAFolder(newDirectory);
-                        Trace.Assert(BSA.Add(destFolder));
-                    }
+                var addedFile = fix.newFolder.Add(fix.newFile);
+                var removedFile = fix.folder.Remove(fix.file);
+            }
 
-                    var newBsaFile = oldBsaFile.DeepCopy(newDirectory, Path.GetFileName(newFilename));
-                    destFolder.Add(newBsaFile);
-                }
-                else
+            if (renameDict.Count > 0)
+            {
+                foreach (var kvp in renameDict)
                 {
-                    sbErrors.AppendLine("\tFile not found: " + oldFilename);
-                    sbErrors.AppendLine("\t\tCannot create: " + newFilename);
+                    sbErrors.AppendLine("\tFile not found: " + kvp.Value);
+                    sbErrors.AppendLine("\t\tCannot create: " + kvp.Key);
                 }
             }
 
-            //var allGroups = BSA.SelectMany(folder => folder.Select(file => new { folder, file }));
+            var allFiles = BSA.SelectMany(folder => folder);
 
-            //var renamedToAdd =
-            //    (from entry in renameDict
-            //     let oldFilename = entry.Value
-            //     let newFilename = entry.Key
-            //     let oldBsaFile = allGroups.Where(a => a.file.Filename == oldFilename).SingleOrDefault()
-            //     select new { oldFilename, newFilename, oldBsaFile })
-            //     .Select(
-            //     fnGroup =>
-            //     {
-            //         var oldBsaFile = fnGroup.oldBsaFile.file;
-            //         if (oldBsaFile != null)
-            //         {
-            //             var newBsaFile = oldBsaFile.DeepCopy();
-            //             newBsaFile.UpdatePath(Path.GetDirectoryName(fnGroup.newFilename), Path.GetFileName(fnGroup.newFilename));
-
-            //             return new { fnGroup.oldBsaFile.folder, newBsaFile };
-            //         }
-            //         else
-            //         {
-            //             sbErrors.AppendLine("\tFile not found: " + fnGroup.oldFilename);
-            //             sbErrors.AppendLine("\t\tCannot create: " + fnGroup.newFilename);
-            //         }
-
-            //         return null;
-            //     })
-            //     .Where(bsaGroup => bsaGroup != null);
+            var filesToRemove = new HashSet<BSAFile>(allFiles
+                .Where(file => !newChkDict.ContainsKey(file.Filename))
+                .Select(file => file));
+            var filesRemoved = BSA.Sum(folder => folder.RemoveWhere(bsafile => filesToRemove.Contains(bsafile)));
+            BSA.RemoveWhere(folder => folder.Count == 0);
 
             var oldChkDict = allFiles.ToDictionary(file => file.Filename, file => new { file, checksum = new Lazy<string>(() => Util.GetChecksum(file.GetSaveData(true))) });
-
             foreach (var entry in newChkDict)
             {
                 string newChk = entry.Value;
@@ -137,13 +126,6 @@ namespace TaleOfTwoWastelands
                 }
             }
 
-            var filesToRemove = new HashSet<BSAFile>(
-                oldChkDict
-                .Where(kvp => !newChkDict.ContainsKey(kvp.Key))
-                .Select(kvp => kvp.Value.file));
-            var filesRemoved = BSA.Sum(folder => folder.RemoveWhere(bsafile => filesToRemove.Contains(bsafile)));
-
-            BSA.RemoveWhere(folder => folder.Count == 0);
             BSA.Save(newBSA);
 
             //BSA.BuildBSA(progress, token, BSADir, newBSA);

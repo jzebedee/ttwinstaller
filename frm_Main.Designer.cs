@@ -45,6 +45,7 @@
             this.label3 = new System.Windows.Forms.Label();
             this.dlg_FindGame = new System.Windows.Forms.OpenFileDialog();
             this.dlg_SaveTTW = new System.Windows.Forms.SaveFileDialog();
+            this.prgCurrent = new System.Windows.Forms.ProgressBar();
             this.tbl_Main.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pic_Banner)).BeginInit();
             this.SuspendLayout();
@@ -54,10 +55,10 @@
             this.tbl_Main.ColumnCount = 3;
             this.tbl_Main.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 37.26885F));
             this.tbl_Main.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 62.73115F));
-            this.tbl_Main.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 82F));
+            this.tbl_Main.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 83F));
             this.tbl_Main.Controls.Add(this.pic_Banner, 0, 0);
             this.tbl_Main.Controls.Add(this.txt_Progress, 1, 7);
-            this.tbl_Main.Controls.Add(this.btn_Install, 1, 8);
+            this.tbl_Main.Controls.Add(this.btn_Install, 2, 8);
             this.tbl_Main.Controls.Add(this.txt_Instructions, 1, 0);
             this.tbl_Main.Controls.Add(this.btn_FO3Browse, 2, 1);
             this.tbl_Main.Controls.Add(this.btn_FNVBrowse, 2, 3);
@@ -68,6 +69,7 @@
             this.tbl_Main.Controls.Add(this.label1, 1, 2);
             this.tbl_Main.Controls.Add(this.label2, 1, 4);
             this.tbl_Main.Controls.Add(this.label3, 1, 6);
+            this.tbl_Main.Controls.Add(this.prgCurrent, 2, 7);
             this.tbl_Main.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tbl_Main.Location = new System.Drawing.Point(0, 0);
             this.tbl_Main.Name = "tbl_Main";
@@ -81,6 +83,7 @@
             this.tbl_Main.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30F));
             this.tbl_Main.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tbl_Main.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30F));
+            this.tbl_Main.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
             this.tbl_Main.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
             this.tbl_Main.Size = new System.Drawing.Size(784, 562);
             this.tbl_Main.TabIndex = 0;
@@ -115,8 +118,7 @@
             // btn_Install
             // 
             this.btn_Install.Anchor = System.Windows.Forms.AnchorStyles.None;
-            this.tbl_Main.SetColumnSpan(this.btn_Install, 2);
-            this.btn_Install.Location = new System.Drawing.Point(485, 535);
+            this.btn_Install.Location = new System.Drawing.Point(704, 535);
             this.btn_Install.Name = "btn_Install";
             this.btn_Install.Size = new System.Drawing.Size(75, 23);
             this.btn_Install.TabIndex = 2;
@@ -181,7 +183,7 @@
             this.txt_FO3Location.Multiline = false;
             this.txt_FO3Location.Name = "txt_FO3Location";
             this.txt_FO3Location.ReadOnly = true;
-            this.txt_FO3Location.Size = new System.Drawing.Size(434, 24);
+            this.txt_FO3Location.Size = new System.Drawing.Size(433, 24);
             this.txt_FO3Location.TabIndex = 7;
             this.txt_FO3Location.Text = "";
             // 
@@ -194,7 +196,7 @@
             this.txt_FNVLocation.Multiline = false;
             this.txt_FNVLocation.Name = "txt_FNVLocation";
             this.txt_FNVLocation.ReadOnly = true;
-            this.txt_FNVLocation.Size = new System.Drawing.Size(434, 24);
+            this.txt_FNVLocation.Size = new System.Drawing.Size(433, 24);
             this.txt_FNVLocation.TabIndex = 8;
             this.txt_FNVLocation.Text = "";
             // 
@@ -207,7 +209,7 @@
             this.txt_TTWLocation.Multiline = false;
             this.txt_TTWLocation.Name = "txt_TTWLocation";
             this.txt_TTWLocation.ReadOnly = true;
-            this.txt_TTWLocation.Size = new System.Drawing.Size(434, 24);
+            this.txt_TTWLocation.Size = new System.Drawing.Size(433, 24);
             this.txt_TTWLocation.TabIndex = 9;
             this.txt_TTWLocation.Text = "";
             // 
@@ -248,6 +250,14 @@
             this.dlg_SaveTTW.FileName = "TaleOfTwoWastelands.fomod";
             this.dlg_SaveTTW.Title = "Tale of Two Wastelands";
             // 
+            // prgCurrent
+            // 
+            this.prgCurrent.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.prgCurrent.Location = new System.Drawing.Point(264, 535);
+            this.prgCurrent.Name = "prgCurrent";
+            this.prgCurrent.Size = new System.Drawing.Size(433, 24);
+            this.prgCurrent.TabIndex = 13;
+            // 
             // frm_Main
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -283,6 +293,7 @@
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.OpenFileDialog dlg_FindGame;
         private System.Windows.Forms.SaveFileDialog dlg_SaveTTW;
+        private System.Windows.Forms.ProgressBar prgCurrent;
 
     }
 }
