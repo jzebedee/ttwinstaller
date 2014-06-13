@@ -56,34 +56,43 @@ namespace TaleOfTwoWastelands
                 return sbErrors.ToString();
             }
 
-            var renameCopies = from folder in BSA.ToList()
-                               from file in folder
-                               join kvp in renameDict on file.Filename equals kvp.Value
-                               let newFilename = kvp.Key
+            var renameGroup = from folder in BSA.ToList()
+                              from file in folder
+                              join kvp in renameDict on file.Filename equals kvp.Value
+                              let a = new { folder, file, kvp }
+                              //group a by kvp.Value into g
+                              select a;
+
+            //var dupedFiles = (from g in renameGroup
+            //                  where g.Count() > 1
+            //                  from a in g
+            //                  select a.kvp).ToList();
+
+            //var dupedFilesSlim = (from g in renameGroup
+            //                      where g.Count() > 1
+            //                      select g.First().kvp).ToList();
+
+            var renameCopies = from g in renameGroup
+                               let newFilename = g.kvp.Key
                                let newDirectory = Path.GetDirectoryName(newFilename)
-                               let a = new { folder, file, newFilename, newDirectory }
-                               let id = new { newFilename, newDirectory }
-                               group a by id into outs
+                               let a = new { g.folder, g.file, newFilename }
+                               group a by newDirectory into outs
                                select outs;
 
             var newBsaFolders = from g in renameCopies
-                                let folderAdded = BSA.Add(new BSAFolder(g.Key.newDirectory))
+                                let folderAdded = BSA.Add(new BSAFolder(g.Key))
                                 select g;
 
             var renameFixes = from g in newBsaFolders.ToList()
-                              join newFolder in BSA on g.Key.newDirectory equals newFolder.Path
                               from a in g
-                              let newFile = a.file.DeepCopy(a.newDirectory, Path.GetFileName(a.newFilename))
-                              select new { a.folder, a.file, newFolder, newFile, g.Key.newFilename };
-
-            foreach (var fix in renameFixes)
-            {
-                //don't say this too fast
-                var cleanedDict = renameDict.Remove(fix.newFilename);
-
-                var addedFile = fix.newFolder.Add(fix.newFile);
-                var removedFile = fix.folder.Remove(fix.file);
-            }
+                              join newFolder in BSA on g.Key equals newFolder.Path
+                              let newFile = a.file.DeepCopy(g.Key, Path.GetFileName(a.newFilename))
+                              let addedFile = newFolder.Add(newFile)
+                              //let removedFile = a.folder.Remove(a.file)
+                              //don't say this too fast
+                              let cleanedDict = renameDict.Remove(a.newFilename)
+                              select new { a.folder, a.file, newFolder, newFile, a.newFilename };
+            renameFixes.ToList(); // execute query
 
             if (renameDict.Count > 0)
             {
@@ -95,13 +104,6 @@ namespace TaleOfTwoWastelands
             }
 
             var allFiles = BSA.SelectMany(folder => folder);
-
-            var filesToRemove = new HashSet<BSAFile>(allFiles
-                .Where(file => !newChkDict.ContainsKey(file.Filename))
-                .Select(file => file));
-            var filesRemoved = BSA.Sum(folder => folder.RemoveWhere(bsafile => filesToRemove.Contains(bsafile)));
-            BSA.RemoveWhere(folder => folder.Count == 0);
-
             var oldChkDict = allFiles.ToDictionary(file => file.Filename, file => new { file, checksum = new Lazy<string>(() => Util.GetChecksum(file.GetSaveData(true))) });
             foreach (var entry in newChkDict)
             {
@@ -125,6 +127,10 @@ namespace TaleOfTwoWastelands
                     sbErrors.AppendLine("\tFile not found: " + file);
                 }
             }
+
+            var filesToRemove = new HashSet<BSAFile>(allFiles.Where(file => !newChkDict.ContainsKey(file.Filename)));
+            var filesRemoved = BSA.Sum(folder => folder.RemoveWhere(bsafile => filesToRemove.Contains(bsafile)));
+            BSA.RemoveWhere(folder => folder.Count == 0);
 
             BSA.Save(newBSA);
 
