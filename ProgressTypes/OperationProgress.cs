@@ -25,10 +25,20 @@ namespace TaleOfTwoWastelands.ProgressTypes
 
         public int Step()
         {
-            if (++ItemsDone > ItemsTotal)
+            if ((ItemsDone + 1) > ItemsTotal)
                 throw new ArgumentOutOfRangeException();
 
-            return ItemsDone;
+            return ++ItemsDone;
+        }
+
+        public void Finish()
+        {
+            _itemsDone = 0;
+            _itemsTotal = 0;
+            _currentOperation = "";
+            RaisePropertyChanged("ItemsDone");
+            RaisePropertyChanged("ItemsTotal");
+            RaisePropertyChanged("CurrentOperation");
         }
 
         private int _itemsDone;

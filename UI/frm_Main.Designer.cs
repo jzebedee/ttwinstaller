@@ -30,7 +30,6 @@
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(frm_Main));
             this.tbl_Main = new System.Windows.Forms.TableLayoutPanel();
-            this.prgOverall = new TaleOfTwoWastelands.UI.TextProgressBar();
             this.pic_Banner = new System.Windows.Forms.PictureBox();
             this.txt_Progress = new System.Windows.Forms.RichTextBox();
             this.btn_Install = new System.Windows.Forms.Button();
@@ -44,10 +43,11 @@
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
-            this.prgCurrent = new TaleOfTwoWastelands.UI.TextProgressBar();
             this.chkYou = new System.Windows.Forms.CheckBox();
             this.dlg_FindGame = new System.Windows.Forms.OpenFileDialog();
             this.dlg_SaveTTW = new System.Windows.Forms.SaveFileDialog();
+            this.prgOverall = new TaleOfTwoWastelands.UI.TextProgressBar();
+            this.prgCurrent = new TaleOfTwoWastelands.UI.TextProgressBar();
             this.tbl_Main.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pic_Banner)).BeginInit();
             this.SuspendLayout();
@@ -57,7 +57,7 @@
             this.tbl_Main.ColumnCount = 3;
             this.tbl_Main.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 37.26885F));
             this.tbl_Main.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 62.73115F));
-            this.tbl_Main.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 85F));
+            this.tbl_Main.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 105F));
             this.tbl_Main.Controls.Add(this.prgOverall, 1, 9);
             this.tbl_Main.Controls.Add(this.pic_Banner, 0, 0);
             this.tbl_Main.Controls.Add(this.txt_Progress, 1, 7);
@@ -88,18 +88,8 @@
             this.tbl_Main.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tbl_Main.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30F));
             this.tbl_Main.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30F));
-            this.tbl_Main.Size = new System.Drawing.Size(784, 562);
+            this.tbl_Main.Size = new System.Drawing.Size(784, 561);
             this.tbl_Main.TabIndex = 0;
-            // 
-            // prgOverall
-            // 
-            this.prgOverall.CustomText = null;
-            this.prgOverall.DisplayStyle = TaleOfTwoWastelands.UI.ProgressBarDisplayText.CustomText;
-            this.prgOverall.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.prgOverall.Location = new System.Drawing.Point(263, 535);
-            this.prgOverall.Name = "prgOverall";
-            this.prgOverall.Size = new System.Drawing.Size(432, 24);
-            this.prgOverall.TabIndex = 14;
             // 
             // pic_Banner
             // 
@@ -110,7 +100,7 @@
             this.pic_Banner.Margin = new System.Windows.Forms.Padding(0, 0, 3, 0);
             this.pic_Banner.Name = "pic_Banner";
             this.tbl_Main.SetRowSpan(this.pic_Banner, 10);
-            this.pic_Banner.Size = new System.Drawing.Size(257, 562);
+            this.pic_Banner.Size = new System.Drawing.Size(250, 561);
             this.pic_Banner.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this.pic_Banner.TabIndex = 0;
             this.pic_Banner.TabStop = false;
@@ -120,10 +110,10 @@
             this.txt_Progress.BackColor = System.Drawing.SystemColors.Window;
             this.tbl_Main.SetColumnSpan(this.txt_Progress, 2);
             this.txt_Progress.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.txt_Progress.Location = new System.Drawing.Point(263, 213);
+            this.txt_Progress.Location = new System.Drawing.Point(256, 213);
             this.txt_Progress.Name = "txt_Progress";
             this.txt_Progress.ReadOnly = true;
-            this.txt_Progress.Size = new System.Drawing.Size(518, 286);
+            this.txt_Progress.Size = new System.Drawing.Size(525, 285);
             this.txt_Progress.TabIndex = 1;
             this.txt_Progress.TabStop = false;
             this.txt_Progress.Text = "";
@@ -131,7 +121,7 @@
             // btn_Install
             // 
             this.btn_Install.Anchor = System.Windows.Forms.AnchorStyles.None;
-            this.btn_Install.Location = new System.Drawing.Point(703, 535);
+            this.btn_Install.Location = new System.Drawing.Point(693, 534);
             this.btn_Install.Name = "btn_Install";
             this.btn_Install.Size = new System.Drawing.Size(75, 23);
             this.btn_Install.TabIndex = 2;
@@ -145,10 +135,10 @@
             this.txt_Instructions.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.tbl_Main.SetColumnSpan(this.txt_Instructions, 2);
             this.txt_Instructions.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.txt_Instructions.Location = new System.Drawing.Point(263, 3);
+            this.txt_Instructions.Location = new System.Drawing.Point(256, 3);
             this.txt_Instructions.Name = "txt_Instructions";
             this.txt_Instructions.ReadOnly = true;
-            this.txt_Instructions.Size = new System.Drawing.Size(518, 34);
+            this.txt_Instructions.Size = new System.Drawing.Size(525, 34);
             this.txt_Instructions.TabIndex = 3;
             this.txt_Instructions.TabStop = false;
             this.txt_Instructions.Text = "Please indicate where Fallout 3 and Fallout New Vegas are located, and where you " +
@@ -157,7 +147,7 @@
             // btn_FO3Browse
             // 
             this.btn_FO3Browse.Anchor = System.Windows.Forms.AnchorStyles.None;
-            this.btn_FO3Browse.Location = new System.Drawing.Point(704, 43);
+            this.btn_FO3Browse.Location = new System.Drawing.Point(694, 43);
             this.btn_FO3Browse.Name = "btn_FO3Browse";
             this.btn_FO3Browse.Size = new System.Drawing.Size(74, 23);
             this.btn_FO3Browse.TabIndex = 4;
@@ -168,7 +158,7 @@
             // btn_FNVBrowse
             // 
             this.btn_FNVBrowse.Anchor = System.Windows.Forms.AnchorStyles.None;
-            this.btn_FNVBrowse.Location = new System.Drawing.Point(704, 103);
+            this.btn_FNVBrowse.Location = new System.Drawing.Point(694, 103);
             this.btn_FNVBrowse.Name = "btn_FNVBrowse";
             this.btn_FNVBrowse.Size = new System.Drawing.Size(74, 23);
             this.btn_FNVBrowse.TabIndex = 5;
@@ -179,7 +169,7 @@
             // btn_TTWBrowse
             // 
             this.btn_TTWBrowse.Anchor = System.Windows.Forms.AnchorStyles.None;
-            this.btn_TTWBrowse.Location = new System.Drawing.Point(704, 163);
+            this.btn_TTWBrowse.Location = new System.Drawing.Point(694, 163);
             this.btn_TTWBrowse.Name = "btn_TTWBrowse";
             this.btn_TTWBrowse.Size = new System.Drawing.Size(74, 23);
             this.btn_TTWBrowse.TabIndex = 6;
@@ -192,11 +182,11 @@
             this.txt_FO3Location.BackColor = System.Drawing.SystemColors.Window;
             this.txt_FO3Location.Dock = System.Windows.Forms.DockStyle.Fill;
             this.txt_FO3Location.EnableAutoDragDrop = true;
-            this.txt_FO3Location.Location = new System.Drawing.Point(263, 43);
+            this.txt_FO3Location.Location = new System.Drawing.Point(256, 43);
             this.txt_FO3Location.Multiline = false;
             this.txt_FO3Location.Name = "txt_FO3Location";
             this.txt_FO3Location.ReadOnly = true;
-            this.txt_FO3Location.Size = new System.Drawing.Size(432, 24);
+            this.txt_FO3Location.Size = new System.Drawing.Size(419, 24);
             this.txt_FO3Location.TabIndex = 7;
             this.txt_FO3Location.Text = "";
             // 
@@ -205,11 +195,11 @@
             this.txt_FNVLocation.BackColor = System.Drawing.SystemColors.Window;
             this.txt_FNVLocation.Dock = System.Windows.Forms.DockStyle.Fill;
             this.txt_FNVLocation.EnableAutoDragDrop = true;
-            this.txt_FNVLocation.Location = new System.Drawing.Point(263, 103);
+            this.txt_FNVLocation.Location = new System.Drawing.Point(256, 103);
             this.txt_FNVLocation.Multiline = false;
             this.txt_FNVLocation.Name = "txt_FNVLocation";
             this.txt_FNVLocation.ReadOnly = true;
-            this.txt_FNVLocation.Size = new System.Drawing.Size(432, 24);
+            this.txt_FNVLocation.Size = new System.Drawing.Size(419, 24);
             this.txt_FNVLocation.TabIndex = 8;
             this.txt_FNVLocation.Text = "";
             // 
@@ -218,18 +208,18 @@
             this.txt_TTWLocation.BackColor = System.Drawing.SystemColors.Window;
             this.txt_TTWLocation.Dock = System.Windows.Forms.DockStyle.Fill;
             this.txt_TTWLocation.EnableAutoDragDrop = true;
-            this.txt_TTWLocation.Location = new System.Drawing.Point(263, 163);
+            this.txt_TTWLocation.Location = new System.Drawing.Point(256, 163);
             this.txt_TTWLocation.Multiline = false;
             this.txt_TTWLocation.Name = "txt_TTWLocation";
             this.txt_TTWLocation.ReadOnly = true;
-            this.txt_TTWLocation.Size = new System.Drawing.Size(432, 24);
+            this.txt_TTWLocation.Size = new System.Drawing.Size(419, 24);
             this.txt_TTWLocation.TabIndex = 9;
             this.txt_TTWLocation.Text = "";
             // 
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(263, 70);
+            this.label1.Location = new System.Drawing.Point(256, 70);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(91, 13);
             this.label1.TabIndex = 10;
@@ -238,7 +228,7 @@
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(263, 130);
+            this.label2.Location = new System.Drawing.Point(256, 130);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(140, 13);
             this.label2.TabIndex = 11;
@@ -247,21 +237,11 @@
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(263, 190);
+            this.label3.Location = new System.Drawing.Point(256, 190);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(125, 13);
             this.label3.TabIndex = 12;
             this.label3.Text = "Tale Of Two Wastelands";
-            // 
-            // prgCurrent
-            // 
-            this.prgCurrent.CustomText = null;
-            this.prgCurrent.DisplayStyle = TaleOfTwoWastelands.UI.ProgressBarDisplayText.CustomText;
-            this.prgCurrent.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.prgCurrent.Location = new System.Drawing.Point(263, 505);
-            this.prgCurrent.Name = "prgCurrent";
-            this.prgCurrent.Size = new System.Drawing.Size(432, 24);
-            this.prgCurrent.TabIndex = 13;
             // 
             // chkYou
             // 
@@ -269,7 +249,7 @@
             this.chkYou.AutoSize = true;
             this.chkYou.Checked = true;
             this.chkYou.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.chkYou.Location = new System.Drawing.Point(716, 508);
+            this.chkYou.Location = new System.Drawing.Point(706, 507);
             this.chkYou.Name = "chkYou";
             this.chkYou.Size = new System.Drawing.Size(49, 17);
             this.chkYou.TabIndex = 15;
@@ -287,11 +267,31 @@
             this.dlg_SaveTTW.FileName = "TaleOfTwoWastelands.fomod";
             this.dlg_SaveTTW.Title = "Tale of Two Wastelands";
             // 
+            // prgOverall
+            // 
+            this.prgOverall.CustomText = null;
+            this.prgOverall.DisplayStyle = TaleOfTwoWastelands.UI.ProgressBarDisplayText.CustomText;
+            this.prgOverall.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.prgOverall.Location = new System.Drawing.Point(256, 534);
+            this.prgOverall.Name = "prgOverall";
+            this.prgOverall.Size = new System.Drawing.Size(419, 24);
+            this.prgOverall.TabIndex = 14;
+            // 
+            // prgCurrent
+            // 
+            this.prgCurrent.CustomText = null;
+            this.prgCurrent.DisplayStyle = TaleOfTwoWastelands.UI.ProgressBarDisplayText.CustomText;
+            this.prgCurrent.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.prgCurrent.Location = new System.Drawing.Point(256, 504);
+            this.prgCurrent.Name = "prgCurrent";
+            this.prgCurrent.Size = new System.Drawing.Size(419, 24);
+            this.prgCurrent.TabIndex = 13;
+            // 
             // frm_Main
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(784, 562);
+            this.ClientSize = new System.Drawing.Size(784, 561);
             this.Controls.Add(this.tbl_Main);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "frm_Main";

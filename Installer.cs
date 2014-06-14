@@ -157,42 +157,123 @@ namespace TaleOfTwoWastelands
         {
             this.Token = inToken;
 
+            var opProg = new OperationProgress(progressUIMajor, inToken) { ItemsTotal = 7 + BuildableBSAs.Count + CheckedESMs.Count };
             try
             {
-                if (CheckFiles())
+                try
                 {
-                    WriteLog("All files found.");
-                    LogOutput("All files found. Proceeding with installation.");
+                    opProg.CurrentOperation = "Checking for required files";
+
+                    if (CheckFiles())
+                    {
+                        WriteLog("All files found.");
+                        LogOutput("All files found. Proceeding with installation.");
+                    }
+                    else
+                    {
+                        WriteLog("Missing files detected. Aborting install.");
+                        LogOutput("The above files were not found. Make sure your Fallout 3 location is accurate and try again.\nInstallation failed.");
+                        return;
+                    }
                 }
-                else
+                finally
                 {
-                    WriteLog("Missing files detected. Aborting install.");
-                    LogOutput("The above files were not found. Make sure your Fallout 3 location is accurate and try again.\nInstallation failed.");
-                    return;
+                    //+1
+                    opProg.Step();
                 }
 
-                WriteLog("Creating FOMOD foundation.");
-                Util.CopyFolder(Path.Combine(AssetsDir, "TTW Data", "TTW Files"), TTWSavePath, (s) => WriteLog(s));
+                try
+                {
+                    var curOp = "Creating FOMOD foundation";
+                    opProg.CurrentOperation = curOp;
 
-                BuildBSAs();
+                    WriteLog(curOp);
+                    Util.CopyFolder(Path.Combine(AssetsDir, "TTW Data", "TTW Files"), TTWSavePath, (s) => WriteLog(s));
+                }
+                finally
+                {
+                    //+1
+                    opProg.Step();
+                }
 
-                BuildSFX();
+                //count BuildableBSAs
+                BuildBSAs(opProg);
 
-                BuildVoice();
+                try
+                {
+                    opProg.CurrentOperation = "Building SFX";
 
-                if (!File.Exists(Path.Combine(dirTTWMain, "TaleOfTwoWastelands.bsa")))
-                    File.Copy(Path.Combine(AssetsDir, "TTW Data", "TaleOfTwoWastelands.bsa"), Path.Combine(dirTTWMain, "TaleOfTwoWastelands.bsa"));
+                    BuildSFX();
+                }
+                finally
+                {
+                    //+1
+                    opProg.Step();
+                }
 
-                if (!PatchMasters())
+                try
+                {
+                    opProg.CurrentOperation = "Building Voices";
+
+                    BuildVoice();
+                }
+                finally
+                {
+                    //+1
+                    opProg.Step();
+                }
+
+                try
+                {
+                    var ttwArchive = "TaleOfTwoWastelands.bsa";
+                    opProg.CurrentOperation = "Copying " + ttwArchive;
+
+                    if (!File.Exists(Path.Combine(dirTTWMain, ttwArchive)))
+                        File.Copy(Path.Combine(AssetsDir, "TTW Data", ttwArchive), Path.Combine(dirTTWMain, ttwArchive));
+                }
+                finally
+                {
+                    //+1
+                    opProg.Step();
+                }
+
+                //count CheckedESMs
+                if (!PatchMasters(opProg))
                     return;
 
-                FalloutLineCopy("Fallout3 music files", Path.Combine(AssetsDir, "TTW Data", "FO3_MusicCopy.txt"));
-                FalloutLineCopy("Fallout3 video files", Path.Combine(AssetsDir, "TTW Data", "FO3_VideoCopy.txt"));
+                //+2
+                {
+                    string
+                        prefix = "Copying ",
+                        opA = "Fallout3 music files",
+                        opB = "Fallout3 video files";
+
+                    opProg.CurrentOperation = prefix + opA;
+                    FalloutLineCopy(opA, Path.Combine(AssetsDir, "TTW Data", "FO3_MusicCopy.txt"));
+                    opProg.Step();
+
+                    opProg.CurrentOperation = prefix + opB;
+                    FalloutLineCopy(opB, Path.Combine(AssetsDir, "TTW Data", "FO3_VideoCopy.txt"));
+                    opProg.Step();
+                }
 
                 if (MessageBox.Show("Tale of Two Wastelands is easiest to install via a mod manager (such as Nexus Mod Manager). Manual installation is possible but not suggested.\n\nWould like the installer to automatically build FOMODs?", "Build FOMODs?", MessageBoxButtons.YesNo) == DialogResult.Yes)
                 {
-                    BuildFOMODs();
+                    //+1 (opt)
+                    try
+                    {
+                        opProg.ItemsTotal++;
+                        opProg.CurrentOperation = "Building FOMODs";
+
+                        BuildFOMODs();
+                    }
+                    finally
+                    {
+                        opProg.Step();
+                    }
                 }
+
+                opProg.Finish();
 
                 LogOutput("Install completed successfully.");
                 MessageBox.Show("Tale of Two Wastelands has been installed successfully.");
@@ -221,7 +302,7 @@ namespace TaleOfTwoWastelands
             }
         }
 
-        private void BuildBSAs()
+        private void BuildBSAs(OperationProgress opProg)
         {
             foreach (var KVP in BuildableBSAs)
             {
@@ -231,7 +312,16 @@ namespace TaleOfTwoWastelands
                 DialogResult buildResult;
                 do
                 {
-                    buildResult = BuildBSA(Token, KVP.Key, KVP.Value);
+                    try
+                    {
+                        opProg.CurrentOperation = "Building " + Path.GetFileName(KVP.Value);
+
+                        buildResult = BuildBSA(Token, KVP.Key, KVP.Value);
+                    }
+                    finally
+                    {
+                        opProg.Step();
+                    }
                 } while (!Token.IsCancellationRequested && buildResult == DialogResult.Retry);
 
                 if (Token.IsCancellationRequested || buildResult == DialogResult.Abort)
@@ -304,11 +394,20 @@ namespace TaleOfTwoWastelands
             outBsa.Save(outBsaPath);
         }
 
-        private bool PatchMasters()
+        private bool PatchMasters(OperationProgress opProg)
         {
             foreach (var ESM in CheckedESMs)
-                if (Token.IsCancellationRequested || !PatchFile(ESM))
-                    return false;
+                try
+                {
+                    opProg.CurrentOperation = "Patching " + ESM;
+
+                    if (Token.IsCancellationRequested || !PatchFile(ESM))
+                        return false;
+                }
+                finally
+                {
+                    opProg.Step();
+                }
 
             return true;
         }

@@ -213,7 +213,7 @@ namespace TaleOfTwoWastelands
                 opProg.Step();
             }
 
-            //BSA.BuildBSA(progress, token, BSADir, newBSA);
+            opProg.Finish();
 
             return sbErrors.ToString();
         }
