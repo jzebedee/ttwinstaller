@@ -25,7 +25,7 @@ namespace TaleOfTwoWastelands
 
         [SerializableAttribute]
         [ComVisibleAttribute(true)]
-        public delegate void GenericEventHandler<T>(Object sender, T e);
+        public delegate void GenericEventHandler<P>(Object sender, P e);
 
         public event GenericEventHandler<T> ProgressChanged;
 
