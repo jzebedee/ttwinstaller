@@ -64,18 +64,23 @@
     <Compile Include="BinaryPatchUtility.cs" />
     <Compile Include="BSA.cs" />
     <Compile Include="BSADiff.cs" />
-    <Compile Include="frm_Main.cs">
+    <Compile Include="UI\frm_Main.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="frm_Main.Designer.cs">
+    <Compile Include="UI\frm_Main.Designer.cs">
       <DependentUpon>frm_Main.cs</DependentUpon>
     </Compile>
     <Compile Include="Installer.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Progress.cs" Condition="!$(TargetFrameworkVersion.Contains('v4.5'))" />
+    <Compile Include="ProgressTypes\OperationProgress.cs" />
+    <Compile Include="ProgressTypes\ProgressUpdater.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="UI\TextProgressBar.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Util.cs" />
-    <EmbeddedResource Include="frm_Main.resx">
+    <EmbeddedResource Include="UI\frm_Main.resx">
       <DependentUpon>frm_Main.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
@@ -122,9 +127,7 @@
       <Install>false</Install>
     </BootstrapperPackage>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="ProgressTypes\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

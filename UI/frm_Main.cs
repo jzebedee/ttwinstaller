@@ -13,8 +13,9 @@ using Microsoft.Win32;
 using System.Threading;
 using System.Security.Principal;
 using System.Diagnostics;
+using TaleOfTwoWastelands.ProgressTypes;
 
-namespace TaleOfTwoWastelands
+namespace TaleOfTwoWastelands.UI
 {
     public partial class frm_Main : Form
     {
@@ -32,10 +33,27 @@ namespace TaleOfTwoWastelands
             //verify we are running as administrator
             Trace.Assert(new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator));
 
-            var prog = new Progress<string>();
-            prog.ProgressChanged += (in_sender, in_e) => txt_Progress.AppendText(string.Format("[{0}]\t{1}{2}", DateTime.Now, in_e, Environment.NewLine));
+            var progText = new Progress<string>(msg => txt_Progress.AppendText(string.Format("[{0}]\t{1}{2}", DateTime.Now, msg, Environment.NewLine)));
 
-            _install = new Installer(prog, dlg_FindGame, dlg_SaveTTW);
+            Action<OperationProgress, TextProgressBar> updateProgressBar = (opProg, bar) =>
+            {
+                Action update = () => {
+                    bar.Maximum = opProg.ItemsTotal;
+                    bar.Value = opProg.ItemsDone;
+                    bar.CustomText = opProg.CurrentOperation;
+                };
+                
+                if(bar.InvokeRequired) {
+                    bar.Invoke(update);
+                } else {
+                    update();
+                }
+            };
+
+            var progUIMinor = new Progress<OperationProgress>(opProg => updateProgressBar(opProg, prgCurrent));
+            var progUIMajor = new Progress<OperationProgress>(opProg => updateProgressBar(opProg, prgOverall));
+
+            _install = new Installer(progText, progUIMinor, progUIMajor, dlg_FindGame, dlg_SaveTTW);
             txt_FO3Location.Text = _install.Fallout3Path;
             txt_FNVLocation.Text = _install.FalloutNVPath;
             txt_TTWLocation.Text = _install.TTWSavePath;
@@ -87,6 +105,16 @@ namespace TaleOfTwoWastelands
             {
                 _install_cts.Cancel();
                 _install_task.Wait();
+            }
+        }
+
+        private void chkYou_CheckedChanged(object sender, EventArgs e)
+        {
+            var checkbox = (sender as CheckBox);
+            if (!checkbox.Checked)
+            {
+                checkbox.Checked = true;
+                MessageBox.Show("Impossible");
             }
         }
     }
