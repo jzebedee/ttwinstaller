@@ -43,174 +43,177 @@ namespace TaleOfTwoWastelands
                 opProg.Step();
             }
 
-            var outFilename = Path.GetFileNameWithoutExtension(newBSA);
-
-            try
+            using (BSA)
             {
-                opProg.CurrentOperation = "Opening rename fixes";
+                var outFilename = Path.GetFileNameWithoutExtension(newBSA);
 
-                var renamePath = Path.Combine(PatchDir, outFilename, "RenameFiles.dict");
-                if (File.Exists(renamePath))
+                try
                 {
-                    using (FileStream stream = new FileStream(renamePath, FileMode.Open))
+                    opProg.CurrentOperation = "Opening rename fixes";
+
+                    var renamePath = Path.Combine(PatchDir, outFilename, "RenameFiles.dict");
+                    if (File.Exists(renamePath))
                     {
-                        BinaryFormatter bFormatter = new BinaryFormatter();
-                        renameDict = (SortedDictionary<string, string>)bFormatter.Deserialize(stream);
-                    }
-                }
-            }
-            finally
-            {
-                opProg.Step();
-            }
-
-            try
-            {
-                opProg.CurrentOperation = "Opening checksum database";
-
-                var checksumPath = Path.Combine(PatchDir, outFilename, "CheckSums.dict");
-                if (File.Exists(checksumPath))
-                {
-                    using (FileStream stream = new FileStream(checksumPath, FileMode.Open))
-                    {
-                        BinaryFormatter bFormatter = new BinaryFormatter();
-                        newChkDict = (SortedDictionary<string, string>)bFormatter.Deserialize(stream);
-                    }
-                }
-                else
-                {
-                    sbErrors.AppendLine("\tNo Checksum dictionary is available for: " + oldBSA);
-                    return sbErrors.ToString();
-                }
-            }
-            finally
-            {
-                opProg.Step();
-            }
-
-            try
-            {
-                var opRename = new OperationProgress(progressUI, token);
-
-                var opPrefix = "Renaming BSA files";
-
-                opRename.CurrentOperation = opPrefix;
-
-                var renameGroup = from folder in BSA.ToList()
-                                  from file in folder
-                                  join kvp in renameDict on file.Filename equals kvp.Value
-                                  let a = new { folder, file, kvp }
-                                  //group a by kvp.Value into g
-                                  select a;
-
-                var renameCopies = from g in renameGroup
-                                   let newFilename = g.kvp.Key
-                                   let newDirectory = Path.GetDirectoryName(newFilename)
-                                   let a = new { g.folder, g.file, newFilename }
-                                   group a by newDirectory into outs
-                                   select outs;
-
-                var newBsaFolders = from g in renameCopies
-                                    let folderAdded = BSA.Add(new BSAFolder(g.Key))
-                                    select g;
-                newBsaFolders.ToList();
-
-                opRename.ItemsTotal = BSA.SelectMany(folder => folder).Count();
-
-                var renameFixes = from g in newBsaFolders
-                                  from a in g
-                                  join newFolder in BSA on g.Key equals newFolder.Path
-                                  let newFile = a.file.DeepCopy(g.Key, Path.GetFileName(a.newFilename))
-                                  let addedFile = newFolder.Add(newFile)
-                                  //let removedFile = a.folder.Remove(a.file)
-                                  //don't say this too fast
-                                  let cleanedDict = renameDict.Remove(a.newFilename)
-
-                                  let curOp = (opRename.CurrentOperation = opPrefix + ": " + a.file.Name + " -> " + newFile.Name)
-                                  let curDone = opRename.Step()
-
-                                  select new { a.folder, a.file, newFolder, newFile, a.newFilename };
-                renameFixes.ToList(); // execute query
-            }
-            finally
-            {
-                opProg.Step();
-            }
-
-            if (renameDict.Count > 0)
-            {
-                foreach (var kvp in renameDict)
-                {
-                    sbErrors.AppendLine("\tFile not found: " + kvp.Value);
-                    sbErrors.AppendLine("\t\tCannot create: " + kvp.Key);
-                }
-            }
-
-            var allFiles = BSA.SelectMany(folder => folder);
-
-            try
-            {
-                var opChk = new OperationProgress(progressUI, token);
-
-                var oldChkDict = allFiles.ToDictionary(file => file.Filename, file => new { file, checksum = new Lazy<string>(() => Util.GetChecksum(file.GetSaveData(true))) });
-                opChk.ItemsTotal = newChkDict.Count;
-
-                foreach (var entry in newChkDict)
-                {
-                    string newChk = entry.Value;
-                    string file = entry.Key;
-
-                    if (oldChkDict.ContainsKey(file))
-                    {
-                        var anon = oldChkDict[file];
-
-                        opChk.CurrentOperation = "Validating " + anon.file.Name;
-
-                        //file exists
-                        if (anon.checksum.Value != newChk)
+                        using (FileStream stream = new FileStream(renamePath, FileMode.Open))
                         {
-                            opChk.CurrentOperation = "Patching " + anon.file.Name;
+                            BinaryFormatter bFormatter = new BinaryFormatter();
+                            renameDict = (SortedDictionary<string, string>)bFormatter.Deserialize(stream);
+                        }
+                    }
+                }
+                finally
+                {
+                    opProg.Step();
+                }
 
-                            var patchErrors = PatchFile(outFilename, anon.file, anon.checksum.Value, newChk);
-                            sbErrors.Append(patchErrors);
+                try
+                {
+                    opProg.CurrentOperation = "Opening checksum database";
+
+                    var checksumPath = Path.Combine(PatchDir, outFilename, "CheckSums.dict");
+                    if (File.Exists(checksumPath))
+                    {
+                        using (FileStream stream = new FileStream(checksumPath, FileMode.Open))
+                        {
+                            BinaryFormatter bFormatter = new BinaryFormatter();
+                            newChkDict = (SortedDictionary<string, string>)bFormatter.Deserialize(stream);
                         }
                     }
                     else
                     {
-                        //file not found
-                        sbErrors.AppendLine("\tFile not found: " + file);
+                        sbErrors.AppendLine("\tNo Checksum dictionary is available for: " + oldBSA);
+                        return sbErrors.ToString();
                     }
-
-                    opChk.Step();
                 }
-            }
-            finally
-            {
-                opProg.Step();
-            }
+                finally
+                {
+                    opProg.Step();
+                }
 
-            try
-            {
-                opProg.CurrentOperation = "Removing unnecessary files";
+                try
+                {
+                    var opRename = new OperationProgress(progressUI, token);
 
-                var filesToRemove = new HashSet<BSAFile>(allFiles.Where(file => !newChkDict.ContainsKey(file.Filename)));
-                var filesRemoved = BSA.Sum(folder => folder.RemoveWhere(bsafile => filesToRemove.Contains(bsafile)));
-                BSA.RemoveWhere(folder => folder.Count == 0);
-            }
-            finally
-            {
-                opProg.Step();
-            }
+                    var opPrefix = "Renaming BSA files";
 
-            try
-            {
-                opProg.CurrentOperation = "Building " + Path.GetFileName(newBSA);
+                    opRename.CurrentOperation = opPrefix;
 
-                BSA.Save(newBSA);
-            }
-            finally
-            {
-                opProg.Step();
+                    var renameGroup = from folder in BSA.ToList()
+                                      from file in folder
+                                      join kvp in renameDict on file.Filename equals kvp.Value
+                                      let a = new { folder, file, kvp }
+                                      //group a by kvp.Value into g
+                                      select a;
+
+                    var renameCopies = from g in renameGroup
+                                       let newFilename = g.kvp.Key
+                                       let newDirectory = Path.GetDirectoryName(newFilename)
+                                       let a = new { g.folder, g.file, newFilename }
+                                       group a by newDirectory into outs
+                                       select outs;
+
+                    var newBsaFolders = from g in renameCopies
+                                        let folderAdded = BSA.Add(new BSAFolder(g.Key))
+                                        select g;
+                    newBsaFolders.ToList();
+
+                    opRename.ItemsTotal = BSA.SelectMany(folder => folder).Count();
+
+                    var renameFixes = from g in newBsaFolders
+                                      from a in g
+                                      join newFolder in BSA on g.Key equals newFolder.Path
+                                      let newFile = a.file.DeepCopy(g.Key, Path.GetFileName(a.newFilename))
+                                      let addedFile = newFolder.Add(newFile)
+                                      //let removedFile = a.folder.Remove(a.file)
+                                      //don't say this too fast
+                                      let cleanedDict = renameDict.Remove(a.newFilename)
+
+                                      let curOp = (opRename.CurrentOperation = opPrefix + ": " + a.file.Name + " -> " + newFile.Name)
+                                      let curDone = opRename.Step()
+
+                                      select new { a.folder, a.file, newFolder, newFile, a.newFilename };
+                    renameFixes.ToList(); // execute query
+                }
+                finally
+                {
+                    opProg.Step();
+                }
+
+                if (renameDict.Count > 0)
+                {
+                    foreach (var kvp in renameDict)
+                    {
+                        sbErrors.AppendLine("\tFile not found: " + kvp.Value);
+                        sbErrors.AppendLine("\t\tCannot create: " + kvp.Key);
+                    }
+                }
+
+                var allFiles = BSA.SelectMany(folder => folder);
+
+                try
+                {
+                    var opChk = new OperationProgress(progressUI, token);
+
+                    var oldChkDict = allFiles.ToDictionary(file => file.Filename, file => new { file, checksum = new Lazy<string>(() => Util.GetChecksum(file.GetSaveData(true))) });
+                    opChk.ItemsTotal = newChkDict.Count;
+
+                    foreach (var entry in newChkDict)
+                    {
+                        string newChk = entry.Value;
+                        string file = entry.Key;
+
+                        if (oldChkDict.ContainsKey(file))
+                        {
+                            var anon = oldChkDict[file];
+
+                            opChk.CurrentOperation = "Validating " + anon.file.Name;
+
+                            //file exists
+                            if (anon.checksum.Value != newChk)
+                            {
+                                opChk.CurrentOperation = "Patching " + anon.file.Name;
+
+                                var patchErrors = PatchFile(outFilename, anon.file, anon.checksum.Value, newChk);
+                                sbErrors.Append(patchErrors);
+                            }
+                        }
+                        else
+                        {
+                            //file not found
+                            sbErrors.AppendLine("\tFile not found: " + file);
+                        }
+
+                        opChk.Step();
+                    }
+                }
+                finally
+                {
+                    opProg.Step();
+                }
+
+                try
+                {
+                    opProg.CurrentOperation = "Removing unnecessary files";
+
+                    var filesToRemove = new HashSet<BSAFile>(allFiles.Where(file => !newChkDict.ContainsKey(file.Filename)));
+                    var filesRemoved = BSA.Sum(folder => folder.RemoveWhere(bsafile => filesToRemove.Contains(bsafile)));
+                    BSA.RemoveWhere(folder => folder.Count == 0);
+                }
+                finally
+                {
+                    opProg.Step();
+                }
+
+                try
+                {
+                    opProg.CurrentOperation = "Building " + Path.GetFileName(newBSA);
+
+                    BSA.Save(newBSA);
+                }
+                finally
+                {
+                    opProg.Step();
+                }
             }
 
             opProg.Finish();

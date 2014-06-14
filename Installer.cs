@@ -333,44 +333,47 @@ namespace TaleOfTwoWastelands
         {
             var fo3BsaPath = Path.Combine(dirFO3Data, "Fallout - Sound.bsa");
 
-            var inBsa = new BSAWrapper(fo3BsaPath);
-            var outBsa = new BSAWrapper(inBsa.Settings);
-
-            LogOutput("Extracting songs");
-
-            var songsPath = Path.Combine("sound", "songs");
-            bool skipExisting = false;
-            if (Directory.Exists(Path.Combine(dirTTWMain, songsPath)))
-                skipExisting = ShowSkipDialog("Fallout 3 songs");
-            BSA.ExtractBSA(progressLog, Token, inBsa.Where(folder => folder.Path.StartsWith(songsPath)), dirTTWMain, skipExisting, "Fallout - Sound");
-
-            var outBsaPath = Path.Combine(dirTTWOptional, "Fallout3 Sound Effects", "TaleOfTwoWastelands - SFX.bsa");
-            if (File.Exists(outBsaPath))
-                return;
-
-            LogOutput("Building optional TaleOfTwoWastelands - SFX.bsa...");
-
-            var fxuiPath = Path.Combine("sound", "fx", "ui");
-
-            var includedFilenames = new HashSet<string>(File.ReadLines(Path.Combine(AssetsDir, "TTW Data", "TTW_SFXCopy.txt")));
-
-            var includedGroups =
-                from folder in inBsa.Where(folder => folder.Path.StartsWith(fxuiPath))
-                from file in folder
-                where includedFilenames.Contains(file.Filename)
-                group file by folder;
-
-            foreach (var group in includedGroups)
+            using (BSAWrapper
+                inBsa = new BSAWrapper(fo3BsaPath),
+                outBsa = new BSAWrapper(inBsa.Settings))
             {
-                //make folder only include files that matched includedFilenames
-                group.Key.IntersectWith(group);
 
-                //add folders back into output BSA
-                outBsa.Add(group.Key);
+                LogOutput("Extracting songs");
+
+                var songsPath = Path.Combine("sound", "songs");
+                bool skipExisting = false;
+                if (Directory.Exists(Path.Combine(dirTTWMain, songsPath)))
+                    skipExisting = ShowSkipDialog("Fallout 3 songs");
+                BSA.ExtractBSA(progressLog, Token, inBsa.Where(folder => folder.Path.StartsWith(songsPath)), dirTTWMain, skipExisting, "Fallout - Sound");
+
+                var outBsaPath = Path.Combine(dirTTWOptional, "Fallout3 Sound Effects", "TaleOfTwoWastelands - SFX.bsa");
+                if (File.Exists(outBsaPath))
+                    return;
+
+                LogOutput("Building optional TaleOfTwoWastelands - SFX.bsa...");
+
+                var fxuiPath = Path.Combine("sound", "fx", "ui");
+
+                var includedFilenames = new HashSet<string>(File.ReadLines(Path.Combine(AssetsDir, "TTW Data", "TTW_SFXCopy.txt")));
+
+                var includedGroups =
+                    from folder in inBsa.Where(folder => folder.Path.StartsWith(fxuiPath))
+                    from file in folder
+                    where includedFilenames.Contains(file.Filename)
+                    group file by folder;
+
+                foreach (var group in includedGroups)
+                {
+                    //make folder only include files that matched includedFilenames
+                    group.Key.IntersectWith(group);
+
+                    //add folders back into output BSA
+                    outBsa.Add(group.Key);
+                }
+
+                WriteLog("Building TaleOfTwoWastelands - SFX.bsa.");
+                outBsa.Save(outBsaPath);
             }
-
-            WriteLog("Building TaleOfTwoWastelands - SFX.bsa.");
-            outBsa.Save(outBsaPath);
 
             LogOutput("Done\n");
         }
@@ -383,15 +386,18 @@ namespace TaleOfTwoWastelands
 
             var inBsaPath = Path.Combine(dirFO3Data, "Fallout - Voices.bsa");
 
-            var inBsa = new BSAWrapper(inBsaPath);
-            var outBsa = new BSAWrapper(inBsa.Settings);
+            using (BSAWrapper
+                inBsa = new BSAWrapper(inBsaPath),
+                outBsa = new BSAWrapper(inBsa.Settings))
+            {
 
-            var includedFolders = inBsa
-                .Where(folder => VoicePaths.ContainsKey(folder.Path))
-                .Select(folder => new BSAFolder(VoicePaths[folder.Path], folder));
+                var includedFolders = inBsa
+                    .Where(folder => VoicePaths.ContainsKey(folder.Path))
+                    .Select(folder => new BSAFolder(VoicePaths[folder.Path], folder));
 
-            Trace.Assert(includedFolders.All(folder => outBsa.Add(folder)));
-            outBsa.Save(outBsaPath);
+                Trace.Assert(includedFolders.All(folder => outBsa.Add(folder)));
+                outBsa.Save(outBsaPath);
+            }
         }
 
         private bool PatchMasters(OperationProgress opProg)
