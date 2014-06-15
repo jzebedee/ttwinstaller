@@ -1,4 +1,5 @@
-﻿
+﻿#define PATCH
+//#define CREATE
 using System;
 using System.IO;
 using ICSharpCode.SharpZipLib.BZip2;
@@ -37,6 +38,11 @@ namespace TaleOfTwoWastelands
     */
     class BinaryPatchUtility
     {
+        const long c_fileSignature = 0x3034464649445342L;
+        const int c_headerSize = 32;
+        const int c_bufferSize = 0x100000;
+
+#if CREATE
         /// <summary>
         /// Creates a binary patch (in <a href="http://www.daemonology.net/bsdiff/">bsdiff</a> format) that can be used
         /// (by <see cref="Apply"/>) to transform <paramref name="oldData"/> into <paramref name="newData"/>.
@@ -227,151 +233,6 @@ namespace TaleOfTwoWastelands
             output.Position = endPosition;
         }
 
-        /// <summary>
-        /// Applies a binary patch (in <a href="http://www.daemonology.net/bsdiff/">bsdiff</a> format) to the data in
-        /// <paramref name="input"/> and writes the results of patching to <paramref name="output"/>.
-        /// </summary>
-        /// <param name="input">A <see cref="Stream"/> containing the input data.</param>
-        /// <param name="openPatchStream">A func that can open a <see cref="Stream"/> positioned at the start of the patch data.
-        /// This stream must support reading and seeking, and <paramref name="openPatchStream"/> must allow multiple streams on
-        /// the patch to be opened concurrently.</param>
-        /// <param name="output">A <see cref="Stream"/> to which the patched data is written.</param>
-        public static void Apply(Stream input, Func<Stream> openPatchStream, Stream output)
-        {
-            // check arguments
-            if (input == null)
-                throw new ArgumentNullException("input");
-            if (openPatchStream == null)
-                throw new ArgumentNullException("openPatchStream");
-            if (output == null)
-                throw new ArgumentNullException("output");
-
-            /*
-            File format:
-                0	8	"BSDIFF40"
-                8	8	X
-                16	8	Y
-                24	8	sizeof(newfile)
-                32	X	bzip2(control block)
-                32+X	Y	bzip2(diff block)
-                32+X+Y	???	bzip2(extra block)
-            with control block a set of triples (x,y,z) meaning "add x bytes
-            from oldfile to x bytes from the diff block; copy y bytes from the
-            extra block; seek forwards in oldfile by z bytes".
-            */
-            // read header
-            long controlLength, diffLength, newSize;
-            using (Stream patchStream = openPatchStream())
-            {
-                // check patch stream capabilities
-                if (!patchStream.CanRead)
-                    throw new ArgumentException("Patch stream must be readable.", "openPatchStream");
-                if (!patchStream.CanSeek)
-                    throw new ArgumentException("Patch stream must be seekable.", "openPatchStream");
-
-                byte[] header = patchStream.ReadExactly(c_headerSize);
-
-                // check for appropriate magic
-                long signature = ReadInt64(header, 0);
-                if (signature != c_fileSignature)
-                    throw new InvalidOperationException("Corrupt patch.");
-
-                // read lengths from header
-                controlLength = ReadInt64(header, 8);
-                diffLength = ReadInt64(header, 16);
-                newSize = ReadInt64(header, 24);
-                if (controlLength < 0 || diffLength < 0 || newSize < 0)
-                    throw new InvalidOperationException("Corrupt patch.");
-            }
-
-            // preallocate buffers for reading and writing
-            const int c_bufferSize = 1048576;
-            byte[] newData = new byte[c_bufferSize];
-            byte[] oldData = new byte[c_bufferSize];
-
-            // prepare to read three parts of the patch in parallel
-            using (
-                Stream compressedControlStream = openPatchStream(),
-                compressedDiffStream = openPatchStream(),
-                compressedExtraStream = openPatchStream())
-            {
-                // seek to the start of each part
-                compressedControlStream.Seek(c_headerSize, SeekOrigin.Current);
-                compressedDiffStream.Seek(c_headerSize + controlLength, SeekOrigin.Current);
-                compressedExtraStream.Seek(c_headerSize + controlLength + diffLength, SeekOrigin.Current);
-
-                // decompress each part (to read it)
-                using (BZip2InputStream controlStream = new BZip2InputStream(compressedControlStream))
-                using (BZip2InputStream diffStream = new BZip2InputStream(compressedDiffStream))
-                using (BZip2InputStream extraStream = new BZip2InputStream(compressedExtraStream))
-                {
-                    long[] control = new long[3];
-                    byte[] buffer = new byte[8];
-
-                    int oldPosition = 0;
-                    int newPosition = 0;
-                    while (newPosition < newSize)
-                    {
-                        // read control data
-                        for (int i = 0; i < 3; i++)
-                        {
-                            controlStream.ReadExactly(buffer, 0, 8);
-                            control[i] = ReadInt64(buffer, 0);
-                        }
-
-                        // sanity-check
-                        if (newPosition + control[0] > newSize)
-                            throw new InvalidOperationException("Corrupt patch.");
-
-                        // seek old file to the position that the new data is diffed against
-                        input.Position = oldPosition;
-
-                        int bytesToCopy = (int)control[0];
-                        while (bytesToCopy > 0)
-                        {
-                            int actualBytesToCopy = Math.Min(bytesToCopy, c_bufferSize);
-
-                            // read diff string
-                            diffStream.ReadExactly(newData, 0, actualBytesToCopy);
-
-                            // add old data to diff string
-                            int availableInputBytes = Math.Min(actualBytesToCopy, (int)(input.Length - input.Position));
-                            input.ReadExactly(oldData, 0, availableInputBytes);
-
-                            for (int index = 0; index < availableInputBytes; index++)
-                                newData[index] += oldData[index];
-
-                            output.Write(newData, 0, actualBytesToCopy);
-
-                            // adjust counters
-                            newPosition += actualBytesToCopy;
-                            oldPosition += actualBytesToCopy;
-                            bytesToCopy -= actualBytesToCopy;
-                        }
-
-                        // sanity-check
-                        if (newPosition + control[1] > newSize)
-                            throw new InvalidOperationException("Corrupt patch.");
-
-                        // read extra string
-                        bytesToCopy = (int)control[1];
-                        while (bytesToCopy > 0)
-                        {
-                            int actualBytesToCopy = Math.Min(bytesToCopy, c_bufferSize);
-
-                            extraStream.ReadExactly(newData, 0, actualBytesToCopy);
-                            output.Write(newData, 0, actualBytesToCopy);
-
-                            newPosition += actualBytesToCopy;
-                            bytesToCopy -= actualBytesToCopy;
-                        }
-
-                        // adjust position
-                        oldPosition = (int)(oldPosition + control[2]);
-                    }
-                }
-            }
-        }
 
         private static int CompareBytes(byte[] left, int leftOffset, byte[] right, int rightOffset)
         {
@@ -577,39 +438,183 @@ namespace TaleOfTwoWastelands
             first = second;
             second = temp;
         }
+#endif
 
-        private static long ReadInt64(byte[] buf, int offset)
+#if PATCH
+        /// <summary>
+        /// Applies a binary patch (in <a href="http://www.daemonology.net/bsdiff/">bsdiff</a> format) to the data in
+        /// <paramref name="input"/> and writes the results of patching to <paramref name="output"/>.
+        /// </summary>
+        /// <param name="input">A <see cref="Stream"/> containing the input data.</param>
+        /// <param name="openPatchStream">A func that can open a <see cref="Stream"/> positioned at the start of the patch data.
+        /// This stream must support reading and seeking, and <paramref name="openPatchStream"/> must allow multiple streams on
+        /// the patch to be opened concurrently.</param>
+        /// <param name="output">A <see cref="Stream"/> to which the patched data is written.</param>
+        public static unsafe void Apply(Stream input, Func<Stream> openPatchStream, Stream output)
         {
-            long value = buf[offset + 7] & 0x7F;
+            // check arguments
+            if (input == null)
+                throw new ArgumentNullException("input");
+            if (openPatchStream == null)
+                throw new ArgumentNullException("openPatchStream");
+            if (output == null)
+                throw new ArgumentNullException("output");
 
-            for (int index = 6; index >= 0; index--)
+            /*
+            File format:
+                0	8	"BSDIFF40"
+                8	8	X
+                16	8	Y
+                24	8	sizeof(newfile)
+                32	X	bzip2(control block)
+                32+X	Y	bzip2(diff block)
+                32+X+Y	???	bzip2(extra block)
+            with control block a set of triples (x,y,z) meaning "add x bytes
+            from oldfile to x bytes from the diff block; copy y bytes from the
+            extra block; seek forwards in oldfile by z bytes".
+            */
+            // read header
+            long controlLength, diffLength, newSize;
+            using (Stream patchStream = openPatchStream())
             {
-                value *= 256;
-                value += buf[offset + index];
+                // check patch stream capabilities
+                if (!patchStream.CanRead)
+                    throw new ArgumentException("Patch stream must be readable.", "openPatchStream");
+                if (!patchStream.CanSeek)
+                    throw new ArgumentException("Patch stream must be seekable.", "openPatchStream");
+
+                byte[] header = patchStream.ReadExactly(c_headerSize);
+
+                // check for appropriate magic
+                long signature = ReadInt64(header, 0);
+                if (signature != c_fileSignature)
+                    throw new InvalidOperationException("Corrupt patch.");
+
+                // read lengths from header
+                controlLength = ReadInt64(header, 8);
+                diffLength = ReadInt64(header, 16);
+                newSize = ReadInt64(header, 24);
+                if (controlLength < 0 || diffLength < 0 || newSize < 0)
+                    throw new InvalidOperationException("Corrupt patch.");
             }
 
-            if ((buf[offset + 7] & 0x80) != 0)
-                value = -value;
+            // preallocate buffers for reading and writing
+            byte[] newData = new byte[c_bufferSize];
+            byte[] oldData = new byte[c_bufferSize];
 
-            return value;
+            // prepare to read three parts of the patch in parallel
+            using (
+                Stream compressedControlStream = openPatchStream(),
+                compressedDiffStream = openPatchStream(),
+                compressedExtraStream = openPatchStream())
+            {
+                // seek to the start of each part
+                compressedControlStream.Seek(c_headerSize, SeekOrigin.Current);
+                compressedDiffStream.Seek(c_headerSize + controlLength, SeekOrigin.Current);
+                compressedExtraStream.Seek(c_headerSize + controlLength + diffLength, SeekOrigin.Current);
+
+                // decompress each part (to read it)
+                using (BZip2InputStream controlStream = new BZip2InputStream(compressedControlStream))
+                using (BZip2InputStream diffStream = new BZip2InputStream(compressedDiffStream))
+                using (BZip2InputStream extraStream = new BZip2InputStream(compressedExtraStream))
+                {
+                    long[] control = new long[3];
+                    byte[] buffer = new byte[8];
+
+                    int oldPosition = 0;
+                    int newPosition = 0;
+                    while (newPosition < newSize)
+                    {
+                        // read control data
+                        for (int i = 0; i < 3; i++)
+                        {
+                            controlStream.ReadExactly(buffer, 0, 8);
+                            control[i] = ReadInt64(buffer, 0);
+                        }
+
+                        // sanity-check
+                        if (newPosition + control[0] > newSize)
+                            throw new InvalidOperationException("Corrupt patch.");
+
+                        // seek old file to the position that the new data is diffed against
+                        input.Position = oldPosition;
+
+                        int bytesToCopy = (int)control[0];
+                        while (bytesToCopy > 0)
+                        {
+                            int actualBytesToCopy = Math.Min(bytesToCopy, c_bufferSize);
+
+                            // read diff string
+                            diffStream.ReadExactly(newData, 0, actualBytesToCopy);
+
+                            // add old data to diff string
+                            int availableInputBytes = Math.Min(actualBytesToCopy, (int)(input.Length - input.Position));
+                            input.ReadExactly(oldData, 0, availableInputBytes);
+
+                            fixed (byte* pN = newData)
+                            fixed (byte* pO = oldData)
+                            {
+                                for (int i = 0; i < availableInputBytes; i++)
+                                    *(pN + i) += *(pO + i);
+                            }
+
+                            output.Write(newData, 0, actualBytesToCopy);
+
+                            // adjust counters
+                            newPosition += actualBytesToCopy;
+                            oldPosition += actualBytesToCopy;
+                            bytesToCopy -= actualBytesToCopy;
+                        }
+
+                        // sanity-check
+                        if (newPosition + control[1] > newSize)
+                            throw new InvalidOperationException("Corrupt patch.");
+
+                        // read extra string
+                        bytesToCopy = (int)control[1];
+                        while (bytesToCopy > 0)
+                        {
+                            int actualBytesToCopy = Math.Min(bytesToCopy, c_bufferSize);
+
+                            extraStream.ReadExactly(newData, 0, actualBytesToCopy);
+                            output.Write(newData, 0, actualBytesToCopy);
+
+                            newPosition += actualBytesToCopy;
+                            bytesToCopy -= actualBytesToCopy;
+                        }
+
+                        // adjust position
+                        oldPosition = (int)(oldPosition + control[2]);
+                    }
+                }
+            }
+        }
+#endif
+
+        private static unsafe long ReadInt64(byte[] buf, int offset)
+        {
+            long y;
+
+            fixed (byte* pBuf = &(buf[offset]))
+            {
+                y = pBuf[7] & 0x7F;
+                for (int i = 6; i >= 0; i--)
+                {
+                    y = y << 8;
+                    y += pBuf[i];
+                }
+
+                return (pBuf[7] & 0x80) != 0 ? -y : y;
+            }
         }
 
         private static void WriteInt64(long value, byte[] buf, int offset)
         {
-            long valueToWrite = value < 0 ? -value : value;
-
-            for (int byteIndex = 0; byteIndex < 8; byteIndex++)
-            {
-                buf[offset + byteIndex] = (byte)(valueToWrite % 256);
-                valueToWrite -= buf[offset + byteIndex];
-                valueToWrite /= 256;
-            }
+            var valBytes = BitConverter.GetBytes(value < 0 ? -value : value);
+            Buffer.BlockCopy(valBytes, 0, buf, offset, valBytes.Length);
 
             if (value < 0)
                 buf[offset + 7] |= 0x80;
         }
-
-        const long c_fileSignature = 0x3034464649445342L;
-        const int c_headerSize = 32;
     }
 }
