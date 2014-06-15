@@ -6,9 +6,9 @@ using System.Text;
 namespace TaleOfTwoWastelands
 {
     [Serializable]
-    public class Patch
+    public class PatchInfo
     {
-        public Validation Metadata { get; set; }
+        public FileValidation Metadata { get; set; }
         public byte[] Data { get; set; }
     }
 }

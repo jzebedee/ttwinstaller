@@ -27,9 +27,8 @@ namespace TaleOfTwoWastelands
             var sbErrors = new StringBuilder();
             var opProg = new OperationProgress(progressUI, token) { ItemsTotal = 7 };
 
-            IDictionary<string, string> renameDict, newChkDict;
-            renameDict = new SortedDictionary<string, string>();
-            newChkDict = new SortedDictionary<string, string>();
+            var renameDict = new Dictionary<string, string>();
+            var patchDict = new Dictionary<string, PatchInfo>();
 
             BSAWrapper BSA;
             try
@@ -49,15 +48,15 @@ namespace TaleOfTwoWastelands
 
                 try
                 {
-                    opProg.CurrentOperation = "Opening rename fixes";
+                    opProg.CurrentOperation = "Opening rename database";
 
-                    var renamePath = Path.Combine(PatchDir, outBsaFilename, "RenameFiles.dict");
+                    var renamePath = Path.Combine(PatchDir, "Checksums", Path.ChangeExtension(outBsaFilename, ".ren"));
                     if (File.Exists(renamePath))
                     {
-                        using (FileStream stream = new FileStream(renamePath, FileMode.Open))
+                        using (var stream = File.OpenRead(renamePath))
                         {
-                            BinaryFormatter bFormatter = new BinaryFormatter();
-                            renameDict = (SortedDictionary<string, string>)bFormatter.Deserialize(stream);
+                            var bFormatter = new BinaryFormatter();
+                            renameDict = (Dictionary<string, string>)bFormatter.Deserialize(stream);
                         }
                     }
                 }
@@ -68,20 +67,20 @@ namespace TaleOfTwoWastelands
 
                 try
                 {
-                    opProg.CurrentOperation = "Opening checksum database";
+                    opProg.CurrentOperation = "Opening patch database";
 
-                    var checksumPath = Path.Combine(PatchDir, outBsaFilename, "CheckSums.dict");
-                    if (File.Exists(checksumPath))
+                    var patchPath = Path.Combine(PatchDir, "Checksums", Path.ChangeExtension(outBsaFilename, ".pat"));
+                    if (File.Exists(patchPath))
                     {
-                        using (FileStream stream = new FileStream(checksumPath, FileMode.Open))
+                        using (var stream = File.OpenRead(patchPath))
                         {
-                            BinaryFormatter bFormatter = new BinaryFormatter();
-                            newChkDict = (SortedDictionary<string, string>)bFormatter.Deserialize(stream);
+                            var bFormatter = new BinaryFormatter();
+                            patchDict = (Dictionary<string, PatchInfo>)bFormatter.Deserialize(stream);
                         }
                     }
                     else
                     {
-                        sbErrors.AppendLine("\tNo Checksum dictionary is available for: " + oldBSA);
+                        sbErrors.AppendLine("\tNo patch database is available for: " + oldBSA);
                         return sbErrors.ToString();
                     }
                 }
@@ -151,54 +150,63 @@ namespace TaleOfTwoWastelands
                 var allFiles = BSA.SelectMany(folder => folder);
 
 #if BUILD_PATCHDB
-                var patDB = new Dictionary<string, Patch>();
+                var patDB = new Dictionary<string, PatchInfo>();
 #endif
                 try
                 {
                     var opChk = new OperationProgress(progressUI, token);
 
-                    var oldChkDict = allFiles.ToDictionary(file => file.Filename, file => new { file, checksum = new Lazy<string>(() => Util.GetChecksum(file.GetSaveData(true))) });
-                    opChk.ItemsTotal = newChkDict.Count;
+                    var oldChkDict = FileValidation.FromBSA(BSA);
+                    opChk.ItemsTotal = patchDict.Count;
 
-                    foreach (var entry in newChkDict)
+                    var joinedPatches = from patKvp in patchDict
+                                        join oldKvp in oldChkDict on patKvp.Key equals oldKvp.Key into foundOld
+                                        join bsaFile in allFiles on patKvp.Key equals bsaFile.Filename
+                                        select new
+                                        {
+                                            bsaFile,
+                                            file = patKvp.Key,
+                                            patch = patKvp.Value,
+                                            oldChk = foundOld.SingleOrDefault()
+                                        };
+
+                    foreach (var join in joinedPatches)
                     {
-                        string newChk = entry.Value;
-                        string file = entry.Key;
-
-                        if (oldChkDict.ContainsKey(file))
-                        {
-                            var anon = oldChkDict[file];
-
-                            opChk.CurrentOperation = "Validating " + anon.file.Name;
-
-                            //file exists
-                            if (anon.checksum.Value != newChk)
-                            {
-                                opChk.CurrentOperation = "Patching " + anon.file.Name;
-
-                                var patchErrors = PatchFile(outBsaFilename, anon.file, anon.checksum.Value, newChk);
-                                sbErrors.Append(patchErrors);
-                            }
-
-#if BUILD_PATCHDB
-                            var diffPath = Path.Combine(PatchDir, outBsaFilename, anon.file.Filename + "." + anon.checksum.Value + "." + newChk + ".diff");
-                            var patch = new Patch()
-                            {
-                                Metadata = Validation.FromBSAFile(anon.file),
-                                Data = File.Exists(diffPath) ? File.ReadAllBytes(diffPath) : null
-                            };
-                            patDB.Add(anon.file.Filename, patch);
-#endif
-                        }
-                        else
+                        if (string.IsNullOrEmpty(join.oldChk.Key))
                         {
 #if BUILD_PATCHDB
                             Trace.Fail("You can't build a patchDB with invalid files!");
 #endif
                             //file not found
-                            sbErrors.AppendLine("\tFile not found: " + file);
+                            sbErrors.AppendLine("\tFile not found: " + join.file);
+
+                            opChk.Step();
+                            continue;
                         }
 
+                        var oldChk = join.oldChk.Value;
+                        var newChk = join.patch.Metadata;
+                        opChk.CurrentOperation = "Validating " + join.bsaFile.Name;
+
+                        if (!newChk.Equals(oldChk))
+                        {
+                            opChk.CurrentOperation = "Patching " + join.bsaFile.Name;
+
+                            var patchErrors = PatchFile(outBsaFilename, join.bsaFile, oldChk, join.patch);
+                            sbErrors.Append(patchErrors);
+                        }
+
+#if BUILD_PATCHDB
+                        MD5 fileHash = MD5.Create();
+                        var oldChksum = BitConverter.ToString(fileHash.ComputeHash(join.bsaFile.GetSaveData(true))).Replace("-", "");
+                        var diffPath = Path.Combine(PatchDir, outBsaFilename, join.bsaFile.Filename + "." + oldChksum + "." + newChk + ".diff");
+                        var patch = new PatchInfo()
+                        {
+                            Metadata = FileValidation.FromBSAFile(join.bsaFile),
+                            Data = File.Exists(diffPath) ? File.ReadAllBytes(diffPath) : null
+                        };
+                        patDB.Add(join.bsaFile.Filename, patch);
+#endif
                         opChk.Step();
                     }
                 }
@@ -219,7 +227,7 @@ namespace TaleOfTwoWastelands
                 {
                     opProg.CurrentOperation = "Removing unnecessary files";
 
-                    var filesToRemove = new HashSet<BSAFile>(allFiles.Where(file => !newChkDict.ContainsKey(file.Filename)));
+                    var filesToRemove = new HashSet<BSAFile>(allFiles.Where(file => !patchDict.ContainsKey(file.Filename)));
                     var filesRemoved = BSA.Sum(folder => folder.RemoveWhere(bsafile => filesToRemove.Contains(bsafile)));
                     BSA.RemoveWhere(folder => folder.Count == 0);
                 }
@@ -245,7 +253,7 @@ namespace TaleOfTwoWastelands
             return sbErrors.ToString();
         }
 
-        private static string PatchFile(string bsaPrefix, BSAFile bsaFile, string checksumA, string checksumB)
+        private static string PatchFile(string bsaPrefix, BSAFile bsaFile, FileValidation oldChk, PatchInfo patch)
         {
             if (string.IsNullOrEmpty(PatchDir))
                 throw new ArgumentNullException("PatchDir was not set");
@@ -253,29 +261,30 @@ namespace TaleOfTwoWastelands
             var sbErrors = new StringBuilder();
 
             //file exists but is not up to date
-            var diffPath = Path.Combine(PatchDir, bsaPrefix, bsaFile.Filename + "." + checksumA + "." + checksumB + ".diff");
-            if (File.Exists(diffPath))
+            if (patch.Data != null)
             {
                 byte[] patchedBytes;
 
                 //a patch exists for the file
                 using (MemoryStream input = new MemoryStream(bsaFile.GetSaveData(true)), output = new MemoryStream())
                 {
-                    using (var mmfPatch = MemoryMappedFile.CreateFromFile(diffPath))
-                        BinaryPatchUtility.Apply(input, () => mmfPatch.CreateViewStream(), output);
+                    BinaryPatchUtility.Apply(input, () => new MemoryStream(patch.Data), output);
                     patchedBytes = output.ToArray();
                 }
 
-                var oldChk = Util.GetChecksum(patchedBytes);
-                if (oldChk == checksumB)
+                var testBsaFile = bsaFile.DeepCopy();
+                testBsaFile.UpdateData(patchedBytes, false);
+
+                var oldChk2 = FileValidation.FromBSAFile(testBsaFile);
+                if (patch.Metadata.Equals(oldChk2))
                     bsaFile.UpdateData(patchedBytes, false);
                 else
-                    sbErrors.AppendLine("\tPatching " + bsaFile.Filename + " has failed - " + oldChk);
+                    sbErrors.AppendLine("\tPatching " + bsaFile.Filename + " has failed - " + oldChk2);
             }
             else
             {
                 //no patch exists for the file
-                sbErrors.AppendLine("\tFile is of an unexpected version: " + bsaFile.Filename + " - " + checksumA);
+                sbErrors.AppendLine("\tFile is of an unexpected version: " + bsaFile.Filename + " - " + oldChk);
                 sbErrors.AppendLine("\t\tThis file cannot be patched. Errors may occur.");
             }
 

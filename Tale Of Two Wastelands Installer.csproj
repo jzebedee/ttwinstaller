@@ -65,8 +65,8 @@
     <Compile Include="BinaryPatchUtility.cs" />
     <Compile Include="BSA.cs" />
     <Compile Include="BSADiff.cs" />
-    <Compile Include="Patch.cs" />
-    <Compile Include="Validation.cs" />
+    <Compile Include="PatchInfo.cs" />
+    <Compile Include="FileValidation.cs" />
     <Compile Include="UI\frm_Main.cs">
       <SubType>Form</SubType>
     </Compile>

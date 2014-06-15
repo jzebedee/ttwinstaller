@@ -602,19 +602,19 @@ namespace TaleOfTwoWastelands
 
 #if BUILD_PATCHDB
             Directory.CreateDirectory("Checksums");
-            var bsaName = Path.GetFileNameWithoutExtension(inBSAPath);
+            //var bsaName = Path.GetFileNameWithoutExtension(inBSAPath);
 
-            using (var BSA = new BSAWrapper(inBSAPath))
-            {
-                var chkDBFilename = Path.Combine("Checksums", Path.ChangeExtension(bsaName, ".chk"));
+            //using (var BSA = new BSAWrapper(inBSAPath))
+            //{
+            //    var chkDBFilename = Path.Combine("Checksums", Path.ChangeExtension(bsaName, ".chk"));
 
-                var bformatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
-                using (var chkStream = File.OpenWrite(chkDBFilename))
-                {
-                    var chkDB = Validation.FromBSA(BSA);
-                    bformatter.Serialize(chkStream, chkDB);
-                }
-            }
+            //    var bformatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
+            //    using (var chkStream = File.OpenWrite(chkDBFilename))
+            //    {
+            //        var chkDB = Validation.FromBSA(BSA);
+            //        bformatter.Serialize(chkStream, chkDB);
+            //    }
+            //}
 #endif
 
             var errors = BSADiff.PatchBSA(progressLog, progressUIMinor, token, inBSAPath, outBSAPath);
