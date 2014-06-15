@@ -45,13 +45,13 @@ namespace TaleOfTwoWastelands
 
             using (BSA)
             {
-                var outFilename = Path.GetFileNameWithoutExtension(newBSA);
+                var outBsaFilename = Path.GetFileNameWithoutExtension(newBSA);
 
                 try
                 {
                     opProg.CurrentOperation = "Opening rename fixes";
 
-                    var renamePath = Path.Combine(PatchDir, outFilename, "RenameFiles.dict");
+                    var renamePath = Path.Combine(PatchDir, outBsaFilename, "RenameFiles.dict");
                     if (File.Exists(renamePath))
                     {
                         using (FileStream stream = new FileStream(renamePath, FileMode.Open))
@@ -70,7 +70,7 @@ namespace TaleOfTwoWastelands
                 {
                     opProg.CurrentOperation = "Opening checksum database";
 
-                    var checksumPath = Path.Combine(PatchDir, outFilename, "CheckSums.dict");
+                    var checksumPath = Path.Combine(PatchDir, outBsaFilename, "CheckSums.dict");
                     if (File.Exists(checksumPath))
                     {
                         using (FileStream stream = new FileStream(checksumPath, FileMode.Open))
@@ -150,6 +150,9 @@ namespace TaleOfTwoWastelands
 
                 var allFiles = BSA.SelectMany(folder => folder);
 
+#if BUILD_PATCHDB
+                var patDB = new Dictionary<string, Patch>();
+#endif
                 try
                 {
                     var opChk = new OperationProgress(progressUI, token);
@@ -173,12 +176,25 @@ namespace TaleOfTwoWastelands
                             {
                                 opChk.CurrentOperation = "Patching " + anon.file.Name;
 
-                                var patchErrors = PatchFile(outFilename, anon.file, anon.checksum.Value, newChk);
+                                var patchErrors = PatchFile(outBsaFilename, anon.file, anon.checksum.Value, newChk);
                                 sbErrors.Append(patchErrors);
                             }
+
+#if BUILD_PATCHDB
+                            var diffPath = Path.Combine(PatchDir, outBsaFilename, anon.file.Filename + "." + anon.checksum.Value + "." + newChk + ".diff");
+                            var patch = new Patch()
+                            {
+                                Metadata = Validation.FromBSAFile(anon.file),
+                                Data = File.Exists(diffPath) ? File.ReadAllBytes(diffPath) : null
+                            };
+                            patDB.Add(anon.file.Filename, patch);
+#endif
                         }
                         else
                         {
+#if BUILD_PATCHDB
+                            Trace.Fail("You can't build a patchDB with invalid files!");
+#endif
                             //file not found
                             sbErrors.AppendLine("\tFile not found: " + file);
                         }
@@ -190,6 +206,14 @@ namespace TaleOfTwoWastelands
                 {
                     opProg.Step();
                 }
+
+#if BUILD_PATCHDB
+                var patchDBFilename = Path.Combine("Checksums", Path.ChangeExtension(outBsaFilename, ".pat"));
+
+                var bformatter = new BinaryFormatter();
+                using (var patStream = File.OpenWrite(patchDBFilename))
+                    bformatter.Serialize(patStream, patDB);
+#endif
 
                 try
                 {

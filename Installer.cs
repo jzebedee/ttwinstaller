@@ -600,6 +600,23 @@ namespace TaleOfTwoWastelands
             string inBSAFile = Path.ChangeExtension(inBSA, ".bsa");
             string inBSAPath = Path.Combine(dirFO3Data, inBSAFile);
 
+#if BUILD_PATCHDB
+            Directory.CreateDirectory("Checksums");
+            var bsaName = Path.GetFileNameWithoutExtension(inBSAPath);
+
+            using (var BSA = new BSAWrapper(inBSAPath))
+            {
+                var chkDBFilename = Path.Combine("Checksums", Path.ChangeExtension(bsaName, ".chk"));
+
+                var bformatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
+                using (var chkStream = File.OpenWrite(chkDBFilename))
+                {
+                    var chkDB = Validation.FromBSA(BSA);
+                    bformatter.Serialize(chkStream, chkDB);
+                }
+            }
+#endif
+
             var errors = BSADiff.PatchBSA(progressLog, progressUIMinor, token, inBSAPath, outBSAPath);
 
             WriteLog(errors);

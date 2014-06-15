@@ -2,11 +2,13 @@
 using ICSharpCode.SharpZipLib.Checksums;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 
 namespace TaleOfTwoWastelands
 {
+    [Serializable]
     public class Validation
     {
         const int WINDOW = 0x1000;
@@ -17,25 +19,26 @@ namespace TaleOfTwoWastelands
         public uint DeflatedFilesize { get; set; }
         public long[] DeflatedChecksums { get; set; }
 
-        public static Dictionary<string, Validation> FromBSA(string bsaPath)
+        public static Dictionary<string, Validation> FromBSA(BSAWrapper BSA)
         {
-            using (var BSA = new BSAWrapper(bsaPath))
-                return BSA
-                    .SelectMany(folder => folder)
-                    .Select(file => new { file.Filename, val = FromBSAFile(file) })
-                    .ToDictionary(a => a.Filename, a => a.val);
+            return BSA
+                .SelectMany(folder => folder)
+                .Select(file => new { file.Filename, val = FromBSAFile(file) })
+                .ToDictionary(a => a.Filename, a => a.val);
         }
 
-        private static Validation FromBSAFile(BSAFile file)
+        public static Validation FromBSAFile(BSAFile file)
         {
             var patch = new Validation();
-            patch.InflatedFilesize = file.OriginalSize;
-            patch.InflatedChecksums = IncrementalChecksum(file.GetSaveData(true));
+
             if (file.IsCompressed)
             {
-                patch.DeflatedFilesize = file.Size;
                 patch.DeflatedChecksums = IncrementalChecksum(file.GetSaveData(false));
+                patch.DeflatedFilesize = file.Size;
             }
+
+            patch.InflatedChecksums = IncrementalChecksum(file.GetSaveData(true));
+            patch.InflatedFilesize = file.OriginalSize;
 
             return patch;
         }
