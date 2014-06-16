@@ -15,11 +15,11 @@ namespace TaleOfTwoWastelands
         static void Main()
         {
 #if BUILD_PATCHDB
-            var result = MessageBox.Show("Building PatchDB from 'BuildDB' folder. OK?", "", MessageBoxButtons.OKCancel);
+            var result = MessageBox.Show("Building PatchDB from 'BuildDB' folder. Existing files are skipped. OK?", "", MessageBoxButtons.OKCancel);
             if (result != DialogResult.OK)
                 return;
 
-
+            TaleOfTwoWastelands.Patching.BuildPatchDB.Build();
 
             return;
 #endif

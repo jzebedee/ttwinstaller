@@ -13,11 +13,11 @@ using BSAsharp;
 using System.IO.MemoryMappedFiles;
 using TaleOfTwoWastelands.ProgressTypes;
 
-namespace TaleOfTwoWastelands
+namespace TaleOfTwoWastelands.Patching
 {
     class BSADiff
     {
-        public static string PatchDir { get; set; }
+        public static readonly string PatchDir = Path.Combine(Installer.AssetsDir, "TTW Data", "TTW Patches");
 
         public static string PatchBSA(IProgress<string> progressLog, IProgress<OperationProgress> progressUI, CancellationToken token, string oldBSA, string newBSA)
         {
@@ -142,9 +142,6 @@ namespace TaleOfTwoWastelands
                 {
                     foreach (var kvp in renameDict)
                     {
-#if BUILD_PATCHDB
-                        Trace.Fail("You can't build a patchDB with missing files!");
-#endif
                         sbErrors.AppendLine("\tFile not found: " + kvp.Value);
                         sbErrors.AppendLine("\t\tCannot create: " + kvp.Key);
                     }
@@ -152,9 +149,6 @@ namespace TaleOfTwoWastelands
 
                 var allFiles = BSA.SelectMany(folder => folder);
 
-#if BUILD_PATCHDB
-                var patDB = new Dictionary<string, PatchInfo>();
-#endif
                 try
                 {
                     var opChk = new OperationProgress(progressUI, token);
@@ -177,9 +171,6 @@ namespace TaleOfTwoWastelands
                     {
                         if (string.IsNullOrEmpty(join.oldChk.Key))
                         {
-#if BUILD_PATCHDB
-                            Trace.Fail("You can't build a patchDB with invalid files!");
-#endif
                             //file not found
                             sbErrors.AppendLine("\tFile not found: " + join.file);
 
@@ -199,17 +190,6 @@ namespace TaleOfTwoWastelands
                             sbErrors.Append(patchErrors);
                         }
 
-#if BUILD_PATCHDB
-                        MD5 fileHash = MD5.Create();
-                        var oldChksum = BitConverter.ToString(fileHash.ComputeHash(join.bsaFile.GetSaveData(true))).Replace("-", "");
-                        var diffPath = Path.Combine(PatchDir, outBsaFilename, join.bsaFile.Filename + "." + oldChksum + "." + newChk + ".diff");
-                        var patch = new PatchInfo()
-                        {
-                            Metadata = FileValidation.FromBSAFile(join.bsaFile),
-                            Data = File.Exists(diffPath) ? File.ReadAllBytes(diffPath) : null
-                        };
-                        patDB.Add(join.bsaFile.Filename, patch);
-#endif
                         opChk.Step();
                     }
                 }
@@ -217,14 +197,6 @@ namespace TaleOfTwoWastelands
                 {
                     opProg.Step();
                 }
-
-#if BUILD_PATCHDB
-                var patchDBFilename = Path.Combine("Checksums", Path.ChangeExtension(outBsaFilename, ".pat"));
-
-                var bformatter = new BinaryFormatter();
-                using (var patStream = File.OpenWrite(patchDBFilename))
-                    bformatter.Serialize(patStream, patDB);
-#endif
 
                 try
                 {

@@ -11,20 +11,21 @@ using System.Windows.Forms;
 using System.Diagnostics;
 using BSAsharp;
 using TaleOfTwoWastelands.ProgressTypes;
+using TaleOfTwoWastelands.Patching;
 
 namespace TaleOfTwoWastelands
 {
     class Installer
     {
-        private const string MainDir = "Main Files", OptDir = "Optional Files";
+        public const string MainDir = "Main Files", OptDir = "Optional Files";
         public const string AssetsDir = "resources";
 
-        static readonly HashSet<string> CheckedESMs = new HashSet<string>(new[] { "Fallout3.esm", "Anchorage.esm", "ThePitt.esm", "BrokenSteel.esm", "PointLookout.esm", "Zeta.esm" });
-        static readonly Dictionary<string, string> VoicePaths = new Dictionary<string, string> {
+        public static readonly HashSet<string> CheckedESMs = new HashSet<string>(new[] { "Fallout3.esm", "Anchorage.esm", "ThePitt.esm", "BrokenSteel.esm", "PointLookout.esm", "Zeta.esm" });
+        public static readonly Dictionary<string, string> VoicePaths = new Dictionary<string, string> {
             {Path.Combine("sound", "voice", "fallout3.esm", "playervoicemale"), Path.Combine("PlayerVoice", "sound", "voice", "falloutnv.esm", "playervoicemale")},
             {Path.Combine("sound", "voice", "fallout3.esm", "playervoicefemale"), Path.Combine("PlayerVoice", "sound", "voice", "falloutnv.esm", "playervoicefemale")}
         };
-        static readonly Dictionary<string, string[]> CheckedBSAs = new Dictionary<string, string[]> {
+        public static readonly Dictionary<string, string[]> CheckedBSAs = new Dictionary<string, string[]> {
             {"Fallout3 - Main.bsa", new[] {"Fallout - Meshes.bsa", "Fallout - Misc.bsa", "Fallout - Textures.bsa"}},
             {"Fallout3 - Sounds.bsa", new[] {"Fallout - MenuVoices.bsa", "Fallout - Sound.bsa", "Fallout - Voices.bsa"}},
             {"Fallout3 - DLC.bsa",
@@ -37,7 +38,7 @@ namespace TaleOfTwoWastelands
                 }
             }
         };
-        static readonly Dictionary<string, string> BuildableBSAs = new Dictionary<string, string>
+        public static readonly Dictionary<string, string> BuildableBSAs = new Dictionary<string, string>
         {
             {"Fallout - Meshes", "Fallout3 - Meshes"},
             {"Fallout - Misc", "Fallout3 - Misc"},
@@ -97,23 +98,7 @@ namespace TaleOfTwoWastelands
             this.progressLog = new Progress<string>(log => logFile.WriteLine("[{0}]\t{1}", DateTime.Now, log));
             this.WriteLog = (s) => progressLog.Report(s);
 
-            BSADiff.PatchDir = Path.Combine(AssetsDir, "TTW Data", "TTW Patches");
-
-            RegistryKey bethKey;
-            //determine software reg path (depends on architecture)
-            if (Environment.Is64BitOperatingSystem) //64-bit
-            {
-                WriteLog("\t64-bit architecture found.");
-                bethKey = Registry.LocalMachine.OpenSubKey("Software\\Wow6432Node", RegistryKeyPermissionCheck.ReadWriteSubTree);
-            }
-            else //32-bit
-            {
-                WriteLog("\t32-bit architecture found.");
-                bethKey = Registry.LocalMachine.OpenSubKey("Software", RegistryKeyPermissionCheck.ReadWriteSubTree);
-            }
-
-            //create or retrieve BethSoft path
-            bethKey = bethKey.CreateSubKey("Bethesda Softworks", RegistryKeyPermissionCheck.ReadWriteSubTree);
+            RegistryKey bethKey = GetBethKey(WriteLog);
 
             //create or retrieve FO3 path
             fo3Key = bethKey.CreateSubKey("Fallout3");
@@ -132,6 +117,28 @@ namespace TaleOfTwoWastelands
             CheckSums = BuildChecksumDictionary(Path.Combine(AssetsDir, "TTW Data", "TTW Patches", "TTW_Checksums.txt"));
 
             InstallChecks(openDialog, saveDialog);
+        }
+
+        internal static RegistryKey GetBethKey(Action<string> log = null)
+        {
+            log = log ?? ((s) => { });
+
+            RegistryKey bethKey;
+
+            //determine software reg path (depends on architecture)
+            if (Environment.Is64BitOperatingSystem) //64-bit
+            {
+                log("\t64-bit architecture found.");
+                bethKey = Registry.LocalMachine.OpenSubKey("Software\\Wow6432Node", RegistryKeyPermissionCheck.ReadWriteSubTree);
+            }
+            else //32-bit
+            {
+                log("\t32-bit architecture found.");
+                bethKey = Registry.LocalMachine.OpenSubKey("Software", RegistryKeyPermissionCheck.ReadWriteSubTree);
+            }
+
+            //create or retrieve BethSoft path
+            return bethKey.CreateSubKey("Bethesda Softworks", RegistryKeyPermissionCheck.ReadWriteSubTree);
         }
 
         public void Fallout3Prompt(FileDialog open, bool manual = false)
@@ -599,23 +606,6 @@ namespace TaleOfTwoWastelands
 
             string inBSAFile = Path.ChangeExtension(inBSA, ".bsa");
             string inBSAPath = Path.Combine(dirFO3Data, inBSAFile);
-
-#if BUILD_PATCHDB
-            Directory.CreateDirectory("Checksums");
-            //var bsaName = Path.GetFileNameWithoutExtension(inBSAPath);
-
-            //using (var BSA = new BSAWrapper(inBSAPath))
-            //{
-            //    var chkDBFilename = Path.Combine("Checksums", Path.ChangeExtension(bsaName, ".chk"));
-
-            //    var bformatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
-            //    using (var chkStream = File.OpenWrite(chkDBFilename))
-            //    {
-            //        var chkDB = Validation.FromBSA(BSA);
-            //        bformatter.Serialize(chkStream, chkDB);
-            //    }
-            //}
-#endif
 
             var errors = BSADiff.PatchBSA(progressLog, progressUIMinor, token, inBSAPath, outBSAPath);
 

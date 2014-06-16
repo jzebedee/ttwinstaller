@@ -3,19 +3,20 @@ using ICSharpCode.SharpZipLib.Checksums;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Text;
 
-namespace TaleOfTwoWastelands
+namespace TaleOfTwoWastelands.Patching
 {
     [Serializable]
-    public class FileValidation
+    public class FileValidation : ISerializable
     {
         const int WINDOW = 0x1000;
 
         public uint InflatedFilesize { get; private set; }
 
-        [NonSerialized]
         private Lazy<IEnumerable<long>> _inflatedChecksums;
 
         private long[] _writtenInflatedChecksums;
@@ -27,13 +28,12 @@ namespace TaleOfTwoWastelands
             }
             set
             {
-                _writtenInflatedChecksums = value.ToArray();
+                _writtenInflatedChecksums = value != null ? value.ToArray() : null;
             }
         }
 
         public uint DeflatedFilesize { get; private set; }
 
-        [NonSerialized]
         private Lazy<IEnumerable<long>> _deflatedChecksums;
 
         private long[] _writtenDeflatedChecksums;
@@ -45,12 +45,32 @@ namespace TaleOfTwoWastelands
             }
             set
             {
-                _writtenDeflatedChecksums = value.ToArray();
+                _writtenDeflatedChecksums = value != null ? value.ToArray() : null;
             }
         }
 
+        public FileValidation(SerializationInfo info, StreamingContext context)
+        {
+            InflatedChecksums = DeserializeInfo<IEnumerable<long>>(info, "InflatedChecksums");
+            InflatedFilesize = DeserializeInfo<uint>(info, "InflatedFilesize");
+            DeflatedChecksums = DeserializeInfo<IEnumerable<long>>(info, "DeflatedChecksums");
+            DeflatedFilesize = DeserializeInfo<uint>(info, "DeflatedFilesize");
+        }
         private FileValidation()
         {
+        }
+
+        private static T DeserializeInfo<T>(SerializationInfo info, string name)
+        {
+            return (T)info.GetValue(name, typeof(T));
+        }
+
+        public void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            info.AddValue("InflatedChecksums", InflatedChecksums.ToArray());
+            info.AddValue("InflatedFilesize", InflatedFilesize);
+            info.AddValue("DeflatedChecksums", DeflatedChecksums != null ? DeflatedChecksums.ToArray() : null);
+            info.AddValue("DeflatedFilesize", DeflatedFilesize);
         }
 
         public static Dictionary<string, FileValidation> FromBSA(BSAWrapper BSA)
@@ -94,24 +114,25 @@ namespace TaleOfTwoWastelands
         {
             var val = new FileValidation();
 
-            if (file.Name.Contains("barkeep"))
-                file.GetSaveData(true);
-
             if (file.IsCompressed)
             {
-                val._deflatedChecksums = new Lazy<IEnumerable<long>>(() =>
-                {
-                    var gysd = file.GetYieldingSaveData(false);
-                    var gsd = file.GetSaveData(false);
-                    Trace.Assert(gysd.SequenceEqual(gsd));
-
-                    return IncrementalChecksum(gysd, file.Size);
-                });
+                val._deflatedChecksums = new Lazy<IEnumerable<long>>(() => IncrementalChecksum(file.GetYieldingSaveData(false), file.Size));
                 val.DeflatedFilesize = file.Size;
             }
 
             val._inflatedChecksums = new Lazy<IEnumerable<long>>(() => IncrementalChecksum(file.GetYieldingSaveData(true), file.OriginalSize));
             val.InflatedFilesize = file.OriginalSize;
+
+            return val;
+        }
+
+        public static FileValidation FromFile(string path)
+        {
+            var val = new FileValidation();
+
+            var fBytes = File.ReadAllBytes(path);
+            val._inflatedChecksums = new Lazy<IEnumerable<long>>(() => IncrementalChecksum(fBytes, (uint)fBytes.Length));
+            val.InflatedFilesize = (uint)fBytes.Length;
 
             return val;
         }
@@ -127,7 +148,10 @@ namespace TaleOfTwoWastelands
                 chk = new Adler32();
 
             var windows = (size + WINDOW - 1) / WINDOW;
+
             var dataMover = data.GetEnumerator();
+            dataMover.MoveNext();
+
             for (int i = 0; i < windows; i++)
             {
                 //chk.Update(data, i * WINDOW, Math.Min(i * WINDOW + WINDOW, (int)size) - (i * WINDOW));
