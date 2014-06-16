@@ -19,7 +19,7 @@ namespace TaleOfTwoWastelands.Patching
     {
         public static readonly string PatchDir = Path.Combine(Installer.AssetsDir, "TTW Data", "TTW Patches");
 
-        public static string PatchBSA(IProgress<string> progressLog, IProgress<OperationProgress> progressUI, CancellationToken token, string oldBSA, string newBSA)
+        public static string PatchBSA(IProgress<string> progressLog, IProgress<OperationProgress> progressUI, CancellationToken token, string oldBSA, string newBSA, bool simulate = false)
         {
             if (string.IsNullOrEmpty(PatchDir))
                 throw new ArgumentNullException("PatchDir was not set");
@@ -69,7 +69,7 @@ namespace TaleOfTwoWastelands.Patching
                 {
                     opProg.CurrentOperation = "Opening patch database";
 
-                    var patchPath = Path.Combine(PatchDir, "Checksums", Path.ChangeExtension(outBsaFilename, ".pat"));
+                    var patchPath = Path.Combine(PatchDir, "Checksums", Path.ChangeExtension(outBsaFilename, ".fix"));
                     if (File.Exists(patchPath))
                     {
                         using (var stream = File.OpenRead(patchPath))
@@ -186,7 +186,7 @@ namespace TaleOfTwoWastelands.Patching
                         {
                             opChk.CurrentOperation = "Patching " + join.bsaFile.Name;
 
-                            var patchErrors = PatchFile(outBsaFilename, join.bsaFile, oldChk, join.patch);
+                            var patchErrors = PatchFile(join.bsaFile, oldChk, join.patch);
                             sbErrors.Append(patchErrors);
                         }
 
@@ -215,7 +215,8 @@ namespace TaleOfTwoWastelands.Patching
                 {
                     opProg.CurrentOperation = "Building " + Path.GetFileName(newBSA);
 
-                    BSA.Save(newBSA);
+                    if (!simulate)
+                        BSA.Save(newBSA);
                 }
                 finally
                 {
@@ -228,7 +229,7 @@ namespace TaleOfTwoWastelands.Patching
             return sbErrors.ToString();
         }
 
-        private static string PatchFile(string bsaPrefix, BSAFile bsaFile, FileValidation oldChk, PatchInfo patch)
+        public static string PatchFile(BSAFile bsaFile, FileValidation oldChk, PatchInfo patch, bool failFast = false)
         {
             if (string.IsNullOrEmpty(PatchDir))
                 throw new ArgumentNullException("PatchDir was not set");
@@ -254,13 +255,26 @@ namespace TaleOfTwoWastelands.Patching
                 if (patch.Metadata.Equals(oldChk2))
                     bsaFile.UpdateData(patchedBytes, false);
                 else
-                    sbErrors.AppendLine("\tPatching " + bsaFile.Filename + " has failed - " + oldChk2);
+                {
+                    var err = "\tPatching " + bsaFile.Filename + " has failed - " + oldChk2;
+                    if (failFast)
+                        Trace.Fail(err);
+                    else
+                        sbErrors.AppendLine(err);
+                }
             }
             else
             {
                 //no patch exists for the file
-                sbErrors.AppendLine("\tFile is of an unexpected version: " + bsaFile.Filename + " - " + oldChk);
-                sbErrors.AppendLine("\t\tThis file cannot be patched. Errors may occur.");
+                var err = "\tFile is of an unexpected version: " + bsaFile.Filename + " - " + oldChk;
+
+                if (failFast)
+                    Trace.Fail(err);
+                else
+                {
+                    sbErrors.AppendLine(err);
+                    sbErrors.AppendLine("\t\tThis file cannot be patched. Errors may occur.");
+                }
             }
 
             return sbErrors.ToString();

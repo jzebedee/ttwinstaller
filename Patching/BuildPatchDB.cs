@@ -8,13 +8,17 @@ using System.Linq;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
+using TaleOfTwoWastelands.ProgressTypes;
 
 namespace TaleOfTwoWastelands.Patching
 {
     class BuildPatchDB
     {
         const string SOURCE_DIR = "BuildDB";
-        const string BUILD_DIR = "PatchDB";
+        const string BUILD_DIR = "Checksums";
+
+        private static readonly BinaryFormatter BF = new BinaryFormatter();
 
         //Shameless code duplication. So sue me.
         public static void Build()
@@ -24,8 +28,6 @@ namespace TaleOfTwoWastelands.Patching
 #endif
 
             Directory.CreateDirectory(BUILD_DIR);
-
-            var bformatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
 
             var dirTTWMain = Path.Combine(SOURCE_DIR, Installer.MainDir);
             var dirTTWOptional = Path.Combine(SOURCE_DIR, Installer.OptDir);
@@ -49,38 +51,127 @@ namespace TaleOfTwoWastelands.Patching
                     var patch = PatchInfo.FromFile("", dataESM, ttwESM);
 
                     using (var fixStream = File.OpenWrite(fixPath))
-                        bformatter.Serialize(fixStream, new Fixup(fvOriginal, patch));
+                        BF.Serialize(fixStream, new PatchFixup(fvOriginal, patch));
                 }
 #if RECHECK
                 using (var fixStream = File.OpenRead(fixPath))
                 {
-                    var p = (Fixup)bformatter.Deserialize(fixStream);
+                    var p = (PatchFixup)BF.Deserialize(fixStream);
                     if(keepGoing)
                         Debugger.Break();
                 }
 #endif
             }
 
-            //patDB.Add(join.bsaFile.Filename, patch);
+            var progressLog = new Progress<string>(s => Debug.Write(s));
+            var progressUIMinor = new Progress<OperationProgress>();
+            var token = new CancellationTokenSource().Token;
+            foreach (var kvpBsa in Installer.BuildableBSAs)
+            {
+                var inBsaName = kvpBsa.Key;
+                var outBsaName = kvpBsa.Value;
 
-            //var patchDBFilename = Path.Combine("Checksums", Path.ChangeExtension(outBsaFilename, ".pat"));
+                string outBSAFile = Path.ChangeExtension(outBsaName, ".bsa");
+                string outBSAPath = Path.Combine(dirTTWMain, outBSAFile);
 
-            //var bformatter = new BinaryFormatter();
-            //using (var patStream = File.OpenWrite(patchDBFilename))
-            //    bformatter.Serialize(patStream, patDB);
-            ////var bsaName = Path.GetFileNameWithoutExtension(inBSAPath);
+                string inBSAFile = Path.ChangeExtension(inBsaName, ".bsa");
+                string inBSAPath = Path.Combine(dirFO3Data, inBSAFile);
 
-            ////using (var BSA = new BSAWrapper(inBSAPath))
-            ////{
-            ////    var chkDBFilename = Path.Combine("Checksums", Path.ChangeExtension(bsaName, ".chk"));
+                IDictionary<string, string> renameDict = null;
+                { //comment this out if you don't need it, but set renameDict
+                    var renDict = ReadOldDict(outBsaName, "RenameFiles.dict");
+                    if (renDict != null)
+                    {
+                        renameDict = new Dictionary<string, string>(renDict);
+                        var newRenPath = Path.Combine(BUILD_DIR, Path.ChangeExtension(outBsaName, ".ren"));
+                        if (!File.Exists(newRenPath))
+                            using (var stream = File.OpenWrite(newRenPath))
+                                BF.Serialize(stream, renameDict);
+                    }
+                    else
+                    {
+                        renameDict = new Dictionary<string, string>();
+                    }
+                }
+                Debug.Assert(renameDict != null);
 
-            ////    var bformatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
-            ////    using (var chkStream = File.OpenWrite(chkDBFilename))
-            ////    {
-            ////        var chkDB = Validation.FromBSA(BSA);
-            ////        bformatter.Serialize(chkStream, chkDB);
-            ////    }
-            ////}
+                var patPath = Path.Combine(BUILD_DIR, Path.ChangeExtension(outBsaName, ".pat"));
+                if (File.Exists(patPath))
+                    continue;
+
+                var checkDict = new Dictionary<string, PatchFixup>();
+
+                using (var inBSA = new BSAWrapper(inBSAPath))
+                using (var outBSA = new BSAWrapper(outBSAPath))
+                {
+                    foreach (var kvpRen in renameDict)
+                    {
+                        var oldFilePath = kvpRen.Key;
+                        var newFilePath = kvpRen.Value;
+                        Console.WriteLine();
+                    }
+
+                    var oldFiles = inBSA.SelectMany(folder => folder).ToList();
+                    var newFiles = outBSA.SelectMany(folder => folder).ToList();
+
+                    Func<BSAFile, string> keySel = file => file.Filename;
+                    Func<BSAFile, string> valSel = file => GetChecksum(file.GetSaveData(true));
+
+                    var oldChkDict = FileValidation.FromBSA(inBSA);
+                    var newChkDict = FileValidation.FromBSA(outBSA);
+
+                    var joinedPatches = from patKvp in newChkDict
+                                        join oldKvp in oldChkDict on patKvp.Key equals oldKvp.Key into foundOld
+                                        join bsaFile in oldFiles on patKvp.Key equals bsaFile.Filename
+                                        select new
+                                        {
+                                            bsaFile,
+                                            file = patKvp.Key,
+                                            patch = patKvp.Value,
+                                            oldChk = foundOld.SingleOrDefault()
+                                        };
+
+                    var OldDiff_oldChkDict = oldFiles.ToDictionary(keySel, valSel);
+                    var OldDiff_newChkDict = newFiles.ToDictionary(keySel, valSel);
+
+                    Debug.Assert(checkDict != null);
+                    foreach (var join in joinedPatches)
+                    {
+                        if (string.IsNullOrEmpty(join.oldChk.Key))
+                            Debug.Fail("File not found: " + join.file);
+
+                        var oldChk = join.oldChk.Value;
+                        var newChk = join.patch;
+
+                        if (!newChk.Equals(oldChk))
+                        {
+                            var patchInfo = PatchInfo.FromFileChecksum(outBsaName, join.bsaFile.Filename, OldDiff_oldChkDict[join.file], OldDiff_newChkDict[join.file], newChk);
+                            Debug.Assert(patchInfo.Data != null);
+
+                            checkDict.Add(join.file, new PatchFixup(oldChk, patchInfo));
+                            //BSADiff.PatchFile(join.bsaFile, oldChk, patchInfo, true);
+                        }
+                    }
+
+                    using (var stream = File.OpenWrite(patPath))
+                        BF.Serialize(stream, checkDict);
+                }
+            }
+        }
+
+        private static IDictionary<string, string> ReadOldDict(string outFilename, string dictName)
+        {
+            var dictPath = Path.Combine(BSADiff.PatchDir, outFilename, dictName);
+            if (!File.Exists(dictPath))
+                return null;
+            using (var stream = File.OpenRead(dictPath))
+                return (IDictionary<string, string>)BF.Deserialize(stream);
+        }
+
+        private static string GetChecksum(byte[] buf)
+        {
+            MD5 fileHash = MD5.Create();
+            return BitConverter.ToString(fileHash.ComputeHash(buf)).Replace("-", "");
         }
     }
 }

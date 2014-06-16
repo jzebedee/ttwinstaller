@@ -67,6 +67,7 @@
     <Compile Include="Patching\BSADiff.cs" />
     <Compile Include="Patching\BuildPatchDB.cs" Condition="$(DefineConstants.Contains('BUILD_PATCHDB'))" />
     <Compile Include="Patching\Fixup.cs" />
+    <Compile Include="Patching\PatchFixup.cs" />
     <Compile Include="Patching\PatchInfo.cs" />
     <Compile Include="Patching\FileValidation.cs" />
     <Compile Include="UI\frm_Main.cs">

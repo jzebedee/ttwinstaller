@@ -1,17 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Text;
 
 namespace TaleOfTwoWastelands.Patching
 {
     [Serializable]
-    public class Fixup
+    public class Fixup<TOrig, TUpdate>
     {
-        public FileValidation Original { get; set; }
-        public PatchInfo Update { get; set; }
+        public TOrig Original { get; protected set; }
+        public TUpdate Update { get; protected set; }
 
-        public Fixup(FileValidation orig, PatchInfo upd)
+        public Fixup(TOrig orig, TUpdate upd)
         {
             this.Original = orig;
             this.Update = upd;

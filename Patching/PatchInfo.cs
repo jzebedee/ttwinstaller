@@ -25,6 +25,18 @@ namespace TaleOfTwoWastelands.Patching
                 Data = System.IO.File.Exists(diffPath) ? System.IO.File.ReadAllBytes(diffPath) : null
             };
         }
+
+        public static PatchInfo FromFileChecksum(string prefix, string filename, string oldChk, string newChk, FileValidation newChkVal)
+        {
+            prefix = !string.IsNullOrEmpty(prefix) ? System.IO.Path.Combine(BSADiff.PatchDir, prefix) : BSADiff.PatchDir;
+
+            var diffPath = System.IO.Path.Combine(prefix, filename + "." + oldChk + "." + newChk + ".diff");
+            return new PatchInfo()
+            {
+                Metadata = newChkVal,
+                Data = System.IO.File.Exists(diffPath) ? System.IO.File.ReadAllBytes(diffPath) : null
+            };
+        }
 #endif
     }
 }

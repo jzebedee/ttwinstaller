@@ -1,4 +1,6 @@
-﻿using BSAsharp;
+﻿//#define INCLUDES_DEFLATED
+using BSAsharp;
+using BSAsharp.Extensions;
 using ICSharpCode.SharpZipLib.Checksums;
 using System;
 using System.Collections.Generic;
@@ -16,22 +18,9 @@ namespace TaleOfTwoWastelands.Patching
         const int WINDOW = 0x1000;
 
         public uint InflatedFilesize { get; private set; }
+        public IEnumerable<long> InflatedChecksums { get; set; }
 
-        private Lazy<IEnumerable<long>> _inflatedChecksums;
-
-        private long[] _writtenInflatedChecksums;
-        public IEnumerable<long> InflatedChecksums
-        {
-            get
-            {
-                return _writtenInflatedChecksums ?? (_inflatedChecksums != null ? _inflatedChecksums.Value : null);
-            }
-            set
-            {
-                _writtenInflatedChecksums = value != null ? value.ToArray() : null;
-            }
-        }
-
+#if INCLUDES_DEFLATED
         public uint DeflatedFilesize { get; private set; }
 
         private Lazy<IEnumerable<long>> _deflatedChecksums;
@@ -48,13 +37,16 @@ namespace TaleOfTwoWastelands.Patching
                 _writtenDeflatedChecksums = value != null ? value.ToArray() : null;
             }
         }
+#endif
 
         public FileValidation(SerializationInfo info, StreamingContext context)
         {
             InflatedChecksums = DeserializeInfo<IEnumerable<long>>(info, "InflatedChecksums");
             InflatedFilesize = DeserializeInfo<uint>(info, "InflatedFilesize");
+#if INCLUDES_DEFLATED
             DeflatedChecksums = DeserializeInfo<IEnumerable<long>>(info, "DeflatedChecksums");
             DeflatedFilesize = DeserializeInfo<uint>(info, "DeflatedFilesize");
+#endif
         }
         private FileValidation()
         {
@@ -69,16 +61,17 @@ namespace TaleOfTwoWastelands.Patching
         {
             info.AddValue("InflatedChecksums", InflatedChecksums.ToArray());
             info.AddValue("InflatedFilesize", InflatedFilesize);
+#if INCLUDES_DEFLATED
             info.AddValue("DeflatedChecksums", DeflatedChecksums != null ? DeflatedChecksums.ToArray() : null);
             info.AddValue("DeflatedFilesize", DeflatedFilesize);
+#endif
         }
 
         public static Dictionary<string, FileValidation> FromBSA(BSAWrapper BSA)
         {
             return BSA
                 .SelectMany(folder => folder)
-                .Select(file => new { file.Filename, val = FromBSAFile(file) })
-                .ToDictionary(a => a.Filename, a => a.val);
+                .ToDictionary(file => file.Filename, file => FromBSAFile(file));
         }
 
         public override bool Equals(object obj)
@@ -93,20 +86,24 @@ namespace TaleOfTwoWastelands.Patching
             if (obj == null)
                 return false;
 
+#if INCLUDES_DEFLATED
             if (DeflatedChecksums != null && obj.DeflatedChecksums != null)
             {
                 if (DeflatedFilesize == obj.DeflatedFilesize)
                 {
-                    return DeflatedChecksums.SequenceEqual(obj.DeflatedChecksums);
+                    if (DeflatedChecksums.SequenceEqual(obj.DeflatedChecksums))
+                        return true;
                 }
             }
-            else if (InflatedChecksums != null && obj.InflatedChecksums != null)
+#endif
+            if (InflatedChecksums != null && obj.InflatedChecksums != null)
             {
                 if (InflatedFilesize == obj.InflatedFilesize)
                 {
                     return InflatedChecksums.SequenceEqual(obj.InflatedChecksums);
                 }
             }
+
             return false;
         }
 
@@ -114,13 +111,15 @@ namespace TaleOfTwoWastelands.Patching
         {
             var val = new FileValidation();
 
+#if INCLUDES_DEFLATED
             if (file.IsCompressed)
             {
-                val._deflatedChecksums = new Lazy<IEnumerable<long>>(() => IncrementalChecksum(file.GetYieldingSaveData(false), file.Size));
-                val.DeflatedFilesize = file.Size;
+                val._deflatedChecksums = new Lazy<IEnumerable<long>>(() => IncrementalChecksum(file.GetYieldingFileData(false), file.DataSize));
+                val.DeflatedFilesize = file.DataSize;
             }
+#endif
 
-            val._inflatedChecksums = new Lazy<IEnumerable<long>>(() => IncrementalChecksum(file.GetYieldingSaveData(true), file.OriginalSize));
+            val.InflatedChecksums = IncrementalChecksum(file.YieldContents(true), file.OriginalSize);
             val.InflatedFilesize = file.OriginalSize;
 
             return val;
@@ -130,14 +129,42 @@ namespace TaleOfTwoWastelands.Patching
         {
             var val = new FileValidation();
 
-            var fBytes = File.ReadAllBytes(path);
-            val._inflatedChecksums = new Lazy<IEnumerable<long>>(() => IncrementalChecksum(fBytes, (uint)fBytes.Length));
-            val.InflatedFilesize = (uint)fBytes.Length;
+            var fileInfo = new FileInfo(path);
+            val.InflatedChecksums = IncrementalChecksum(ReadWindow(() => File.OpenRead(path)), (uint)fileInfo.Length);
+            val.InflatedFilesize = (uint)fileInfo.Length;
 
             return val;
         }
 
-        private static IEnumerable<long> IncrementalChecksum(IEnumerable<byte> data, uint size)
+        private static IEnumerable<byte[]> ReadWindow(Func<Stream> createStream)
+        {
+            int bytesRead;
+            byte[] buf = new byte[WINDOW];
+
+            var stream = createStream();
+            while ((bytesRead = stream.Read(buf, 0, WINDOW)) != 0)
+                yield return bytesRead == WINDOW ? buf : buf.TrimBuffer(0, bytesRead);
+            stream.Dispose();
+        }
+
+        private static IEnumerable<long> IncrementalChecksum(IEnumerable<byte[]> data, uint size)
+        {
+            Trace.Assert(size > 0);
+
+            IChecksum chk;
+            if (size < WINDOW)
+                chk = new Crc32();
+            else
+                chk = new Adler32();
+
+            foreach (var buf in data)
+            {
+                chk.Update(buf);
+                yield return chk.Value;
+            }
+        }
+
+        private static IEnumerable<long> IncrementalChecksumOld(IEnumerable<byte> data, uint size)
         {
             Trace.Assert(size > 0);
 
@@ -154,7 +181,6 @@ namespace TaleOfTwoWastelands.Patching
 
             for (int i = 0; i < windows; i++)
             {
-                //chk.Update(data, i * WINDOW, Math.Min(i * WINDOW + WINDOW, (int)size) - (i * WINDOW));
                 byte[] buf = new byte[WINDOW];
                 for (int j = 0; j < WINDOW; j++)
                 {
@@ -162,8 +188,8 @@ namespace TaleOfTwoWastelands.Patching
                     if (!dataMover.MoveNext())
                         break;
                 }
-                chk.Update(buf);
 
+                chk.Update(buf);
                 yield return chk.Value;
             }
             dataMover.Dispose();
