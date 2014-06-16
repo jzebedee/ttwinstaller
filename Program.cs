@@ -14,6 +14,16 @@ namespace TaleOfTwoWastelands
         [STAThread]
         static void Main()
         {
+#if BUILD_PATCHDB
+            var result = MessageBox.Show("Building PatchDB from 'BuildDB' folder. OK?", "", MessageBoxButtons.OKCancel);
+            if (result != DialogResult.OK)
+                return;
+
+
+
+            return;
+#endif
+
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new UI.frm_Main());

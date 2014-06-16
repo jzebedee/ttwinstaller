@@ -142,6 +142,9 @@ namespace TaleOfTwoWastelands
                 {
                     foreach (var kvp in renameDict)
                     {
+#if BUILD_PATCHDB
+                        Trace.Fail("You can't build a patchDB with missing files!");
+#endif
                         sbErrors.AppendLine("\tFile not found: " + kvp.Value);
                         sbErrors.AppendLine("\t\tCannot create: " + kvp.Key);
                     }
