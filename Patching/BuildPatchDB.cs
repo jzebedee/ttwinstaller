@@ -40,7 +40,7 @@ namespace TaleOfTwoWastelands.Patching
 
             foreach (var ESM in Installer.CheckedESMs)
             {
-                var fixPath = Path.Combine(BUILD_DIR, Path.ChangeExtension(ESM, ".fix"));
+                var fixPath = Path.Combine(BUILD_DIR, ESM + ".pat");
                 if (!File.Exists(fixPath))
                 {
                     var dataESM = Path.Combine(dirFO3Data, ESM);
@@ -104,35 +104,53 @@ namespace TaleOfTwoWastelands.Patching
                 using (var inBSA = new BSAWrapper(inBSAPath))
                 using (var outBSA = new BSAWrapper(outBSAPath))
                 {
-                    foreach (var kvpRen in renameDict)
-                    {
-                        var oldFilePath = kvpRen.Key;
-                        var newFilePath = kvpRen.Value;
-                        Console.WriteLine();
-                    }
-
                     var oldFiles = inBSA.SelectMany(folder => folder).ToList();
                     var newFiles = outBSA.SelectMany(folder => folder).ToList();
 
-                    Func<BSAFile, string> keySel = file => file.Filename;
-                    Func<BSAFile, string> valSel = file => GetChecksum(file.GetSaveData(true));
+                    {
+                        var renameGroup = from folder in inBSA
+                                          from file in folder
+                                          join kvp in renameDict on file.Filename equals kvp.Value
+                                          let a = new { folder, file, kvp }
+                                          select a;
+
+                        var renameCopies = from g in renameGroup
+                                           let newFilename = g.kvp.Key
+                                           let newDirectory = Path.GetDirectoryName(newFilename)
+                                           let a = new { g.folder, g.file, newFilename }
+                                           group a by newDirectory into outs
+                                           select outs;
+
+                        var newBsaFolders = from g in renameCopies
+                                            let folderAdded = inBSA.Add(new BSAFolder(g.Key))
+                                            select g;
+                        newBsaFolders.ToList();
+
+                        var renameFixes = from g in newBsaFolders
+                                          from a in g
+                                          join newFolder in inBSA on g.Key equals newFolder.Path
+                                          let newFile = a.file.DeepCopy(g.Key, Path.GetFileName(a.newFilename))
+                                          let addedFile = newFolder.Add(newFile)
+                                          let cleanedDict = renameDict.Remove(a.newFilename)
+                                          select new { a.folder, a.file, newFolder, newFile, a.newFilename };
+                        renameFixes.ToList(); // execute query
+                    }
 
                     var oldChkDict = FileValidation.FromBSA(inBSA);
                     var newChkDict = FileValidation.FromBSA(outBSA);
 
                     var joinedPatches = from patKvp in newChkDict
                                         join oldKvp in oldChkDict on patKvp.Key equals oldKvp.Key into foundOld
-                                        join bsaFile in oldFiles on patKvp.Key equals bsaFile.Filename
+                                        join oldBsaFile in oldFiles on patKvp.Key equals oldBsaFile.Filename
+                                        join newBsaFile in newFiles on patKvp.Key equals newBsaFile.Filename
                                         select new
                                         {
-                                            bsaFile,
+                                            oldBsaFile,
+                                            newBsaFile,
                                             file = patKvp.Key,
                                             patch = patKvp.Value,
                                             oldChk = foundOld.SingleOrDefault()
                                         };
-
-                    var OldDiff_oldChkDict = oldFiles.ToDictionary(keySel, valSel);
-                    var OldDiff_newChkDict = newFiles.ToDictionary(keySel, valSel);
 
                     Debug.Assert(checkDict != null);
                     foreach (var join in joinedPatches)
@@ -145,7 +163,10 @@ namespace TaleOfTwoWastelands.Patching
 
                         if (!newChk.Equals(oldChk))
                         {
-                            var patchInfo = PatchInfo.FromFileChecksum(outBsaName, join.bsaFile.Filename, OldDiff_oldChkDict[join.file], OldDiff_newChkDict[join.file], newChk);
+                            var antiqueOldChk = GetChecksum(join.oldBsaFile.GetSaveData(true));
+                            var antiqueNewChk = GetChecksum(join.newBsaFile.GetSaveData(true));
+
+                            var patchInfo = PatchInfo.FromFileChecksum(outBsaName, join.oldBsaFile.Filename, antiqueOldChk, antiqueNewChk, newChk);
                             Debug.Assert(patchInfo.Data != null);
 
                             checkDict.Add(join.file, new PatchFixup(oldChk, patchInfo));

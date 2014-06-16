@@ -28,7 +28,7 @@ namespace TaleOfTwoWastelands.Patching
             var opProg = new OperationProgress(progressUI, token) { ItemsTotal = 7 };
 
             var renameDict = new Dictionary<string, string>();
-            var patchDict = new Dictionary<string, PatchInfo>();
+            var patchDict = new Dictionary<string, PatchFixup>();
 
             BSAWrapper BSA;
             try
@@ -69,13 +69,13 @@ namespace TaleOfTwoWastelands.Patching
                 {
                     opProg.CurrentOperation = "Opening patch database";
 
-                    var patchPath = Path.Combine(PatchDir, "Checksums", Path.ChangeExtension(outBsaFilename, ".fix"));
+                    var patchPath = Path.Combine(PatchDir, "Checksums", Path.ChangeExtension(outBsaFilename, ".pat"));
                     if (File.Exists(patchPath))
                     {
                         using (var stream = File.OpenRead(patchPath))
                         {
                             var bFormatter = new BinaryFormatter();
-                            patchDict = (Dictionary<string, PatchInfo>)bFormatter.Deserialize(stream);
+                            patchDict = (Dictionary<string, PatchFixup>)bFormatter.Deserialize(stream);
                         }
                     }
                     else
@@ -179,14 +179,14 @@ namespace TaleOfTwoWastelands.Patching
                         }
 
                         var oldChk = join.oldChk.Value;
-                        var newChk = join.patch.Metadata;
+                        var newChk = join.patch.Update.Metadata;
                         opChk.CurrentOperation = "Validating " + join.bsaFile.Name;
 
                         if (!newChk.Equals(oldChk))
                         {
                             opChk.CurrentOperation = "Patching " + join.bsaFile.Name;
 
-                            var patchErrors = PatchFile(join.bsaFile, oldChk, join.patch);
+                            var patchErrors = PatchFile(join.bsaFile, oldChk, join.patch.Update);
                             sbErrors.Append(patchErrors);
                         }
 
@@ -216,7 +216,7 @@ namespace TaleOfTwoWastelands.Patching
                     opProg.CurrentOperation = "Building " + Path.GetFileName(newBSA);
 
                     if (!simulate)
-                        BSA.Save(newBSA);
+                        BSA.Save(newBSA.ToLowerInvariant());
                 }
                 finally
                 {

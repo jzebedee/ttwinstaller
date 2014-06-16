@@ -100,6 +100,8 @@ namespace TaleOfTwoWastelands.Patching
             {
                 if (InflatedFilesize == obj.InflatedFilesize)
                 {
+                    if (InflatedFilesize == 0)
+                        return true;
                     return InflatedChecksums.SequenceEqual(obj.InflatedChecksums);
                 }
             }
@@ -119,7 +121,7 @@ namespace TaleOfTwoWastelands.Patching
             }
 #endif
 
-            val.InflatedChecksums = IncrementalChecksum(file.YieldContents(true), file.OriginalSize);
+            val.InflatedChecksums = IncrementalChecksum(file.YieldContents(true, WINDOW), file.OriginalSize);
             val.InflatedFilesize = file.OriginalSize;
 
             return val;
@@ -162,37 +164,6 @@ namespace TaleOfTwoWastelands.Patching
                 chk.Update(buf);
                 yield return chk.Value;
             }
-        }
-
-        private static IEnumerable<long> IncrementalChecksumOld(IEnumerable<byte> data, uint size)
-        {
-            Trace.Assert(size > 0);
-
-            IChecksum chk;
-            if (size < WINDOW)
-                chk = new Crc32();
-            else
-                chk = new Adler32();
-
-            var windows = (size + WINDOW - 1) / WINDOW;
-
-            var dataMover = data.GetEnumerator();
-            dataMover.MoveNext();
-
-            for (int i = 0; i < windows; i++)
-            {
-                byte[] buf = new byte[WINDOW];
-                for (int j = 0; j < WINDOW; j++)
-                {
-                    buf[j] = dataMover.Current;
-                    if (!dataMover.MoveNext())
-                        break;
-                }
-
-                chk.Update(buf);
-                yield return chk.Value;
-            }
-            dataMover.Dispose();
         }
     }
 }
