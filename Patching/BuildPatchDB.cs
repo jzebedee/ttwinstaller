@@ -161,16 +161,19 @@ namespace TaleOfTwoWastelands.Patching
                         var oldChk = join.oldChk.Value;
                         var newChk = join.patch;
 
+                        PatchInfo patchInfo;
                         if (!newChk.Equals(oldChk))
                         {
                             var antiqueOldChk = GetChecksum(join.oldBsaFile.GetSaveData(true));
                             var antiqueNewChk = GetChecksum(join.newBsaFile.GetSaveData(true));
 
-                            var patchInfo = PatchInfo.FromFileChecksum(outBsaName, join.oldBsaFile.Filename, antiqueOldChk, antiqueNewChk, newChk);
+                            patchInfo = PatchInfo.FromFileChecksum(outBsaName, join.oldBsaFile.Filename, antiqueOldChk, antiqueNewChk, newChk);
                             Debug.Assert(patchInfo.Data != null);
-
-                            checkDict.Add(join.file, patchInfo);
                         }
+                        else
+                            //without this, we will generate sparse (patch-only) fixups
+                            patchInfo = new PatchInfo { Metadata = newChk };
+                        checkDict.Add(join.file, patchInfo);
                     }
 
                     using (var stream = File.OpenWrite(patPath))

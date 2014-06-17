@@ -151,7 +151,9 @@ namespace TaleOfTwoWastelands.Patching
 
         private static IEnumerable<long> IncrementalChecksum(IEnumerable<byte[]> data, uint size)
         {
-            Trace.Assert(size > 0);
+            //Debug.Assert(size > 0 || data.SelectMany(buf => buf).Count() == 0);
+            if (size == 0) //still need a check that this isn't happening when data isn't blank
+                yield break;
 
             IChecksum chk;
             if (size < WINDOW)

@@ -147,7 +147,7 @@ namespace TaleOfTwoWastelands.Patching
                     }
                 }
 
-                var allFiles = BSA.SelectMany(folder => folder);
+                var allFiles = BSA.SelectMany(folder => folder).ToList();
 
                 try
                 {
@@ -256,7 +256,7 @@ namespace TaleOfTwoWastelands.Patching
                     bsaFile.UpdateData(patchedBytes, false);
                 else
                 {
-                    var err = "\tPatching " + bsaFile.Filename + " has failed - " + oldChk2;
+                    var err = "\tPatching " + bsaFile.Filename + " has failed - " + oldChk2.InflatedChecksums.Last();
                     if (failFast)
                         Trace.Fail(err);
                     else
@@ -266,7 +266,7 @@ namespace TaleOfTwoWastelands.Patching
             else
             {
                 //no patch exists for the file
-                var err = "\tFile is of an unexpected version: " + bsaFile.Filename + " - " + oldChk;
+                var err = "\tFile is of an unexpected version: " + bsaFile.Filename + " - " + oldChk.InflatedChecksums.Last();
 
                 if (failFast)
                     Trace.Fail(err);
