@@ -46,17 +46,17 @@ namespace TaleOfTwoWastelands.Patching
                     var dataESM = Path.Combine(dirFO3Data, ESM);
                     var ttwESM = Path.Combine(dirTTWMain, ESM);
 
-                    var fvOriginal = FileValidation.FromFile(dataESM);
+                    //var fvOriginal = FileValidation.FromFile(dataESM);
 
                     var patch = PatchInfo.FromFile("", dataESM, ttwESM);
 
                     using (var fixStream = File.OpenWrite(fixPath))
-                        BF.Serialize(fixStream, new PatchFixup(fvOriginal, patch));
+                        BF.Serialize(fixStream, patch);
                 }
 #if RECHECK
                 using (var fixStream = File.OpenRead(fixPath))
                 {
-                    var p = (PatchFixup)BF.Deserialize(fixStream);
+                    var p = (PatchInfo)BF.Deserialize(fixStream);
                     if(keepGoing)
                         Debugger.Break();
                 }
@@ -99,7 +99,7 @@ namespace TaleOfTwoWastelands.Patching
                 if (File.Exists(patPath))
                     continue;
 
-                var checkDict = new Dictionary<string, PatchFixup>();
+                var checkDict = new Dictionary<string, PatchInfo>();
 
                 using (var inBSA = new BSAWrapper(inBSAPath))
                 using (var outBSA = new BSAWrapper(outBSAPath))
@@ -169,8 +169,7 @@ namespace TaleOfTwoWastelands.Patching
                             var patchInfo = PatchInfo.FromFileChecksum(outBsaName, join.oldBsaFile.Filename, antiqueOldChk, antiqueNewChk, newChk);
                             Debug.Assert(patchInfo.Data != null);
 
-                            checkDict.Add(join.file, new PatchFixup(oldChk, patchInfo));
-                            //BSADiff.PatchFile(join.bsaFile, oldChk, patchInfo, true);
+                            checkDict.Add(join.file, patchInfo);
                         }
                     }
 

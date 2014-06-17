@@ -28,7 +28,7 @@ namespace TaleOfTwoWastelands.Patching
             var opProg = new OperationProgress(progressUI, token) { ItemsTotal = 7 };
 
             var renameDict = new Dictionary<string, string>();
-            var patchDict = new Dictionary<string, PatchFixup>();
+            var patchDict = new Dictionary<string, PatchInfo>();
 
             BSAWrapper BSA;
             try
@@ -75,7 +75,7 @@ namespace TaleOfTwoWastelands.Patching
                         using (var stream = File.OpenRead(patchPath))
                         {
                             var bFormatter = new BinaryFormatter();
-                            patchDict = (Dictionary<string, PatchFixup>)bFormatter.Deserialize(stream);
+                            patchDict = (Dictionary<string, PatchInfo>)bFormatter.Deserialize(stream);
                         }
                     }
                     else
@@ -163,7 +163,7 @@ namespace TaleOfTwoWastelands.Patching
                                         {
                                             bsaFile,
                                             file = patKvp.Key,
-                                            patch = patKvp.Value,
+                                            patchInfo = patKvp.Value,
                                             oldChk = foundOld.SingleOrDefault()
                                         };
 
@@ -179,14 +179,14 @@ namespace TaleOfTwoWastelands.Patching
                         }
 
                         var oldChk = join.oldChk.Value;
-                        var newChk = join.patch.Update.Metadata;
+                        var newChk = join.patchInfo.Metadata;
                         opChk.CurrentOperation = "Validating " + join.bsaFile.Name;
 
                         if (!newChk.Equals(oldChk))
                         {
                             opChk.CurrentOperation = "Patching " + join.bsaFile.Name;
 
-                            var patchErrors = PatchFile(join.bsaFile, oldChk, join.patch.Update);
+                            var patchErrors = PatchFile(join.bsaFile, oldChk, join.patchInfo);
                             sbErrors.Append(patchErrors);
                         }
 

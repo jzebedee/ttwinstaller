@@ -19,7 +19,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;BUILD_PATCHDB</DefineConstants>
+    <DefineConstants>TRACE;DEBUG</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -66,8 +66,6 @@
     <Compile Include="BSA.cs" />
     <Compile Include="Patching\BSADiff.cs" />
     <Compile Include="Patching\BuildPatchDB.cs" Condition="$(DefineConstants.Contains('BUILD_PATCHDB'))" />
-    <Compile Include="Patching\Fixup.cs" />
-    <Compile Include="Patching\PatchFixup.cs" />
     <Compile Include="Patching\PatchInfo.cs" />
     <Compile Include="Patching\FileValidation.cs" />
     <Compile Include="UI\frm_Main.cs">
