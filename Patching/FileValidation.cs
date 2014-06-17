@@ -53,9 +53,9 @@ namespace TaleOfTwoWastelands.Patching
             InflatedChecksums = IncrementalChecksum(data, size);
             InflatedFilesize = size;
         }
-        public FileValidation(IEnumerable<byte> data, uint size)
+        public FileValidation(byte[] data, uint size)
         {
-            InflatedChecksums = IncrementalChecksum(data, size);
+            InflatedChecksums = IncrementalChecksum(data);
             InflatedFilesize = size;
         }
         private FileValidation() { }
@@ -156,30 +156,47 @@ namespace TaleOfTwoWastelands.Patching
             }
         }
 
-        public static IEnumerable<long> IncrementalChecksum(IEnumerable<byte> data, uint size)
+        //public static IEnumerable<long> IncrementalChecksumA(IEnumerable<byte> data, uint size)
+        //{
+        //    IChecksum chk;
+        //    if (size < WINDOW)
+        //        chk = new Crc32();
+        //    else
+        //        chk = new Adler32();
+
+        //    int i = 0;
+        //    foreach (var db in data)
+        //    {
+        //        chk.Update(db);
+        //        if (++i % WINDOW == 0)
+        //        {
+        //            i = 0;
+        //            yield return chk.Value;
+        //        }
+        //    }
+
+        //    if (i > 0)
+        //        yield return chk.Value;
+        //}
+
+        private static IEnumerable<long> IncrementalChecksum(byte[] data)
         {
             IChecksum chk;
-            if (size < WINDOW)
+            if (data.Length < WINDOW)
                 chk = new Crc32();
             else
                 chk = new Adler32();
 
-            int i = 0;
-            foreach (var db in data)
+            for (int i = 0; i < data.Length; i += WINDOW)
             {
-                chk.Update(db);
-                if (++i % WINDOW == 0)
-                {
-                    i = 0;
-                    yield return chk.Value;
-                }
-            }
+                var len = i + WINDOW > data.Length ? data.Length - i : WINDOW;
 
-            if (i > 0)
+                chk.Update(data, i, len);
                 yield return chk.Value;
+            }
         }
 
-        public static IEnumerable<long> IncrementalChecksum(IEnumerable<byte[]> data, uint size)
+        private static IEnumerable<long> IncrementalChecksum(IEnumerable<byte[]> data, uint size)
         {
             //Debug.Assert(size > 0 || data.SelectMany(buf => buf).Count() == 0);
             if (size == 0) //still need a check that this isn't happening when data isn't blank
