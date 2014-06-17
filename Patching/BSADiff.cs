@@ -248,15 +248,12 @@ namespace TaleOfTwoWastelands.Patching
                     patchedBytes = output.ToArray();
                 }
 
-                var testBsaFile = bsaFile.DeepCopy();
-                testBsaFile.UpdateData(patchedBytes, false);
-
-                var oldChk2 = FileValidation.FromBSAFile(testBsaFile);
-                if (patch.Metadata.Equals(oldChk2))
+                var testChk = new FileValidation(patchedBytes, (uint)patchedBytes.Length);
+                if (patch.Metadata.Equals(testChk))
                     bsaFile.UpdateData(patchedBytes, false);
                 else
                 {
-                    var err = "\tPatching " + bsaFile.Filename + " has failed - " + oldChk2.InflatedChecksums.Last();
+                    var err = "\tPatching " + bsaFile.Filename + " has failed - " + testChk;
                     if (failFast)
                         Trace.Fail(err);
                     else
@@ -266,7 +263,7 @@ namespace TaleOfTwoWastelands.Patching
             else
             {
                 //no patch exists for the file
-                var err = "\tFile is of an unexpected version: " + bsaFile.Filename + " - " + oldChk.InflatedChecksums.Last();
+                var err = "\tFile is of an unexpected version: " + bsaFile.Filename + " - " + oldChk;
 
                 if (failFast)
                     Trace.Fail(err);

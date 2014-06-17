@@ -48,9 +48,17 @@ namespace TaleOfTwoWastelands.Patching
             DeflatedFilesize = DeserializeInfo<uint>(info, "DeflatedFilesize");
 #endif
         }
-        private FileValidation()
+        public FileValidation(IEnumerable<byte[]> data, uint size)
         {
+            InflatedChecksums = IncrementalChecksum(data, size);
+            InflatedFilesize = size;
         }
+        public FileValidation(IEnumerable<byte> data, uint size)
+        {
+            InflatedChecksums = IncrementalChecksum(data, size);
+            InflatedFilesize = size;
+        }
+        private FileValidation() { }
 
         private static T DeserializeInfo<T>(SerializationInfo info, string name)
         {
@@ -72,6 +80,13 @@ namespace TaleOfTwoWastelands.Patching
             return BSA
                 .SelectMany(folder => folder)
                 .ToDictionary(file => file.Filename, file => FromBSAFile(file));
+        }
+
+        public override string ToString()
+        {
+            if (InflatedChecksums != null)
+                return string.Format("({0}, {1} bytes)", InflatedChecksums.LastOrDefault(), InflatedFilesize);
+            return base.ToString();
         }
 
         public override bool Equals(object obj)
@@ -111,7 +126,7 @@ namespace TaleOfTwoWastelands.Patching
 
         public static FileValidation FromBSAFile(BSAFile file)
         {
-            var val = new FileValidation();
+            var val = new FileValidation(file.YieldContents(true, WINDOW), file.OriginalSize);
 
 #if INCLUDES_DEFLATED
             if (file.IsCompressed)
@@ -121,35 +136,50 @@ namespace TaleOfTwoWastelands.Patching
             }
 #endif
 
-            val.InflatedChecksums = IncrementalChecksum(file.YieldContents(true, WINDOW), file.OriginalSize);
-            val.InflatedFilesize = file.OriginalSize;
-
             return val;
         }
 
         public static FileValidation FromFile(string path)
         {
-            var val = new FileValidation();
-
-            var fileInfo = new FileInfo(path);
-            val.InflatedChecksums = IncrementalChecksum(ReadWindow(() => File.OpenRead(path)), (uint)fileInfo.Length);
-            val.InflatedFilesize = (uint)fileInfo.Length;
-
-            return val;
+            return new FileValidation(ReadWindow(File.OpenRead(path)), (uint)new FileInfo(path).Length);
         }
 
-        private static IEnumerable<byte[]> ReadWindow(Func<Stream> createStream)
+        private static IEnumerable<byte[]> ReadWindow(Stream readStream)
         {
             int bytesRead;
             byte[] buf = new byte[WINDOW];
 
-            var stream = createStream();
-            while ((bytesRead = stream.Read(buf, 0, WINDOW)) != 0)
-                yield return bytesRead == WINDOW ? buf : buf.TrimBuffer(0, bytesRead);
-            stream.Dispose();
+            using (readStream)
+            {
+                while ((bytesRead = readStream.Read(buf, 0, WINDOW)) != 0)
+                    yield return buf.TrimBuffer(0, bytesRead);
+            }
         }
 
-        private static IEnumerable<long> IncrementalChecksum(IEnumerable<byte[]> data, uint size)
+        public static IEnumerable<long> IncrementalChecksum(IEnumerable<byte> data, uint size)
+        {
+            IChecksum chk;
+            if (size < WINDOW)
+                chk = new Crc32();
+            else
+                chk = new Adler32();
+
+            int i = 0;
+            foreach (var db in data)
+            {
+                chk.Update(db);
+                if (++i % WINDOW == 0)
+                {
+                    i = 0;
+                    yield return chk.Value;
+                }
+            }
+
+            if (i > 0)
+                yield return chk.Value;
+        }
+
+        public static IEnumerable<long> IncrementalChecksum(IEnumerable<byte[]> data, uint size)
         {
             //Debug.Assert(size > 0 || data.SelectMany(buf => buf).Count() == 0);
             if (size == 0) //still need a check that this isn't happening when data isn't blank

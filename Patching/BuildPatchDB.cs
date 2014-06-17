@@ -104,9 +104,6 @@ namespace TaleOfTwoWastelands.Patching
                 using (var inBSA = new BSAWrapper(inBSAPath))
                 using (var outBSA = new BSAWrapper(outBSAPath))
                 {
-                    var oldFiles = inBSA.SelectMany(folder => folder).ToList();
-                    var newFiles = outBSA.SelectMany(folder => folder).ToList();
-
                     {
                         var renameGroup = from folder in inBSA
                                           from file in folder
@@ -135,6 +132,9 @@ namespace TaleOfTwoWastelands.Patching
                                           select new { a.folder, a.file, newFolder, newFile, a.newFilename };
                         renameFixes.ToList(); // execute query
                     }
+
+                    var oldFiles = inBSA.SelectMany(folder => folder).ToList();
+                    var newFiles = outBSA.SelectMany(folder => folder).ToList();
 
                     var oldChkDict = FileValidation.FromBSA(inBSA);
                     var newChkDict = FileValidation.FromBSA(outBSA);
@@ -175,6 +175,11 @@ namespace TaleOfTwoWastelands.Patching
                             patchInfo = new PatchInfo { Metadata = newChk };
                         checkDict.Add(join.file, patchInfo);
                     }
+
+#if RECHECK
+                    var ancCheckDict = ReadOldDict(outBsaName, "Checksums.dict");
+                    Trace.Assert(ancCheckDict.Keys.SequenceEqual(checkDict.Keys));
+#endif
 
                     using (var stream = File.OpenWrite(patPath))
                         BF.Serialize(stream, checkDict);
