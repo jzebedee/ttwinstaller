@@ -9,7 +9,7 @@ namespace TaleOfTwoWastelands.Patching
     [ProtoContract]
     public class PatchInfo
     {
-        [ProtoMember(1, IsRequired = true)]
+        [ProtoMember(1)]
         public FileValidation Metadata { get; set; }
         [ProtoMember(2)]
         public byte[] Data { get; set; }

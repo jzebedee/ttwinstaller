@@ -1,4 +1,4 @@
-﻿//#define RECHECK
+﻿#define RECHECK
 using BSAsharp;
 using ProtoBuf;
 using System;
@@ -55,8 +55,8 @@ namespace TaleOfTwoWastelands.Patching
 #if RECHECK
                 using (var fixStream = File.OpenRead(fixPath))
                 {
-                    var p = (PatchInfo)BF.Deserialize(fixStream);
-                    if(keepGoing)
+                    var p = Serializer.Deserialize<PatchInfo>(fixStream);
+                    if (keepGoing)
                         Debugger.Break();
                 }
 #endif
@@ -97,8 +97,6 @@ namespace TaleOfTwoWastelands.Patching
                 var patPath = Path.Combine(BUILD_DIR, Path.ChangeExtension(outBsaName, ".pat"));
                 if (File.Exists(patPath))
                     continue;
-
-                var checkDict = new Dictionary<string, PatchInfo>();
 
                 using (var inBSA = new BSAWrapper(inBSAPath))
                 using (var outBSA = new BSAWrapper(outBSAPath))
@@ -151,7 +149,7 @@ namespace TaleOfTwoWastelands.Patching
                                             oldChk = foundOld.SingleOrDefault()
                                         };
 
-                    Debug.Assert(checkDict != null);
+                    var checkDict = new Dictionary<string, PatchInfo>();
                     foreach (var join in joinedPatches)
                     {
                         if (string.IsNullOrEmpty(join.oldChk.Key))
@@ -180,7 +178,7 @@ namespace TaleOfTwoWastelands.Patching
 
 #if RECHECK
                     var ancCheckDict = ReadOldDict(outBsaName, "Checksums.dict");
-                    Trace.Assert(ancCheckDict.Keys.SequenceEqual(checkDict.Keys));
+                    Trace.Assert(ancCheckDict.Keys.SequenceEqual(checkDict.Keys.OrderBy(key => key)));
 #endif
 
                     using (var stream = File.OpenWrite(patPath))

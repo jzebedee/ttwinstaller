@@ -1,4 +1,6 @@
-﻿#define PARALLEL
+﻿#if RELEASE
+#define PARALLEL
+#endif
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,13 +8,13 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using System.Security.Cryptography;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Windows.Forms;
 using System.Threading;
 using System.Diagnostics;
 using BSAsharp;
 using System.IO.MemoryMappedFiles;
 using TaleOfTwoWastelands.ProgressTypes;
+using ProtoBuf;
 
 namespace TaleOfTwoWastelands.Patching
 {
@@ -56,8 +58,7 @@ namespace TaleOfTwoWastelands.Patching
                     {
                         using (var stream = File.OpenRead(renamePath))
                         {
-                            var bFormatter = new BinaryFormatter();
-                            renameDict = (Dictionary<string, string>)bFormatter.Deserialize(stream);
+                            renameDict = Serializer.Deserialize<Dictionary<string, string>>(stream);
                         }
                     }
                 }
@@ -75,8 +76,7 @@ namespace TaleOfTwoWastelands.Patching
                     {
                         using (var stream = File.OpenRead(patchPath))
                         {
-                            var bFormatter = new BinaryFormatter();
-                            patchDict = (Dictionary<string, PatchInfo>)bFormatter.Deserialize(stream);
+                            patchDict = Serializer.Deserialize<Dictionary<string, PatchInfo>>(stream);
                         }
                     }
                     else
@@ -221,7 +221,10 @@ namespace TaleOfTwoWastelands.Patching
                 {
                     opProg.CurrentOperation = "Removing unnecessary files";
 
-                    var filesToRemove = new HashSet<BSAFile>(allFiles.Where(file => !patchDict.ContainsKey(file.Filename)));
+                    var notIncluded = allFiles.Where(file => !patchDict.ContainsKey(file.Filename));
+                    var filesToRemove = new HashSet<BSAFile>(notIncluded);
+                    Trace.Assert(notIncluded.Count() == filesToRemove.Count);
+
                     var filesRemoved = BSA.Sum(folder => folder.RemoveWhere(bsafile => filesToRemove.Contains(bsafile)));
                     BSA.RemoveWhere(folder => folder.Count == 0);
                 }

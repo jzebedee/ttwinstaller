@@ -21,24 +21,39 @@ namespace TaleOfTwoWastelands.Patching
         [ProtoMember(1)]
         public uint InflatedFilesize { get; private set; }
         [ProtoMember(2)]
-        public IEnumerable<long> InflatedChecksums { get; set; }
+        private long[] _writtenInflatedChecksums;
+        public IEnumerable<long> InflatedChecksums
+        {
+            get
+            {
+                return _writtenInflatedChecksums ?? (_lazyInflatedChecksums != null ? (InflatedChecksums = _lazyInflatedChecksums.Value) : null);
+            }
+            private set
+            {
+                if (_writtenInflatedChecksums != value)
+                {
+                    _writtenInflatedChecksums = value != null ? value.ToArray() : null;
+                }
+            }
+        }
 
         private readonly Stream _inStream;
+        private readonly Lazy<IEnumerable<long>> _lazyInflatedChecksums;
 
         public FileValidation(IEnumerable<byte[]> data, uint size)
         {
-            InflatedChecksums = IncrementalChecksum(data, size);
+            _lazyInflatedChecksums = new Lazy<IEnumerable<long>>(() => IncrementalChecksum(data, size));
             InflatedFilesize = size;
         }
         public FileValidation(byte[] data, uint size)
         {
-            InflatedChecksums = IncrementalChecksum(data);
+            _lazyInflatedChecksums = new Lazy<IEnumerable<long>>(() => IncrementalChecksum(data));
             InflatedFilesize = size;
         }
         public FileValidation(Stream stream, uint? size = null)
         {
             _inStream = stream;
-            InflatedChecksums = IncrementalChecksum(ReadWindow(stream), size ?? (uint)stream.Length);
+            _lazyInflatedChecksums = new Lazy<IEnumerable<long>>(() => IncrementalChecksum(ReadWindow(stream), size ?? (uint)stream.Length));
             InflatedFilesize = size ?? (uint)stream.Length;
         }
         private FileValidation() { }
@@ -72,13 +87,9 @@ namespace TaleOfTwoWastelands.Patching
         {
             //if you stringify ones of these in a debugger window, you're going to get
             //an exception from re-reading the stream after it's finished enumerating
+            //NOTE: Lazy<T> makes this not true any more
             if (InflatedChecksums != null)
-                return string.Format("({0}, {1} bytes)",
-#if DEBUG
-#else
-                    ,InflatedChecksums.LastOrDefault()
-#endif
- InflatedFilesize);
+                return string.Format("({0}, {1} bytes)", InflatedChecksums.LastOrDefault(), InflatedFilesize);
             return base.ToString();
         }
 
@@ -92,12 +103,13 @@ namespace TaleOfTwoWastelands.Patching
             if (obj == null)
                 return false;
 
+            if (InflatedFilesize == 0 && obj.InflatedFilesize == 0)
+                return true;
+
             if (InflatedChecksums != null && obj.InflatedChecksums != null)
             {
                 if (InflatedFilesize == obj.InflatedFilesize)
                 {
-                    if (InflatedFilesize == 0)
-                        return true;
                     return InflatedChecksums.SequenceEqual(obj.InflatedChecksums);
                 }
             }
