@@ -9,16 +9,20 @@ using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace TaleOfTwoWastelands.Patching
 {
     [Serializable]
-    public class FileValidation : ISerializable
+    public class FileValidation : IDisposable, ISerializable
     {
         const int WINDOW = 0x1000;
 
         public uint InflatedFilesize { get; private set; }
         public IEnumerable<long> InflatedChecksums { get; set; }
+
+        [NonSerialized]
+        private readonly Stream _inStream;
 
 #if INCLUDES_DEFLATED
         public uint DeflatedFilesize { get; private set; }
@@ -58,7 +62,31 @@ namespace TaleOfTwoWastelands.Patching
             InflatedChecksums = IncrementalChecksum(data);
             InflatedFilesize = size;
         }
+        public FileValidation(Stream stream, uint? size = null)
+        {
+            _inStream = stream;
+            InflatedChecksums = IncrementalChecksum(ReadWindow(stream), size ?? (uint)stream.Length);
+            InflatedFilesize = size ?? (uint)stream.Length;
+        }
         private FileValidation() { }
+        ~FileValidation()
+        {
+            Dispose(false);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                if (_inStream != null)
+                    _inStream.Dispose();
+            }
+        }
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
 
         private static T DeserializeInfo<T>(SerializationInfo info, string name)
         {
@@ -75,24 +103,29 @@ namespace TaleOfTwoWastelands.Patching
 #endif
         }
 
-        public static Dictionary<string, FileValidation> FromBSA(BSAWrapper BSA)
+        public static Dictionary<string, Lazy<FileValidation>> FromBSA(BSAWrapper BSA)
         {
             return BSA
                 .SelectMany(folder => folder)
-                .ToDictionary(file => file.Filename, file => FromBSAFile(file));
+                .ToDictionary(file => file.Filename, file => new Lazy<FileValidation>(() => FromBSAFile(file)));
         }
 
         public override string ToString()
         {
+            //if you stringify ones of these in a debugger window, you're going to get
+            //an exception from re-reading the stream after it's finished enumerating
             if (InflatedChecksums != null)
-                return string.Format("({0}, {1} bytes)", InflatedChecksums.LastOrDefault(), InflatedFilesize);
+                return string.Format("({0}, {1} bytes)",
+#if DEBUG
+#else
+                    ,InflatedChecksums.LastOrDefault()
+#endif
+ InflatedFilesize);
             return base.ToString();
         }
 
         public override bool Equals(object obj)
         {
-            if (obj == null)
-                return false;
             return Equals(obj as FileValidation);
         }
 
@@ -126,7 +159,7 @@ namespace TaleOfTwoWastelands.Patching
 
         public static FileValidation FromBSAFile(BSAFile file)
         {
-            var val = new FileValidation(file.YieldContents(true, WINDOW), file.OriginalSize);
+            var val = new FileValidation(file.GetContentStream(true), file.OriginalSize);
 
 #if INCLUDES_DEFLATED
             if (file.IsCompressed)
@@ -141,7 +174,12 @@ namespace TaleOfTwoWastelands.Patching
 
         public static FileValidation FromFile(string path)
         {
-            return new FileValidation(ReadWindow(File.OpenRead(path)), (uint)new FileInfo(path).Length);
+            return new FileValidation(File.OpenRead(path));
+        }
+
+        private static uint WindowCount(uint size)
+        {
+            return (size + WINDOW - 1) / WINDOW;
         }
 
         private static IEnumerable<byte[]> ReadWindow(Stream readStream)
@@ -150,34 +188,9 @@ namespace TaleOfTwoWastelands.Patching
             byte[] buf = new byte[WINDOW];
 
             using (readStream)
-            {
                 while ((bytesRead = readStream.Read(buf, 0, WINDOW)) != 0)
                     yield return buf.TrimBuffer(0, bytesRead);
-            }
         }
-
-        //public static IEnumerable<long> IncrementalChecksumA(IEnumerable<byte> data, uint size)
-        //{
-        //    IChecksum chk;
-        //    if (size < WINDOW)
-        //        chk = new Crc32();
-        //    else
-        //        chk = new Adler32();
-
-        //    int i = 0;
-        //    foreach (var db in data)
-        //    {
-        //        chk.Update(db);
-        //        if (++i % WINDOW == 0)
-        //        {
-        //            i = 0;
-        //            yield return chk.Value;
-        //        }
-        //    }
-
-        //    if (i > 0)
-        //        yield return chk.Value;
-        //}
 
         private static IEnumerable<long> IncrementalChecksum(byte[] data)
         {

@@ -25,10 +25,12 @@ namespace TaleOfTwoWastelands.ProgressTypes
 
         public int Step()
         {
-            if ((ItemsDone + 1) > ItemsTotal)
+            var itemsDone = Interlocked.Increment(ref _itemsDone);
+            if (itemsDone > ItemsTotal)
                 throw new ArgumentOutOfRangeException();
 
-            return ++ItemsDone;
+            RaisePropertyChanged("ItemsDone");
+            return itemsDone;
         }
 
         public void Finish()

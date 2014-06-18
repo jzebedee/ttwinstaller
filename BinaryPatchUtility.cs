@@ -450,8 +450,10 @@ namespace TaleOfTwoWastelands
         /// This stream must support reading and seeking, and <paramref name="openPatchStream"/> must allow multiple streams on
         /// the patch to be opened concurrently.</param>
         /// <param name="output">A <see cref="Stream"/> to which the patched data is written.</param>
-        public static unsafe void Apply(Stream input, Func<Stream> openPatchStream, Stream output)
+        public static unsafe void Apply(Stream input, byte* pData, long length, Stream output)
         {
+            Func<Stream> openPatchStream = () => new UnmanagedMemoryStream(pData, length);
+
             // check arguments
             if (input == null)
                 throw new ArgumentNullException("input");

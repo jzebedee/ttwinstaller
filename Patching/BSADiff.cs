@@ -1,4 +1,5 @@
-﻿using System;
+﻿#define PARALLEL
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -97,7 +98,7 @@ namespace TaleOfTwoWastelands.Patching
 
                     opRename.CurrentOperation = opPrefix;
 
-                    var renameGroup = from folder in BSA.ToList()
+                    var renameGroup = from folder in BSA
                                       from file in folder
                                       join kvp in renameDict on file.Filename equals kvp.Value
                                       let a = new { folder, file, kvp }
@@ -131,7 +132,11 @@ namespace TaleOfTwoWastelands.Patching
                                       let curDone = opRename.Step()
 
                                       select new { a.folder, a.file, newFolder, newFile, a.newFilename };
-                    renameFixes.ToList(); // execute query
+                    renameFixes
+#if PARALLEL
+.AsParallel()
+#endif
+.ToList(); // execute query
                 }
                 finally
                 {
@@ -167,7 +172,11 @@ namespace TaleOfTwoWastelands.Patching
                                             oldChk = foundOld.SingleOrDefault()
                                         };
 
+#if PARALLEL
+                    Parallel.ForEach(joinedPatches, join =>
+#else
                     foreach (var join in joinedPatches)
+#endif
                     {
                         if (string.IsNullOrEmpty(join.oldChk.Key))
                         {
@@ -175,23 +184,33 @@ namespace TaleOfTwoWastelands.Patching
                             sbErrors.AppendLine("\tFile not found: " + join.file);
 
                             opChk.Step();
+#if PARALLEL
+                            return;
+#else
                             continue;
+#endif
                         }
 
-                        var oldChk = join.oldChk.Value;
-                        var newChk = join.patchInfo.Metadata;
-                        opChk.CurrentOperation = "Validating " + join.bsaFile.Name;
-
-                        if (!newChk.Equals(oldChk))
+                        var lazyOldChk = join.oldChk.Value;
+                        using (var oldChk = lazyOldChk.Value)
                         {
-                            opChk.CurrentOperation = "Patching " + join.bsaFile.Name;
+                            var newChk = join.patchInfo.Metadata;
+                            opChk.CurrentOperation = "Validating " + join.bsaFile.Name;
 
-                            var patchErrors = PatchFile(join.bsaFile, oldChk, join.patchInfo);
-                            sbErrors.Append(patchErrors);
+                            if (!newChk.Equals(oldChk))
+                            {
+                                opChk.CurrentOperation = "Patching " + join.bsaFile.Name;
+
+                                var patchErrors = PatchFile(join.bsaFile, oldChk, join.patchInfo);
+                                sbErrors.Append(patchErrors);
+                            }
                         }
 
                         opChk.Step();
                     }
+#if PARALLEL
+);
+#endif
                 }
                 finally
                 {
@@ -239,25 +258,29 @@ namespace TaleOfTwoWastelands.Patching
             //file exists but is not up to date
             if (patch.Data != null)
             {
-                byte[] patchedBytes;
-
                 //a patch exists for the file
-                using (MemoryStream input = new MemoryStream(bsaFile.GetSaveData(true)), output = new MemoryStream())
+                using (MemoryStream input = bsaFile.GetSaveStream(true), output = new MemoryStream())
                 {
-                    BinaryPatchUtility.Apply(input, () => new MemoryStream(patch.Data), output);
-                    patchedBytes = output.ToArray();
-                }
+                    unsafe
+                    {
+                        fixed (byte* pData = patch.Data)
+                            BinaryPatchUtility.Apply(input, pData, patch.Data.Length, output);
+                    }
 
-                var testChk = new FileValidation(patchedBytes, (uint)patchedBytes.Length);
-                if (patch.Metadata.Equals(testChk))
-                    bsaFile.UpdateData(patchedBytes, false);
-                else
-                {
-                    var err = "\tPatching " + bsaFile.Filename + " has failed - " + testChk;
-                    if (failFast)
-                        Trace.Fail(err);
-                    else
-                        sbErrors.AppendLine(err);
+                    output.Seek(0, SeekOrigin.Begin);
+                    using (var testChk = new FileValidation(output))
+                    {
+                        if (patch.Metadata.Equals(testChk))
+                            bsaFile.UpdateData(output.ToArray(), false);
+                        else
+                        {
+                            var err = "\tPatching " + bsaFile.Filename + " has failed - " + testChk;
+                            if (failFast)
+                                Trace.Fail(err);
+                            else
+                                sbErrors.AppendLine(err);
+                        }
+                    }
                 }
             }
             else
