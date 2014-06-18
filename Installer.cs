@@ -607,7 +607,23 @@ namespace TaleOfTwoWastelands
             string inBSAFile = Path.ChangeExtension(inBSA, ".bsa");
             string inBSAPath = Path.Combine(dirFO3Data, inBSAFile);
 
-            var errors = BSADiff.PatchBSA(progressLog, progressUIMinor, token, inBSAPath, outBSAPath);
+            string errors;
+
+#if DEBUG
+            var watch = new Stopwatch();
+            try
+            {
+                watch.Start();
+#endif
+                errors = BSADiff.PatchBSA(progressLog, progressUIMinor, token, inBSAPath, outBSAPath);
+#if DEBUG
+            }
+            finally
+            {
+                watch.Stop();
+                Debug.WriteLine("PatchBSA for {0} finished in {1}", inBSA, watch.Elapsed);
+            }
+#endif
 
             WriteLog(errors);
             LogOutput(errors);
