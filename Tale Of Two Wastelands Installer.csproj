@@ -45,10 +45,10 @@
       <HintPath>.\BSAsharp.dll</HintPath>
     </Reference>
     <Reference Include="ICSharpCode.SharpZipLib">
-      <HintPath>..\..\..\..\Visual Studio 2013\Projects\BSDiff\trunk\lib\ICSharpCode.SharpZipLib.dll</HintPath>
+      <HintPath>.\ICSharpCode.SharpZipLib.dll</HintPath>
     </Reference>
     <Reference Include="Logos.Utility">
-      <HintPath>..\..\..\..\Visual Studio 2013\Projects\BSDiff\trunk\lib\Logos.Utility.dll</HintPath>
+      <HintPath>.\Logos.Utility.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
