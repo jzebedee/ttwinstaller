@@ -438,6 +438,15 @@ namespace TaleOfTwoWastelands
             first = second;
             second = temp;
         }
+
+        private static void WriteInt64(long value, byte[] buf, int offset)
+        {
+            var valBytes = BitConverter.GetBytes(value < 0 ? -value : value);
+            Buffer.BlockCopy(valBytes, 0, buf, offset, valBytes.Length);
+
+            if (value < 0)
+                buf[offset + 7] |= 0x80;
+        }
 #endif
 
 #if PATCH
@@ -597,7 +606,7 @@ namespace TaleOfTwoWastelands
         {
             long y;
 
-            fixed (byte* pBuf = &(buf[offset]))
+            fixed (byte* pBuf = &buf[offset])
             {
                 y = pBuf[7] & 0x7F;
                 for (int i = 6; i >= 0; i--)
@@ -608,15 +617,6 @@ namespace TaleOfTwoWastelands
 
                 return (pBuf[7] & 0x80) != 0 ? -y : y;
             }
-        }
-
-        private static void WriteInt64(long value, byte[] buf, int offset)
-        {
-            var valBytes = BitConverter.GetBytes(value < 0 ? -value : value);
-            Buffer.BlockCopy(valBytes, 0, buf, offset, valBytes.Length);
-
-            if (value < 0)
-                buf[offset + 7] |= 0x80;
         }
     }
 }

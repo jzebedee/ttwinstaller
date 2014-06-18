@@ -1,14 +1,17 @@
-﻿using System;
+﻿using ProtoBuf;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
 namespace TaleOfTwoWastelands.Patching
 {
-    [Serializable]
+    [ProtoContract]
     public class PatchInfo
     {
+        [ProtoMember(1, IsRequired = true)]
         public FileValidation Metadata { get; set; }
+        [ProtoMember(2)]
         public byte[] Data { get; set; }
 
 #if BUILD_PATCHDB

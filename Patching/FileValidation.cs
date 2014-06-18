@@ -1,7 +1,7 @@
-﻿//#define INCLUDES_DEFLATED
-using BSAsharp;
+﻿using BSAsharp;
 using BSAsharp.Extensions;
 using ICSharpCode.SharpZipLib.Checksums;
+using ProtoBuf;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -13,45 +13,18 @@ using System.Threading.Tasks;
 
 namespace TaleOfTwoWastelands.Patching
 {
-    [Serializable]
-    public class FileValidation : IDisposable, ISerializable
+    [ProtoContract]
+    public class FileValidation : IDisposable
     {
         const int WINDOW = 0x1000;
 
+        [ProtoMember(1)]
         public uint InflatedFilesize { get; private set; }
+        [ProtoMember(2)]
         public IEnumerable<long> InflatedChecksums { get; set; }
 
-        [NonSerialized]
         private readonly Stream _inStream;
 
-#if INCLUDES_DEFLATED
-        public uint DeflatedFilesize { get; private set; }
-
-        private Lazy<IEnumerable<long>> _deflatedChecksums;
-
-        private long[] _writtenDeflatedChecksums;
-        public IEnumerable<long> DeflatedChecksums
-        {
-            get
-            {
-                return _writtenDeflatedChecksums ?? (_deflatedChecksums != null ? _deflatedChecksums.Value : null);
-            }
-            set
-            {
-                _writtenDeflatedChecksums = value != null ? value.ToArray() : null;
-            }
-        }
-#endif
-
-        public FileValidation(SerializationInfo info, StreamingContext context)
-        {
-            InflatedChecksums = DeserializeInfo<IEnumerable<long>>(info, "InflatedChecksums");
-            InflatedFilesize = DeserializeInfo<uint>(info, "InflatedFilesize");
-#if INCLUDES_DEFLATED
-            DeflatedChecksums = DeserializeInfo<IEnumerable<long>>(info, "DeflatedChecksums");
-            DeflatedFilesize = DeserializeInfo<uint>(info, "DeflatedFilesize");
-#endif
-        }
         public FileValidation(IEnumerable<byte[]> data, uint size)
         {
             InflatedChecksums = IncrementalChecksum(data, size);
@@ -88,21 +61,6 @@ namespace TaleOfTwoWastelands.Patching
             GC.SuppressFinalize(this);
         }
 
-        private static T DeserializeInfo<T>(SerializationInfo info, string name)
-        {
-            return (T)info.GetValue(name, typeof(T));
-        }
-
-        public void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            info.AddValue("InflatedChecksums", InflatedChecksums.ToArray());
-            info.AddValue("InflatedFilesize", InflatedFilesize);
-#if INCLUDES_DEFLATED
-            info.AddValue("DeflatedChecksums", DeflatedChecksums != null ? DeflatedChecksums.ToArray() : null);
-            info.AddValue("DeflatedFilesize", DeflatedFilesize);
-#endif
-        }
-
         public static Dictionary<string, Lazy<FileValidation>> FromBSA(BSAWrapper BSA)
         {
             return BSA
@@ -134,16 +92,6 @@ namespace TaleOfTwoWastelands.Patching
             if (obj == null)
                 return false;
 
-#if INCLUDES_DEFLATED
-            if (DeflatedChecksums != null && obj.DeflatedChecksums != null)
-            {
-                if (DeflatedFilesize == obj.DeflatedFilesize)
-                {
-                    if (DeflatedChecksums.SequenceEqual(obj.DeflatedChecksums))
-                        return true;
-                }
-            }
-#endif
             if (InflatedChecksums != null && obj.InflatedChecksums != null)
             {
                 if (InflatedFilesize == obj.InflatedFilesize)
@@ -159,17 +107,7 @@ namespace TaleOfTwoWastelands.Patching
 
         public static FileValidation FromBSAFile(BSAFile file)
         {
-            var val = new FileValidation(file.GetContentStream(true), file.OriginalSize);
-
-#if INCLUDES_DEFLATED
-            if (file.IsCompressed)
-            {
-                val._deflatedChecksums = new Lazy<IEnumerable<long>>(() => IncrementalChecksum(file.GetYieldingFileData(false), file.DataSize));
-                val.DeflatedFilesize = file.DataSize;
-            }
-#endif
-
-            return val;
+            return new FileValidation(file.GetContentStream(true), file.OriginalSize);
         }
 
         public static FileValidation FromFile(string path)

@@ -1,5 +1,6 @@
 ﻿//#define RECHECK
 using BSAsharp;
+using ProtoBuf;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -17,8 +18,6 @@ namespace TaleOfTwoWastelands.Patching
     {
         const string SOURCE_DIR = "BuildDB";
         const string BUILD_DIR = "Checksums";
-
-        private static readonly BinaryFormatter BF = new BinaryFormatter();
 
         //Shameless code duplication. So sue me.
         public static void Build()
@@ -51,7 +50,7 @@ namespace TaleOfTwoWastelands.Patching
                     var patch = PatchInfo.FromFile("", dataESM, ttwESM);
 
                     using (var fixStream = File.OpenWrite(fixPath))
-                        BF.Serialize(fixStream, patch);
+                        Serializer.Serialize(fixStream, patch);
                 }
 #if RECHECK
                 using (var fixStream = File.OpenRead(fixPath))
@@ -86,7 +85,7 @@ namespace TaleOfTwoWastelands.Patching
                         var newRenPath = Path.Combine(BUILD_DIR, Path.ChangeExtension(outBsaName, ".ren"));
                         if (!File.Exists(newRenPath))
                             using (var stream = File.OpenWrite(newRenPath))
-                                BF.Serialize(stream, renameDict);
+                                Serializer.Serialize(stream, renameDict);
                     }
                     else
                     {
@@ -158,8 +157,11 @@ namespace TaleOfTwoWastelands.Patching
                         if (string.IsNullOrEmpty(join.oldChk.Key))
                             Debug.Fail("File not found: " + join.file);
 
-                        var oldChk = join.oldChk.Value;
-                        var newChk = join.patch;
+                        var oldChkLazy = join.oldChk.Value;
+                        var newChkLazy = join.patch;
+
+                        var oldChk = oldChkLazy.Value;
+                        var newChk = newChkLazy.Value;
 
                         PatchInfo patchInfo;
                         if (!newChk.Equals(oldChk))
@@ -182,7 +184,7 @@ namespace TaleOfTwoWastelands.Patching
 #endif
 
                     using (var stream = File.OpenWrite(patPath))
-                        BF.Serialize(stream, checkDict);
+                        Serializer.Serialize(stream, checkDict);
                 }
             }
         }
@@ -193,7 +195,7 @@ namespace TaleOfTwoWastelands.Patching
             if (!File.Exists(dictPath))
                 return null;
             using (var stream = File.OpenRead(dictPath))
-                return (IDictionary<string, string>)BF.Deserialize(stream);
+                return (IDictionary<string, string>)new BinaryFormatter().Deserialize(stream);
         }
 
         private static string GetChecksum(byte[] buf)
