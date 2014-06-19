@@ -397,7 +397,6 @@ namespace TaleOfTwoWastelands
                 inBsa = new BSAWrapper(inBsaPath),
                 outBsa = new BSAWrapper(inBsa.Settings))
             {
-
                 var includedFolders = inBsa
                     .Where(folder => VoicePaths.ContainsKey(folder.Path))
                     .Select(folder => new BSAFolder(VoicePaths[folder.Path], folder));

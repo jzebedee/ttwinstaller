@@ -33,30 +33,27 @@ namespace TaleOfTwoWastelands.UI
             //verify we are running as administrator
             Trace.Assert(new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator));
 
-            var progText = new Progress<string>(msg => txt_Progress.AppendText(string.Format("[{0}]\t{1}{2}", DateTime.Now, msg, Environment.NewLine)));
-
-            Action<OperationProgress, TextProgressBar> updateProgressBar = (opProg, bar) =>
-            {
-                Action update = () => {
-                    bar.Maximum = opProg.ItemsTotal;
-                    bar.Value = opProg.ItemsDone;
-                    bar.CustomText = opProg.CurrentOperation;
-                };
-                
-                if(bar.InvokeRequired) {
-                    bar.Invoke(update);
-                } else {
-                    update();
-                }
-            };
-
-            var progUIMinor = new Progress<OperationProgress>(opProg => updateProgressBar(opProg, prgCurrent));
-            var progUIMajor = new Progress<OperationProgress>(opProg => updateProgressBar(opProg, prgOverall));
+            //Progress<T> maintains SynchronizationContext
+            var progText = new Progress<string>(msg => UpdateLog(msg));
+            var progUIMinor = new Progress<OperationProgress>(opProg => UpdateProgressBar(opProg, prgCurrent));
+            var progUIMajor = new Progress<OperationProgress>(opProg => UpdateProgressBar(opProg, prgOverall));
 
             _install = new Installer(progText, progUIMinor, progUIMajor, dlg_FindGame, dlg_SaveTTW);
             txt_FO3Location.Text = _install.Fallout3Path;
             txt_FNVLocation.Text = _install.FalloutNVPath;
             txt_TTWLocation.Text = _install.TTWSavePath;
+        }
+
+        private void UpdateProgressBar(OperationProgress opProg, TextProgressBar bar)
+        {
+            bar.Maximum = opProg.ItemsTotal;
+            bar.Value = opProg.ItemsDone;
+            bar.CustomText = opProg.CurrentOperation;
+        }
+
+        private void UpdateLog(string msg)
+        {
+            txt_Progress.AppendText(string.Format("[{0}]\t{1}{2}", DateTime.Now, msg, Environment.NewLine));
         }
 
         private void btn_FO3Browse_Click(object sender, EventArgs e)
