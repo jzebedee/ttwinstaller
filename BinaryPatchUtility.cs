@@ -438,6 +438,15 @@ namespace TaleOfTwoWastelands
             first = second;
             second = temp;
         }
+
+        private static void WriteInt64(long value, byte[] buf, int offset)
+        {
+            var valBytes = BitConverter.GetBytes(value < 0 ? -value : value);
+            Buffer.BlockCopy(valBytes, 0, buf, offset, valBytes.Length);
+
+            if (value < 0)
+                buf[offset + 7] |= 0x80;
+        }
 #endif
 
 #if PATCH
@@ -450,8 +459,10 @@ namespace TaleOfTwoWastelands
         /// This stream must support reading and seeking, and <paramref name="openPatchStream"/> must allow multiple streams on
         /// the patch to be opened concurrently.</param>
         /// <param name="output">A <see cref="Stream"/> to which the patched data is written.</param>
-        public static unsafe void Apply(Stream input, Func<Stream> openPatchStream, Stream output)
+        public static unsafe void Apply(Stream input, byte* pData, long length, Stream output)
         {
+            Func<Stream> openPatchStream = () => new UnmanagedMemoryStream(pData, length);
+
             // check arguments
             if (input == null)
                 throw new ArgumentNullException("input");
@@ -595,7 +606,7 @@ namespace TaleOfTwoWastelands
         {
             long y;
 
-            fixed (byte* pBuf = &(buf[offset]))
+            fixed (byte* pBuf = &buf[offset])
             {
                 y = pBuf[7] & 0x7F;
                 for (int i = 6; i >= 0; i--)
@@ -606,15 +617,6 @@ namespace TaleOfTwoWastelands
 
                 return (pBuf[7] & 0x80) != 0 ? -y : y;
             }
-        }
-
-        private static void WriteInt64(long value, byte[] buf, int offset)
-        {
-            var valBytes = BitConverter.GetBytes(value < 0 ? -value : value);
-            Buffer.BlockCopy(valBytes, 0, buf, offset, valBytes.Length);
-
-            if (value < 0)
-                buf[offset + 7] |= 0x80;
         }
     }
 }

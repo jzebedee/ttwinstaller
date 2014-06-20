@@ -1,0 +1,1485 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Logos.Utility</name>
+    </assembly>
+    <members>
+        <member name="T:Logos.Utility.Ascii85">
+            <summary>
+            Converts between binary data and an Ascii85-encoded string.
+            </summary>
+            <remarks>See <a href="http://en.wikipedia.org/wiki/Ascii85">Ascii85 at Wikipedia</a>.</remarks>
+        </member>
+        <member name="M:Logos.Utility.Ascii85.Encode(System.Byte[])">
+            <summary>
+            Encodes the specified byte array in Ascii85.
+            </summary>
+            <param name="bytes">The bytes to encode.</param>
+            <returns>An Ascii85-encoded string representing the input byte array.</returns>
+        </member>
+        <member name="M:Logos.Utility.Ascii85.Decode(System.String)">
+            <summary>
+            Decodes the specified Ascii85 string into the corresponding byte array.
+            </summary>
+            <param name="encoded">The Ascii85 string.</param>
+            <returns>The decoded byte array.</returns>
+        </member>
+        <member name="T:Logos.Utility.Ascii85HttpHeader">
+            <summary>
+            Converts between an Ascii85-encoded string and an escaped version that is always valid
+            in an HTTP header. This class assumes that the "z" exception for 5 consecutive zero bytes
+            is implemented, but the "y" exception for 5 consecutive space characters is not implemented,
+            as is the case with the Ascii85 class.
+            </summary>
+            <remarks>See <a href="http://en.wikipedia.org/wiki/Ascii85">Ascii85 at Wikipedia</a> and
+            <a href="http://www.w3.org/Protocols/rfc2616/rfc2616-sec2.html#sec2.2">RFC 2616 section 2.2</a>.</remarks>
+        </member>
+        <member name="M:Logos.Utility.Ascii85HttpHeader.Encode(System.String)">
+            <summary>
+            Encodes the specified Ascii85 string for safe passage in an HTTP header by
+            substituting other characters for characters used by Ascii85 in the set to
+            avoid the set of separator characters not allowed in HTTP headers, which is
+            {()&lt;&gt;@,;:\"/[]?=}. The curly braces aren't used by Ascii85, but cannot be
+            used in HTTP headers, either. Since there are 15 disallowed characters, and only
+            6 printable ASCII characters that are both allowed in HTTP headers and not used
+            by Ascii85, one of those (~) is used as an escape character to introduce a
+            two-character set to represent each of 10 of those disallowed sequences.
+            
+            This function would normally be used to encode the results of Ascii85.Encode().
+             
+            </summary>
+            <param name="ascii85">A valid Ascii85 string.</param>
+            <returns>A string that is valid as an HTTP header.</returns>
+        </member>
+        <member name="M:Logos.Utility.Ascii85HttpHeader.Decode(System.String)">
+            <summary>
+            Decodes the specified HTTP parameter string to an Ascii85 string.
+            The results of this function would normally be fed to Ascii85.Decode().
+            </summary>
+            <param name="encoded">The HTTP parameter string</param>
+            <returns>The Ascii85 string.</returns>
+        </member>
+        <member name="T:Logos.Utility.ComponentModel.NotifyPropertyChangedUtility">
+            <summary>
+            Provides helper methods for working with <see cref="T:System.ComponentModel.INotifyPropertyChanged"/>.
+            </summary>
+        </member>
+        <member name="M:Logos.Utility.ComponentModel.NotifyPropertyChangedUtility.HasChanged(System.ComponentModel.PropertyChangedEventArgs,System.String)">
+            <summary>
+            Returns <c>true</c> if <paramref name="e"/> indicates that the property named by <paramref name="propertyName"/> has changed.
+            </summary>
+            <param name="e">The <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/>.</param>
+            <param name="propertyName">The property name.</param>
+            <returns><c>true</c> if the property named by <paramref name="propertyName"/> has changed; otherwise <c>false</c>.</returns>
+            <remarks>See <a href="http://code.logos.com/blog/2008/04/handling_the_propertychanged_event.html">Handling the PropertyChanged event</a>.</remarks>
+        </member>
+        <member name="T:Logos.Utility.DateTimeUtility">
+            <summary>
+            Provides methods for manipulating dates.
+            </summary>
+            <remarks>See <a href="http://code.logos.com/blog/2009/04/datetime_and_iso8601.html">DateTime and ISO8601</a>.</remarks>
+        </member>
+        <member name="F:Logos.Utility.DateTimeUtility.Iso8601Format">
+            <summary>
+            The ISO 8601 format string.
+            </summary>
+        </member>
+        <member name="M:Logos.Utility.DateTimeUtility.ParseIso8601(System.String)">
+            <summary>
+            Converts the specified ISO 8601 representation of a date and time
+            to its DateTime equivalent.
+            </summary>
+            <param name="value">The ISO 8601 string representation to parse.</param>
+            <returns>The DateTime equivalent.</returns>
+        </member>
+        <member name="M:Logos.Utility.DateTimeUtility.ToIso8601(System.DateTime)">
+            <summary>
+            Formats the date in the standard ISO 8601 format.
+            </summary>
+            <param name="value">The date to format.</param>
+            <returns>The formatted date.</returns>
+        </member>
+        <member name="T:Logos.Utility.DelegateUtility">
+            <summary>
+            Provides methods for manipulating delegates.
+            </summary>
+            <remarks>See <a href="http://code.logos.com/blog/2008/07/casting_delegates.html">Casting delegates</a>.</remarks>
+        </member>
+        <member name="M:Logos.Utility.DelegateUtility.Cast``1(System.Delegate)">
+            <summary>
+            Casts the specified delegate to the specified type.
+            </summary>
+            <param name="source">The delegate to cast.</param>
+            <returns>A delegate of the specified type which, when invoked, executes
+            the specified delegate.</returns>
+            <remarks>This method uses the <b>CreateDelegate</b> method of
+            <see cref="T:System.Delegate"/> to create a new delegate from an existing delegate.
+            Use this method to cast a delegate from one type to another, where the delegate types
+            have exactly the same parameter types and return type.</remarks>
+        </member>
+        <member name="M:Logos.Utility.DelegateUtility.Cast(System.Delegate,System.Type)">
+            <summary>
+            Casts the specified delegate to the specified type.
+            </summary>
+            <param name="source">The delegate to cast.</param>
+            <param name="type">The type of delegate to which to cast.</param>
+            <returns>A delegate of the specified type which, when invoked, executes
+            the specified delegate.</returns>
+            <remarks>This method uses the <b>CreateDelegate</b> method of
+            <see cref="T:System.Delegate"/> to create a new delegate from an existing delegate.
+            Use this method to cast a delegate from one type to another, where the delegate types
+            have exactly the same parameter types and return type.</remarks>
+        </member>
+        <member name="T:Logos.Utility.DictionaryUtility">
+            <summary>
+            Provides methods for manipulating dictionaries.
+            </summary>
+            <remarks>See <a href="http://code.logos.com/blog/2008/02/getoraddvalue.html">GetOrAddValue</a>.</remarks>
+        </member>
+        <member name="M:Logos.Utility.DictionaryUtility.GetOrAddValue``2(System.Collections.Generic.IDictionary{``0,``1},``0)">
+            <summary>
+            Gets a value from the dictionary, adding and returning a new instance if it is missing.
+            </summary>
+            <param name="dict">The dictionary.</param>
+            <param name="key">The key.</param>
+            <returns>The new or existing value.</returns>
+        </member>
+        <member name="M:Logos.Utility.DictionaryUtility.GetOrAddValue``2(System.Collections.Generic.IDictionary{``0,``1},``0,System.Func{``1})">
+            <summary>
+            Gets a value from the dictionary, adding and returning a new instance if it is missing.
+            </summary>
+            <typeparam name="TKey">The type of the key.</typeparam>
+            <typeparam name="TValue">The type of the value.</typeparam>
+            <param name="dict">The dictionary.</param>
+            <param name="key">The key.</param>
+            <param name="creator">Used to create a new value if necessary</param>
+            <returns>The new or existing value.</returns>
+        </member>
+        <member name="M:Logos.Utility.DictionaryUtility.GetValueOrDefault``2(System.Collections.Generic.IDictionary{``0,``1},``0)">
+            <summary>
+            Gets a value from the dictionary, returning a default value if it is missing.
+            </summary>
+            <typeparam name="TKey">The type of the key.</typeparam>
+            <typeparam name="TValue">The type of the value.</typeparam>
+            <param name="dict">The dictionary.</param>
+            <param name="key">The key.</param>
+            <returns>The value, or a default value.</returns>
+        </member>
+        <member name="M:Logos.Utility.DictionaryUtility.GetValueOrDefault``2(System.Collections.Generic.IDictionary{``0,``1},``0,``1)">
+            <summary>
+            Gets a value from the dictionary, returning the specified default value if it is missing.
+            </summary>
+            <typeparam name="TKey">The type of the key.</typeparam>
+            <typeparam name="TValue">The type of the value.</typeparam>
+            <param name="dict">The dictionary.</param>
+            <param name="key">The key.</param>
+            <param name="defaultValue">The default value.</param>
+            <returns>The value, or a default value.</returns>
+        </member>
+        <member name="M:Logos.Utility.DictionaryUtility.GetValueOrDefault``2(System.Collections.Generic.IDictionary{``0,``1},``0,System.Func{``1})">
+            <summary>
+            Gets a value from the dictionary, returning the generated default value if it is missing.
+            </summary>
+            <typeparam name="TKey">The type of the key.</typeparam>
+            <typeparam name="TValue">The type of the value.</typeparam>
+            <param name="dict">The dictionary.</param>
+            <param name="key">The key.</param>
+            <param name="defaultCreator">The default value generator.</param>
+            <returns>The value, or a default value.</returns>
+        </member>
+        <member name="T:Logos.Utility.DisposableService">
+            <summary>
+            A thread-safe disposable service that supports property notifications.
+            </summary>
+            <remarks>See <a href="http://code.logos.com/blog/2008/03/threadsafe_disposable_objects.html">Thread-safe disposable objects</a>.</remarks>
+        </member>
+        <member name="M:Logos.Utility.DisposableService.Dispose">
+            <summary>
+            Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+            </summary>
+        </member>
+        <member name="M:Logos.Utility.DisposableService.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Logos.Utility.DisposableService"/> class.
+            </summary>
+        </member>
+        <member name="M:Logos.Utility.DisposableService.Dispose(System.Boolean)">
+            <summary>
+            Releases unmanaged and - optionally - managed resources
+            </summary>
+            <param name="disposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
+            <remarks>This method is guaranteed to be called only once.</remarks>
+        </member>
+        <member name="M:Logos.Utility.DisposableService.VerifyNotDisposed">
+            <summary>
+            Verifies that the instance is not disposed.
+            </summary>
+            <exception cref="T:System.ObjectDisposedException">The instance is disposed.</exception>
+        </member>
+        <member name="M:Logos.Utility.DisposableService.OnDisposing">
+            <summary>
+            Called during the call to Dispose, immediately before Dispose(bool) is called.
+            </summary>
+            <remarks>The object is not yet marked as disposed, so VerifyNotDisposed will not throw an exception.</remarks>
+        </member>
+        <member name="E:Logos.Utility.DisposableService.Disposing">
+            <summary>
+            Raised by the Dispose method immediately before disposing.
+            </summary>
+            <remarks>This event is raised only once.</remarks>
+        </member>
+        <member name="T:Logos.Utility.DisposableUtility">
+            <summary>
+            Provides methods for manipulating disposable objects.
+            </summary>
+        </member>
+        <member name="M:Logos.Utility.DisposableUtility.Dispose``1(``0@)">
+            <summary>
+            Disposes and nulls the specified object.
+            </summary>
+            <param name="obj">The object to dispose and null.</param>
+            <remarks>See <a href="http://code.logos.com/blog/2008/02/disposed_objects.html">Disposed objects</a>.</remarks>
+        </member>
+        <member name="M:Logos.Utility.DisposableUtility.DisposeAfter``2(``0,System.Func{``0,``1})">
+            <summary>
+            Disposes the specified object after executing the specified delegate.
+            </summary>
+            <typeparam name="TInput">The type of the input.</typeparam>
+            <typeparam name="TOutput">The type of the output.</typeparam>
+            <param name="d">The object to dispose.</param>
+            <param name="fn">The delegate to execute before disposing the object.</param>
+            <returns>The value returned by the delegate.</returns>
+            <remarks>See <a href="http://code.logos.com/blog/2008/02/another_extension_method_dispo.html">Another extension method: DisposeAfter</a>.</remarks>
+        </member>
+        <member name="M:Logos.Utility.DisposableUtility.DisposeAfter``2(``0,System.Func{``1})">
+            <summary>
+            Disposes the specified object after executing the specified delegate.
+            </summary>
+            <typeparam name="TInput">The type of the input.</typeparam>
+            <typeparam name="TOutput">The type of the output.</typeparam>
+            <param name="d">The object to dispose.</param>
+            <param name="fn">The delegate to execute before disposing the object.</param>
+            <returns>The value returned by the delegate.</returns>
+            <remarks>See <a href="http://code.logos.com/blog/2008/02/another_extension_method_dispo.html">Another extension method: DisposeAfter</a>.</remarks>
+        </member>
+        <member name="T:Logos.Utility.EnumerableUtility">
+            <summary>
+            Provides helper methods for working with <see cref="T:System.Collections.Generic.IEnumerable`1"/>.
+            </summary>
+        </member>
+        <member name="M:Logos.Utility.EnumerableUtility.CountIsExactly``1(System.Collections.Generic.IEnumerable{``0},System.Int32)">
+            <summary>
+            Returns true if the count is as specified.
+            </summary>
+            <typeparam name="T">The type of the element.</typeparam>
+            <param name="source">The sequence.</param>
+            <param name="count">The count.</param>
+            <returns>True if the count is as specified.</returns>
+            <remarks>This method will often be faster than calling Enumerable.Count() and testing that value
+            when the count may be much larger than the count being tested.</remarks>
+        </member>
+        <member name="M:Logos.Utility.EnumerableUtility.EmptyIfNull``1(System.Collections.Generic.IEnumerable{``0})">
+            <summary>
+            Returns the source sequence, or an empty sequence if <paramref name="source"/> is <c>null</c>.
+            </summary>
+            <param name="source">The source sequence.</param>
+            <returns>The source sequence, or an empty sequence if <paramref name="source"/> is <c>null</c>.</returns>
+            <remarks>See <a href="http://code.logos.com/blog/2008/03/emptyifnull.html">EmptyIfNull</a>.</remarks>
+        </member>
+        <member name="M:Logos.Utility.EnumerableUtility.LazyOrderBy``2(System.Collections.Generic.IEnumerable{``0},System.Func{``0,``1})">
+            <summary>
+            Sorts the elements of a sequence in ascending order according to a key.
+            </summary>
+            <param name="source">A sequence of values to order.</param>
+            <param name="keySelector">A function to extract a key from an element.</param>
+            <returns>An <see cref="T:System.Collections.Generic.IEnumerable`1"/> whose elements are sorted according to a key.</returns>
+            <remarks>This method only sorts as much of <paramref name="source"/> as is required to yield the
+            elements that are requested from the return value.</remarks>
+        </member>
+        <member name="M:Logos.Utility.EnumerableUtility.LazyOrderBy``2(System.Collections.Generic.IEnumerable{``0},System.Func{``0,``1},System.Collections.Generic.IComparer{``1})">
+            <summary>
+            Sorts the elements of a sequence in ascending order according to a key.
+            </summary>
+            <param name="source">A sequence of values to order.</param>
+            <param name="keySelector">A function to extract a key from an element.</param>
+            <param name="comparer">An <see cref="T:System.Collections.Generic.IComparer`1"/> to compare keys.</param>
+            <returns>An <see cref="T:System.Collections.Generic.IEnumerable`1"/> whose elements are sorted according to a key.</returns>
+            <remarks>This method only sorts as much of <paramref name="source"/> as is required to yield the
+            elements that are requested from the return value.</remarks>
+        </member>
+        <member name="M:Logos.Utility.EnumerableUtility.LazyOrderByDescending``2(System.Collections.Generic.IEnumerable{``0},System.Func{``0,``1})">
+            <summary>
+            Sorts the elements of a sequence in descending order according to a key.
+            </summary>
+            <param name="source">A sequence of values to order.</param>
+            <param name="keySelector">A function to extract a key from an element.</param>
+            <returns>An <see cref="T:System.Collections.Generic.IEnumerable`1"/> whose elements are sorted according to a key.</returns>
+            <remarks>This method only sorts as much of <paramref name="source"/> as is required to yield the
+            elements that are requested from the return value.</remarks>
+        </member>
+        <member name="M:Logos.Utility.EnumerableUtility.LazyOrderByDescending``2(System.Collections.Generic.IEnumerable{``0},System.Func{``0,``1},System.Collections.Generic.IComparer{``1})">
+            <summary>
+            Sorts the elements of a sequence in descending order according to a key.
+            </summary>
+            <param name="source">A sequence of values to order.</param>
+            <param name="keySelector">A function to extract a key from an element.</param>
+            <param name="comparer">An <see cref="T:System.Collections.Generic.IComparer`1"/> to compare keys.</param>
+            <returns>An <see cref="T:System.Collections.Generic.IEnumerable`1"/> whose elements are sorted according to a key.</returns>
+            <remarks>This method only sorts as much of <paramref name="source"/> as is required to yield the
+            elements that are requested from the return value.</remarks>
+        </member>
+        <member name="M:Logos.Utility.EnumerableUtility.NullableSum(System.Collections.Generic.IEnumerable{System.Nullable{System.Decimal}})">
+            <summary>
+            Computes the sum of a sequence of <see cref="T:System.Nullable`1"/> values.
+            </summary>
+            <param name="source">A sequence of <see cref="T:System.Nullable`1"/> values to calculate the sum of.</param>
+            <returns>The sum of the values in the sequence.</returns>
+            <remarks>This method returns zero if <paramref name="source"/> contains no elements.</remarks>
+        </member>
+        <member name="M:Logos.Utility.EnumerableUtility.NullableSum(System.Collections.Generic.IEnumerable{System.Nullable{System.Double}})">
+            <summary>
+            Computes the sum of a sequence of <see cref="T:System.Nullable`1"/> values.
+            </summary>
+            <param name="source">A sequence of <see cref="T:System.Nullable`1"/> values to calculate the sum of.</param>
+            <returns>The sum of the values in the sequence.</returns>
+            <remarks>This method returns zero if <paramref name="source"/> contains no elements.</remarks>
+        </member>
+        <member name="M:Logos.Utility.EnumerableUtility.NullableSum(System.Collections.Generic.IEnumerable{System.Nullable{System.Int32}})">
+            <summary>
+            Computes the sum of a sequence of <see cref="T:System.Nullable`1"/> values.
+            </summary>
+            <param name="source">A sequence of <see cref="T:System.Nullable`1"/> values to calculate the sum of.</param>
+            <returns>The sum of the values in the sequence.</returns>
+            <remarks>This method returns zero if <paramref name="source"/> contains no elements.</remarks>
+        </member>
+        <member name="M:Logos.Utility.EnumerableUtility.NullableSum(System.Collections.Generic.IEnumerable{System.Nullable{System.Int64}})">
+            <summary>
+            Computes the sum of a sequence of <see cref="T:System.Nullable`1"/> values.
+            </summary>
+            <param name="source">A sequence of <see cref="T:System.Nullable`1"/> values to calculate the sum of.</param>
+            <returns>The sum of the values in the sequence.</returns>
+            <remarks>This method returns zero if <paramref name="source"/> contains no elements.</remarks>
+        </member>
+        <member name="M:Logos.Utility.EnumerableUtility.NullableSum(System.Collections.Generic.IEnumerable{System.Nullable{System.Single}})">
+            <summary>
+            Computes the sum of a sequence of <see cref="T:System.Nullable`1"/> values.
+            </summary>
+            <param name="source">A sequence of <see cref="T:System.Nullable`1"/> values to calculate the sum of.</param>
+            <returns>The sum of the values in the sequence.</returns>
+            <remarks>This method returns zero if <paramref name="source"/> contains no elements.</remarks>
+        </member>
+        <member name="M:Logos.Utility.EnumerableUtility.WhereNotNull``1(System.Collections.Generic.IEnumerable{``0})">
+            <summary>
+            Returns all the elements in the specified collection that are not null.
+            </summary>
+            <param name="source">An <see cref="T:System.Collections.Generic.IEnumerable`1"/> to filter.</param>
+            <returns>An <see cref="T:System.Collections.Generic.IEnumerable`1"/> that contains elements from the input sequence that are not null.</returns>
+            <remarks>See <a href="http://code.logos.com/blog/2010/04/wherenotnull_extension_method.html">WhereNotNull Extension Method</a>.</remarks>
+        </member>
+        <member name="M:Logos.Utility.EnumerableUtility.WhereNotNull``1(System.Collections.Generic.IEnumerable{System.Nullable{``0}})">
+            <summary>
+            Returns all the elements in the specified collection that are not null.
+            </summary>
+            <param name="source">An <see cref="T:System.Collections.Generic.IEnumerable`1"/> to filter.</param>
+            <returns>An <see cref="T:System.Collections.Generic.IEnumerable`1"/> that contains elements from the input sequence that are not null.</returns>
+            <remarks>See <a href="http://code.logos.com/blog/2010/04/wherenotnull_extension_method.html">WhereNotNull Extension Method</a>.</remarks>
+        </member>
+        <member name="T:Logos.Utility.EnvironmentUtility">
+            <summary>
+            Provides utility methods for inspecting and using the current environment.
+            </summary>
+        </member>
+        <member name="M:Logos.Utility.EnvironmentUtility.IsWindowsVistaOrLater">
+            <summary>
+            Returns <c>true</c> if the current OS is Windows Vista (or Server 2008) or later.
+            </summary>
+            <returns><c>true</c> if the current OS is at least Windows Vista (or Server 2008).</returns>
+        </member>
+        <member name="T:Logos.Utility.EventHandlerUtility">
+            <summary>
+            Utility methods for event handlers.
+            </summary>
+        </member>
+        <member name="M:Logos.Utility.EventHandlerUtility.Raise(System.EventHandler,System.Object)">
+            <summary>
+            Raises the specified event.
+            </summary>
+            <param name="eventHandler">The event handler.</param>
+            <param name="sender">The sender.</param>
+            <remarks>This method does nothing if the event handler is null.</remarks>
+        </member>
+        <member name="M:Logos.Utility.EventHandlerUtility.Raise``1(System.EventHandler{``0},System.Object,``0)">
+            <summary>
+            Raises the specified event.
+            </summary>
+            <param name="eventHandler">The event handler.</param>
+            <param name="sender">The sender.</param>
+            <param name="e">The event arguments.</param>
+            <remarks>This method does nothing if the event handler is null.</remarks>
+        </member>
+        <member name="T:Logos.Utility.ExpressionUtility">
+            <summary>
+            Provides helper methods for expression tree operations.
+            </summary>
+        </member>
+        <member name="M:Logos.Utility.ExpressionUtility.GetPropertyName``1(System.Linq.Expressions.Expression{System.Func{``0}})">
+            <summary>
+            Gets the name of the property returned by the specified expression.
+            </summary>
+            <typeparam name="TProperty">The type of the property.</typeparam>
+            <param name="expr">The member access expression.</param>
+            <returns>The name of the property.</returns>
+        </member>
+        <member name="M:Logos.Utility.ExpressionUtility.GetPropertyName``2(System.Linq.Expressions.Expression{System.Func{``0,``1}})">
+            <summary>
+            Gets the name of the property returned by the specified expression.
+            </summary>
+            <typeparam name="T">The type of the property owner.</typeparam>
+            <typeparam name="TProperty">The type of the property.</typeparam>
+            <param name="expr">The member access expression.</param>
+            <returns>The name of the property.</returns>
+            <remarks>Type-annotate the argument to the lambda to get type inference for this method. Example:
+            <code>(FileInfo info) => info.FullName</code> rather than <code>info => info.FullName</code>.</remarks>
+        </member>
+        <member name="T:Logos.Utility.GenericComparer`1">
+            <summary>
+            Implements the IComparer{T} interface with a delegate.
+            </summary>
+            <typeparam name="T">Type of the object to compare.</typeparam>
+        </member>
+        <member name="M:Logos.Utility.GenericComparer`1.#ctor(System.Func{`0,`0,System.Int32})">
+            <summary>
+            Initializes a new instance of the <see cref="T:Logos.Utility.GenericComparer`1"/> class.
+            </summary>
+            <param name="comparer">The comparer delegate.</param>
+        </member>
+        <member name="M:Logos.Utility.GenericComparer`1.Compare(`0,`0)">
+            <summary>
+            Performs a comparison of two objects of the same type.
+            </summary>
+            <param name="x">The first object to compare.</param>
+            <param name="y">The second object to compare.</param>
+            <returns>Less than zero: x is less than y. Zero: x equals y. Greater than zero: x is greater than y.</returns>
+        </member>
+        <member name="T:Logos.Utility.GuidUtility">
+            <summary>
+            Helper methods for working with <see cref="T:System.Guid"/>.
+            </summary>
+        </member>
+        <member name="M:Logos.Utility.GuidUtility.Create(System.Guid,System.String)">
+            <summary>
+            Creates a name-based UUID using the algorithm from RFC 4122 §4.3.
+            </summary>
+            <param name="namespaceId">The ID of the namespace.</param>
+            <param name="name">The name (within that namespace).</param>
+            <returns>A UUID derived from the namespace and name.</returns>
+            <remarks>See <a href="http://code.logos.com/blog/2011/04/generating_a_deterministic_guid.html">Generating a deterministic GUID</a>.</remarks>
+        </member>
+        <member name="M:Logos.Utility.GuidUtility.Create(System.Guid,System.String,System.Int32)">
+            <summary>
+            Creates a name-based UUID using the algorithm from RFC 4122 §4.3.
+            </summary>
+            <param name="namespaceId">The ID of the namespace.</param>
+            <param name="name">The name (within that namespace).</param>
+            <param name="version">The version number of the UUID to create; this value must be either
+            3 (for MD5 hashing) or 5 (for SHA-1 hashing).</param>
+            <returns>A UUID derived from the namespace and name.</returns>
+            <remarks>See <a href="http://code.logos.com/blog/2011/04/generating_a_deterministic_guid.html">Generating a deterministic GUID</a>.</remarks>
+        </member>
+        <member name="F:Logos.Utility.GuidUtility.DnsNamespace">
+            <summary>
+            The namespace for fully-qualified domain names (from RFC 4122, Appendix C).
+            </summary>
+        </member>
+        <member name="F:Logos.Utility.GuidUtility.UrlNamespace">
+            <summary>
+            The namespace for URLs (from RFC 4122, Appendix C).
+            </summary>
+        </member>
+        <member name="F:Logos.Utility.GuidUtility.IsoOidNamespace">
+            <summary>
+            The namespace for ISO OIDs (from RFC 4122, Appendix C).
+            </summary>
+        </member>
+        <member name="T:Logos.Utility.HashCodeUtility">
+            <summary>
+            Provides methods for manipulating and creating hash codes.
+            </summary>
+            <remarks>
+            <para>This code is based on Bob Jenkins' public domain <a href="http://burtleburtle.net/bob/c/lookup3.c">lookup3.c</a> code.</para>
+            <para>This work is hereby released into the Public Domain. To view a copy of the public domain dedication,
+            visit http://creativecommons.org/licenses/publicdomain/ or send a letter to
+            Creative Commons, 171 Second Street, Suite 300, San Francisco, California, 94105, USA.</para>
+            </remarks>
+        </member>
+        <member name="M:Logos.Utility.HashCodeUtility.CombineHashCodes(System.Int32)">
+            <summary>
+            Combines the specified hash codes.
+            </summary>
+            <param name="hashCode1">The first hash code.</param>
+            <returns>The combined hash code.</returns>
+            <remarks>This is a specialization of <see cref="M:Logos.Utility.HashCodeUtility.CombineHashCodes(System.Int32[])"/> for efficiency.</remarks>
+        </member>
+        <member name="M:Logos.Utility.HashCodeUtility.CombineHashCodes(System.Int32,System.Int32)">
+            <summary>
+            Combines the specified hash codes.
+            </summary>
+            <param name="hashCode1">The first hash code.</param>
+            <param name="hashCode2">The second hash code.</param>
+            <returns>The combined hash code.</returns>
+            <remarks>This is a specialization of <see cref="M:Logos.Utility.HashCodeUtility.CombineHashCodes(System.Int32[])"/> for efficiency.</remarks>
+        </member>
+        <member name="M:Logos.Utility.HashCodeUtility.CombineHashCodes(System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Combines the specified hash codes.
+            </summary>
+            <param name="hashCode1">The first hash code.</param>
+            <param name="hashCode2">The second hash code.</param>
+            <param name="hashCode3">The third hash code.</param>
+            <returns>The combined hash code.</returns>
+            <remarks>This is a specialization of <see cref="M:Logos.Utility.HashCodeUtility.CombineHashCodes(System.Int32[])"/> for efficiency.</remarks>
+        </member>
+        <member name="M:Logos.Utility.HashCodeUtility.CombineHashCodes(System.Int32,System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Combines the specified hash codes.
+            </summary>
+            <param name="hashCode1">The first hash code.</param>
+            <param name="hashCode2">The second hash code.</param>
+            <param name="hashCode3">The third hash code.</param>
+            <param name="hashCode4">The fourth hash code.</param>
+            <returns>The combined hash code.</returns>
+            <remarks>This is a specialization of <see cref="M:Logos.Utility.HashCodeUtility.CombineHashCodes(System.Int32[])"/> for efficiency.</remarks>
+        </member>
+        <member name="M:Logos.Utility.HashCodeUtility.CombineHashCodes(System.Int32[])">
+            <summary>
+            Combines the specified hash codes.
+            </summary>
+            <param name="hashCodes">An array of hash codes.</param>
+            <returns>The combined hash code.</returns>
+            <remarks>This method is based on the "hashword" function at http://burtleburtle.net/bob/c/lookup3.c. It attempts to thoroughly
+            mix all the bits in the input hash codes.</remarks>
+        </member>
+        <member name="M:Logos.Utility.HashCodeUtility.GetPersistentHashCode(System.Boolean)">
+            <summary>
+            Gets a hash code for the specified <see cref="T:System.Boolean"/>; this hash code is guaranteed not to change in the future.
+            </summary>
+            <param name="value">The <see cref="T:System.Boolean"/> to hash.</param>
+            <returns>A hash code for the specified <see cref="T:System.Boolean"/>.</returns>
+        </member>
+        <member name="M:Logos.Utility.HashCodeUtility.GetPersistentHashCode(System.Int32)">
+            <summary>
+            Gets a hash code for the specified <see cref="T:System.Int32"/>; this hash code is guaranteed not to change in the future.
+            </summary>
+            <param name="value">The <see cref="T:System.Int32"/> to hash.</param>
+            <returns>A hash code for the specified <see cref="T:System.Int32"/>.</returns>
+            <remarks>Based on <a href="http://www.concentric.net/~Ttwang/tech/inthash.htm">Robert Jenkins' 32 bit integer hash function</a>.</remarks>
+        </member>
+        <member name="M:Logos.Utility.HashCodeUtility.GetPersistentHashCode(System.Int64)">
+            <summary>
+            Gets a hash code for the specified <see cref="T:System.Int64"/>; this hash code is guaranteed not to change in the future.
+            </summary>
+            <param name="value">The <see cref="T:System.Int64"/> to hash.</param>
+            <returns>A hash code for the specified <see cref="T:System.Int64"/>.</returns>
+            <remarks>Based on <a href="http://www.concentric.net/~Ttwang/tech/inthash.htm">64 bit to 32 bit Hash Functions</a>.</remarks>
+        </member>
+        <member name="M:Logos.Utility.HashCodeUtility.GetPersistentHashCode(System.String)">
+            <summary>
+            Gets a hash code for the specified <see cref="T:System.String"/>; this hash code is guaranteed not to change in the future.
+            </summary>
+            <param name="value">The <see cref="T:System.String"/> to hash.</param>
+            <returns>A hash code for the specified <see cref="T:System.String"/>.</returns>
+            <remarks>Based on <a href="http://www.azillionmonkeys.com/qed/hash.html">SuperFastHash</a>.</remarks>
+        </member>
+        <member name="T:Logos.Utility.IO.ManagedIStream">
+            <summary>
+            <see cref="T:Logos.Utility.IO.ManagedIStream"/> provides an implementation of the COM IStream interface that wraps a .NET <see cref="T:System.IO.Stream"/>.
+            </summary>
+        </member>
+        <member name="T:Logos.Utility.IO.ReadOnlyStream">
+            <summary>
+            A read-only stream wrapper.
+            </summary>
+        </member>
+        <member name="T:Logos.Utility.IO.WrappingStream">
+            <summary>
+            A <see cref="T:System.IO.Stream"/> that wraps another stream. One major feature of <see cref="T:Logos.Utility.IO.WrappingStream"/> is that it does not dispose the
+            underlying stream when it is disposed if Ownership.None is used; this is useful when using classes such as <see cref="T:System.IO.BinaryReader"/> and
+            <see cref="T:System.Security.Cryptography.CryptoStream"/> that take ownership of the stream passed to their constructors.
+            </summary>
+            <remarks>See <a href="http://code.logos.com/blog/2009/05/wrappingstream_implementation.html">WrappingStream Implementation</a>.</remarks>
+        </member>
+        <member name="M:Logos.Utility.IO.WrappingStream.#ctor(System.IO.Stream,Logos.Utility.Ownership)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Logos.Utility.IO.WrappingStream"/> class.
+            </summary>
+            <param name="streamBase">The wrapped stream.</param>
+            <param name="ownership">Use Owns if the wrapped stream should be disposed when this stream is disposed.</param>
+        </member>
+        <member name="M:Logos.Utility.IO.WrappingStream.BeginRead(System.Byte[],System.Int32,System.Int32,System.AsyncCallback,System.Object)">
+            <summary>
+            Begins an asynchronous read operation.
+            </summary>
+        </member>
+        <member name="M:Logos.Utility.IO.WrappingStream.BeginWrite(System.Byte[],System.Int32,System.Int32,System.AsyncCallback,System.Object)">
+            <summary>
+            Begins an asynchronous write operation.
+            </summary>
+        </member>
+        <member name="M:Logos.Utility.IO.WrappingStream.EndRead(System.IAsyncResult)">
+            <summary>
+            Waits for the pending asynchronous read to complete.
+            </summary>
+        </member>
+        <member name="M:Logos.Utility.IO.WrappingStream.EndWrite(System.IAsyncResult)">
+            <summary>
+            Ends an asynchronous write operation.
+            </summary>
+        </member>
+        <member name="M:Logos.Utility.IO.WrappingStream.Flush">
+            <summary>
+            Clears all buffers for this stream and causes any buffered data to be written to the underlying device.
+            </summary>
+        </member>
+        <member name="M:Logos.Utility.IO.WrappingStream.Read(System.Byte[],System.Int32,System.Int32)">
+            <summary>
+            Reads a sequence of bytes from the current stream and advances the position
+            within the stream by the number of bytes read.
+            </summary>
+        </member>
+        <member name="M:Logos.Utility.IO.WrappingStream.ReadByte">
+            <summary>
+            Reads a byte from the stream and advances the position within the stream by one byte, or returns -1 if at the end of the stream.
+            </summary>
+        </member>
+        <member name="M:Logos.Utility.IO.WrappingStream.Seek(System.Int64,System.IO.SeekOrigin)">
+            <summary>
+            Sets the position within the current stream.
+            </summary>
+            <param name="offset">A byte offset relative to the <paramref name="origin"/> parameter.</param>
+            <param name="origin">A value of type <see cref="T:System.IO.SeekOrigin"/> indicating the reference point used to obtain the new position.</param>
+            <returns>The new position within the current stream.</returns>
+        </member>
+        <member name="M:Logos.Utility.IO.WrappingStream.SetLength(System.Int64)">
+            <summary>
+            Sets the length of the current stream.
+            </summary>
+            <param name="value">The desired length of the current stream in bytes.</param>
+        </member>
+        <member name="M:Logos.Utility.IO.WrappingStream.Write(System.Byte[],System.Int32,System.Int32)">
+            <summary>
+            Writes a sequence of bytes to the current stream and advances the current position
+            within this stream by the number of bytes written.
+            </summary>
+        </member>
+        <member name="M:Logos.Utility.IO.WrappingStream.WriteByte(System.Byte)">
+            <summary>
+            Writes a byte to the current position in the stream and advances the position within the stream by one byte.
+            </summary>
+        </member>
+        <member name="M:Logos.Utility.IO.WrappingStream.Dispose(System.Boolean)">
+            <summary>
+            Releases the unmanaged resources used by the <see cref="T:Logos.Utility.IO.WrappingStream"/> and optionally releases the managed resources.
+            </summary>
+            <param name="disposing">true to release both managed and unmanaged resources; false to release only unmanaged resources.</param>
+        </member>
+        <member name="P:Logos.Utility.IO.WrappingStream.CanRead">
+            <summary>
+            Gets a value indicating whether the current stream supports reading.
+            </summary>
+            <returns><c>true</c> if the stream supports reading; otherwise, <c>false</c>.</returns>
+        </member>
+        <member name="P:Logos.Utility.IO.WrappingStream.CanSeek">
+            <summary>
+            Gets a value indicating whether the current stream supports seeking.
+            </summary>
+            <returns><c>true</c> if the stream supports seeking; otherwise, <c>false</c>.</returns>
+        </member>
+        <member name="P:Logos.Utility.IO.WrappingStream.CanWrite">
+            <summary>
+            Gets a value indicating whether the current stream supports writing.
+            </summary>
+            <returns><c>true</c> if the stream supports writing; otherwise, <c>false</c>.</returns>
+        </member>
+        <member name="P:Logos.Utility.IO.WrappingStream.Length">
+            <summary>
+            Gets the length in bytes of the stream.
+            </summary>
+        </member>
+        <member name="P:Logos.Utility.IO.WrappingStream.Position">
+            <summary>
+            Gets or sets the position within the current stream.
+            </summary>
+        </member>
+        <member name="P:Logos.Utility.IO.WrappingStream.WrappedStream">
+            <summary>
+            Gets the wrapped stream.
+            </summary>
+            <value>The wrapped stream.</value>
+        </member>
+        <member name="M:Logos.Utility.IO.ReadOnlyStream.#ctor(System.IO.Stream)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Logos.Utility.IO.ReadOnlyStream"/> class.
+            </summary>
+            <param name="streamBase">The wrapped stream.</param>
+        </member>
+        <member name="M:Logos.Utility.IO.ReadOnlyStream.BeginWrite(System.Byte[],System.Int32,System.Int32,System.AsyncCallback,System.Object)">
+            <summary>
+            Begins an asynchronous write operation.
+            </summary>
+        </member>
+        <member name="M:Logos.Utility.IO.ReadOnlyStream.EndWrite(System.IAsyncResult)">
+            <summary>
+            Ends an asynchronous write operation.
+            </summary>
+        </member>
+        <member name="M:Logos.Utility.IO.ReadOnlyStream.SetLength(System.Int64)">
+            <summary>
+            Sets the length of the current stream.
+            </summary>
+        </member>
+        <member name="M:Logos.Utility.IO.ReadOnlyStream.Write(System.Byte[],System.Int32,System.Int32)">
+            <summary>
+            Writes a sequence of bytes to the current stream and advances the current position
+            within this stream by the number of bytes written.
+            </summary>
+        </member>
+        <member name="M:Logos.Utility.IO.ReadOnlyStream.WriteByte(System.Byte)">
+            <summary>
+            Writes a byte to the current position in the stream and advances the position within the stream by one byte.
+            </summary>
+        </member>
+        <member name="P:Logos.Utility.IO.ReadOnlyStream.CanWrite">
+            <summary>
+            Gets a value indicating whether the current stream supports writing.
+            </summary>
+            <returns><c>true</c> if the stream supports writing; otherwise, <c>false</c>.</returns>
+        </member>
+        <member name="T:Logos.Utility.IO.RebasedStream">
+            <summary>
+            <see cref="T:Logos.Utility.IO.RebasedStream"/> is a <see cref="T:Logos.Utility.IO.WrappingStream"/> that changes the effective origin of the wrapped stream.
+            </summary>
+            <remarks>See <a href="http://code.logos.com/blog/2008/08/image_format_error_when_loading_from_a_stream.html">Image Format Error when Loading from a Stream</a>.</remarks>
+        </member>
+        <member name="M:Logos.Utility.IO.RebasedStream.#ctor(System.IO.Stream)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Logos.Utility.IO.RebasedStream"/> class; the current position in <paramref name="streamBase"/>
+            will be the origin of the <see cref="T:Logos.Utility.IO.RebasedStream"/>.
+            </summary>
+            <param name="streamBase">The base stream.</param>
+        </member>
+        <member name="M:Logos.Utility.IO.RebasedStream.Seek(System.Int64,System.IO.SeekOrigin)">
+            <summary>
+            Sets the position within the current stream.
+            </summary>
+            <param name="offset">A byte offset relative to the <paramref name="origin"/> parameter.</param>
+            <param name="origin">A value of type <see cref="T:System.IO.SeekOrigin"/> indicating the reference point used to obtain the new position.</param>
+            <returns>The new position within the current stream.</returns>
+        </member>
+        <member name="M:Logos.Utility.IO.RebasedStream.SetLength(System.Int64)">
+            <summary>
+            Sets the length of the current stream.
+            </summary>
+            <param name="value">The desired length of the current stream in bytes.</param>
+        </member>
+        <member name="P:Logos.Utility.IO.RebasedStream.Length">
+            <summary>
+            Gets the length in bytes of the stream.
+            </summary>
+        </member>
+        <member name="P:Logos.Utility.IO.RebasedStream.Position">
+            <summary>
+            Gets or sets the position within the current stream.
+            </summary>
+        </member>
+        <member name="T:Logos.Utility.Logging.Logger">
+            <summary>
+            Logs messages.
+            </summary>
+        </member>
+        <member name="M:Logos.Utility.Logging.Logger.Debug(System.String)">
+            <summary>
+            Writes the specified message using debug logging.
+            </summary>
+            <param name="message">The message.</param>
+        </member>
+        <member name="M:Logos.Utility.Logging.Logger.Debug(System.String,System.Object[])">
+            <summary>
+            Writes the specified message using debug logging.
+            </summary>
+            <param name="message">The message.</param>
+            <param name="args">The arguments.</param>
+            <remarks>If the arguments are null or empty, the message is not formatted.</remarks>
+        </member>
+        <member name="M:Logos.Utility.Logging.Logger.Info(System.String)">
+            <summary>
+            Writes the specified message using info logging.
+            </summary>
+            <param name="message">The message.</param>
+        </member>
+        <member name="M:Logos.Utility.Logging.Logger.Info(System.String,System.Object[])">
+            <summary>
+            Writes the specified message using info logging.
+            </summary>
+            <param name="message">The message.</param>
+            <param name="aobjArgs">The arguments.</param>
+            <remarks>If the arguments are null or empty, the message is not formatted.</remarks>
+        </member>
+        <member name="M:Logos.Utility.Logging.Logger.Warn(System.String)">
+            <summary>
+            Writes the specified message using warn logging.
+            </summary>
+            <param name="message">The message.</param>
+        </member>
+        <member name="M:Logos.Utility.Logging.Logger.Warn(System.String,System.Object[])">
+            <summary>
+            Writes the specified message using warn logging.
+            </summary>
+            <param name="message">The message.</param>
+            <param name="aobjArgs">The arguments.</param>
+            <remarks>If the arguments are null or empty, the message is not formatted.</remarks>
+        </member>
+        <member name="M:Logos.Utility.Logging.Logger.Error(System.String)">
+            <summary>
+            Writes the specified message using error logging.
+            </summary>
+            <param name="message">The message.</param>
+        </member>
+        <member name="M:Logos.Utility.Logging.Logger.Error(System.String,System.Object[])">
+            <summary>
+            Writes the specified message using error logging.
+            </summary>
+            <param name="message">The message.</param>
+            <param name="aobjArgs">The arguments.</param>
+            <remarks>If the arguments are null or empty, the message is not formatted.</remarks>
+        </member>
+        <member name="P:Logos.Utility.Logging.Logger.Name">
+            <summary>
+            Gets the name.
+            </summary>
+            <value>The name.</value>
+        </member>
+        <member name="P:Logos.Utility.Logging.Logger.IsDebugEnabled">
+            <summary>
+            Gets a value indicating whether debug logging is enabled.
+            </summary>
+            <value>True if debug logging is enabled.</value>
+        </member>
+        <member name="P:Logos.Utility.Logging.Logger.IsInfoEnabled">
+            <summary>
+            Gets a value indicating whether info logging is enabled.
+            </summary>
+            <value>True if info logging is enabled.</value>
+        </member>
+        <member name="P:Logos.Utility.Logging.Logger.IsWarnEnabled">
+            <summary>
+            Gets a value indicating whether warn logging is enabled.
+            </summary>
+            <value>True if warn logging is enabled.</value>
+        </member>
+        <member name="P:Logos.Utility.Logging.Logger.IsErrorEnabled">
+            <summary>
+            Gets a value indicating whether error logging is enabled.
+            </summary>
+            <value>True if error logging is enabled.</value>
+        </member>
+        <member name="E:Logos.Utility.Logging.Logger.ConfigurationUpdated">
+            <summary>
+            Raised when the logging configuration may have changed.
+            </summary>
+        </member>
+        <member name="T:Logos.Utility.Logging.LoggerCore">
+            <summary>
+            The implementation of a logger.
+            </summary>
+        </member>
+        <member name="M:Logos.Utility.Logging.LoggerCore.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Logos.Utility.Logging.LoggerCore"/> class.
+            </summary>
+        </member>
+        <member name="M:Logos.Utility.Logging.LoggerCore.DebugCore(System.String,System.Object[])">
+            <summary>
+            Implements debug logging.
+            </summary>
+            <param name="message">The message.</param>
+            <param name="args">The arguments.</param>
+            <remarks>If the arguments are null or empty, the message should not be formatted.</remarks>
+        </member>
+        <member name="M:Logos.Utility.Logging.LoggerCore.InfoCore(System.String,System.Object[])">
+            <summary>
+            Implements info logging.
+            </summary>
+            <param name="message">The message.</param>
+            <param name="args">The arguments.</param>
+            <remarks>If the arguments are null or empty, the message should not be formatted.</remarks>
+        </member>
+        <member name="M:Logos.Utility.Logging.LoggerCore.WarnCore(System.String,System.Object[])">
+            <summary>
+            Implements warn logging.
+            </summary>
+            <param name="message">The message.</param>
+            <param name="args">The arguments.</param>
+            <remarks>If the arguments are null or empty, the message should not be formatted.</remarks>
+        </member>
+        <member name="M:Logos.Utility.Logging.LoggerCore.ErrorCore(System.String,System.Object[])">
+            <summary>
+            Implements error logging.
+            </summary>
+            <param name="message">The message.</param>
+            <param name="args">The arguments.</param>
+            <remarks>If the arguments are null or empty, the message should not be formatted.</remarks>
+        </member>
+        <member name="M:Logos.Utility.Logging.LoggerCore.RaiseConfigurationUpdated">
+            <summary>
+            Raises the ConfigurationUpdated event; should be called when any of the logging enabled properties change.
+            </summary>
+        </member>
+        <member name="P:Logos.Utility.Logging.LoggerCore.IsDebugEnabledCore">
+            <summary>
+            True if debug logging is enabled.
+            </summary>
+        </member>
+        <member name="P:Logos.Utility.Logging.LoggerCore.IsInfoEnabledCore">
+            <summary>
+            True if info logging is enabled.
+            </summary>
+        </member>
+        <member name="P:Logos.Utility.Logging.LoggerCore.IsWarnEnabledCore">
+            <summary>
+            True if warn logging is enabled.
+            </summary>
+        </member>
+        <member name="P:Logos.Utility.Logging.LoggerCore.IsErrorEnabledCore">
+            <summary>
+            True if error logging is enabled.
+            </summary>
+        </member>
+        <member name="T:Logos.Utility.Logging.LoggingService">
+            <summary>
+            Enables logging and provides access to loggers.
+            </summary>
+        </member>
+        <member name="M:Logos.Utility.Logging.LoggingService.#ctor">
+            <summary>
+            Creates the logging service.
+            </summary>
+        </member>
+        <member name="M:Logos.Utility.Logging.LoggingService.#ctor(System.Func{System.String,Logos.Utility.Logging.LoggerCore})">
+            <summary>
+            Creates and initializes the logging service.
+            </summary>
+        </member>
+        <member name="M:Logos.Utility.Logging.LoggingService.Initialize(System.Func{System.String,Logos.Utility.Logging.LoggerCore})">
+            <summary>
+            Initializes logging.
+            </summary>
+            <param name="createLoggerCore">Called to create a logger implementation. Null to disable logging.</param>
+            <remarks>This method should be called exactly once. It can be called even after GetLogger
+            has been called to create loggers; those loggers will be properly configured as well.</remarks>
+        </member>
+        <member name="M:Logos.Utility.Logging.LoggingService.GetLogger(System.String)">
+            <summary>
+            Gets a logger for the specified name.
+            </summary>
+            <param name="name">The name.</param>
+            <returns>The logger.</returns>
+            <remarks>This method returns the same object for the same name.</remarks>
+        </member>
+        <member name="T:Logos.Utility.Logging.LogManager">
+            <summary>
+            Enables logging and provides access to loggers.
+            </summary>
+        </member>
+        <member name="M:Logos.Utility.Logging.LogManager.Initialize(System.Func{System.String,Logos.Utility.Logging.LoggerCore})">
+            <summary>
+            Initializes logging.
+            </summary>
+            <param name="createLoggerCore">Called to create a logger core. Null to disable logging.</param>
+            <remarks>This method should be called exactly once.</remarks>
+        </member>
+        <member name="M:Logos.Utility.Logging.LogManager.GetLogger(System.String)">
+            <summary>
+            Gets a logger for the specified name.
+            </summary>
+            <param name="name">The name.</param>
+            <returns>The logger.</returns>
+            <remarks>This method returns the same object for the same name.</remarks>
+        </member>
+        <member name="T:Logos.Utility.Logging.LogUtility">
+            <summary>
+            Helper methods for using a Logger.
+            </summary>
+        </member>
+        <member name="M:Logos.Utility.Logging.LogUtility.TimedWarn(Logos.Utility.Logging.Logger,System.String)">
+            <summary>
+            Logs the specified message before and after an operation, displaying the elapsed time.
+            </summary>
+            <param name="logger">The logger.</param>
+            <param name="message">The message.</param>
+            <returns>A Scope that, when disposed, logs the elapsed time.</returns>
+        </member>
+        <member name="M:Logos.Utility.Logging.LogUtility.TimedWarn(Logos.Utility.Logging.Logger,System.String,System.Object[])">
+            <summary>
+            Logs the specified message before and after an operation, displaying the elapsed time.
+            </summary>
+            <param name="logger">The logger.</param>
+            <param name="message">The message.</param>
+            <param name="args">The message arguments.</param>
+            <returns>A Scope that, when disposed, logs the elapsed time.</returns>
+        </member>
+        <member name="M:Logos.Utility.Logging.LogUtility.TimedInfo(Logos.Utility.Logging.Logger,System.String)">
+            <summary>
+            Logs the specified message before and after an operation, displaying the elapsed time.
+            </summary>
+            <param name="logger">The logger.</param>
+            <param name="message">The message.</param>
+            <returns>A Scope that, when disposed, logs the elapsed time.</returns>
+        </member>
+        <member name="M:Logos.Utility.Logging.LogUtility.TimedInfo(Logos.Utility.Logging.Logger,System.String,System.Object[])">
+            <summary>
+            Logs the specified message before and after an operation, displaying the elapsed time.
+            </summary>
+            <param name="logger">The logger.</param>
+            <param name="message">The message.</param>
+            <param name="args">The message arguments.</param>
+            <returns>A Scope that, when disposed, logs the elapsed time.</returns>
+        </member>
+        <member name="M:Logos.Utility.Logging.LogUtility.TimedDebug(Logos.Utility.Logging.Logger,System.String)">
+            <summary>
+            Logs the specified message before and after an operation, displaying the elapsed time.
+            </summary>
+            <param name="logger">The logger.</param>
+            <param name="message">The message.</param>
+            <returns>A Scope that, when disposed, logs the elapsed time.</returns>
+        </member>
+        <member name="M:Logos.Utility.Logging.LogUtility.TimedDebug(Logos.Utility.Logging.Logger,System.String,System.Object[])">
+            <summary>
+            Logs the specified message before and after an operation, displaying the elapsed time.
+            </summary>
+            <param name="logger">The logger.</param>
+            <param name="message">The message.</param>
+            <param name="args">The message arguments.</param>
+            <returns>A Scope that, when disposed, logs the elapsed time.</returns>
+        </member>
+        <member name="T:Logos.Utility.Net.HttpWebRequestUtility">
+            <summary>
+            Provides utility methods for working with <see cref="T:System.Net.HttpWebRequest"/>.
+            </summary>
+        </member>
+        <member name="M:Logos.Utility.Net.HttpWebRequestUtility.GetHttpResponse(System.Net.HttpWebRequest)">
+            <summary>
+            Gets the <see cref="T:System.Net.HttpWebResponse"/> from an Internet resource.
+            </summary>
+            <param name="request">The request.</param>
+            <returns>A <see cref="T:System.Net.HttpWebResponse"/> that contains the response from the Internet resource.</returns>
+            <remarks>This method does not throw a <see cref="T:System.Net.WebException"/> for "error" HTTP status codes; the caller should
+            check the <see cref="P:System.Net.HttpWebResponse.StatusCode"/> property to determine how to handle the response.
+            See <a href="http://code.logos.com/blog/2009/06/using_if-modified-since_in_http_requests.html">Using
+            If-Modified-Since in HTTP Requests</a>.</remarks>
+        </member>
+        <member name="T:Logos.Utility.Net.WebExceptionUtility">
+            <summary>
+            Provides utility methods for working with <see cref="T:System.Net.WebException"/>.
+            </summary>
+        </member>
+        <member name="M:Logos.Utility.Net.WebExceptionUtility.DisposeResponse(System.Net.WebException)">
+            <summary>
+            Calls <see cref="M:System.IDisposable.Dispose"/> on the <see cref="T:System.Net.WebResponse"/> returned by the
+            <see cref="P:System.Net.WebException.Response"/> property, if it is set.
+            </summary>
+            <param name="ex">The <see cref="T:System.Net.WebException"/> that has been caught.</param>
+            <remarks>When catching <see cref="T:System.Net.WebException"/>, the Response property may be set to a valid
+            <see cref="T:System.Net.WebResponse"/> object. If this response isn't going to be used, it should be disposed to
+            clean up any unmanaged objects that may be associated with it.</remarks>
+        </member>
+        <member name="T:Logos.Utility.ObjectImpl">
+            <summary>
+            Provides helper methods for implementing objects.
+            </summary>
+        </member>
+        <member name="M:Logos.Utility.ObjectImpl.OperatorEquality``1(``0,``0)">
+            <summary>
+            Standard implementation of the equality operator.
+            </summary>
+            <param name="left">The left item.</param>
+            <param name="right">The right item.</param>
+            <returns>True if the items are equal.</returns>
+        </member>
+        <member name="M:Logos.Utility.ObjectImpl.OperatorInequality``1(``0,``0)">
+            <summary>
+            Standard implementation of the inequality operator.
+            </summary>
+            <param name="left">The left item.</param>
+            <param name="right">The right item.</param>
+            <returns>True if the items are not equal.</returns>
+        </member>
+        <member name="T:Logos.Utility.ObjectUtility">
+            <summary>
+            Provides methods for manipulating objects.
+            </summary>
+        </member>
+        <member name="M:Logos.Utility.ObjectUtility.GetHashCode``1(``0)">
+            <summary>
+            Gets the hash code for the specified object.
+            </summary>
+            <param name="obj">The object for which to get a hash code.</param>
+            <returns>The hash code for the specified object, or zero if the object is null.</returns>
+        </member>
+        <member name="T:Logos.Utility.Ownership">
+            <summary>
+            Indicates whether an object takes ownership of an item.
+            </summary>
+        </member>
+        <member name="F:Logos.Utility.Ownership.None">
+            <summary>
+            The object does not own this item.
+            </summary>
+        </member>
+        <member name="F:Logos.Utility.Ownership.Owns">
+            <summary>
+            The object owns this item, and is responsible for releasing it.
+            </summary>
+        </member>
+        <member name="T:Logos.Utility.PinnedGCHandle">
+            <summary>
+            A wrapper for <c>GCHandle.Alloc(obj, GCHandleType.Pinned)</c> and <see cref="M:System.Runtime.InteropServices.GCHandle.Free"/> that supports <see cref="T:System.IDisposable"/>.
+            </summary>
+            <remarks>See <a href="http://code.logos.com/blog/2010/05/pinned_gchandle_wrapper.html">Pinned GCHandle Wrapper</a>.</remarks>
+        </member>
+        <member name="M:Logos.Utility.PinnedGCHandle.#ctor(System.Object)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Logos.Utility.PinnedGCHandle"/> class. <see cref="M:Logos.Utility.PinnedGCHandle.Dispose"/> must be called to unpin the object when it is no longer required.
+            </summary>
+            <param name="obj">The object to pin.</param>
+        </member>
+        <member name="M:Logos.Utility.PinnedGCHandle.Dispose">
+            <summary>
+            Unpins the object that was pinned.
+            </summary>
+        </member>
+        <member name="M:Logos.Utility.PinnedGCHandle.op_Implicit(Logos.Utility.PinnedGCHandle)~System.IntPtr">
+            <summary>
+            Implicitly converts this <see cref="T:Logos.Utility.PinnedGCHandle"/> object to an <see cref="T:System.IntPtr"/>.
+            </summary>
+            <param name="handle">The <see cref="T:Logos.Utility.PinnedGCHandle"/> to convert.</param>
+            <returns>An <see cref="T:System.IntPtr"/> to the memory of the object pinned by the <see cref="T:Logos.Utility.PinnedGCHandle"/>.</returns>
+        </member>
+        <member name="P:Logos.Utility.PinnedGCHandle.Pointer">
+            <summary>
+            Gets an <see cref="T:System.IntPtr"/> to the pinned object.
+            </summary>
+            <value>The pointer to the memory of the object that was pinned when this object was constructed.</value>
+        </member>
+        <member name="T:Logos.Utility.Scope">
+            <summary>
+            Executes the specified delegate when disposed.
+            </summary>
+            <remarks>See <a href="http://code.logos.com/blog/2008/08/leverage_using_blocks_with_scope.html">Leverage using blocks with Scope</a>.</remarks>
+        </member>
+        <member name="M:Logos.Utility.Scope.Create(System.Action)">
+            <summary>
+            Creates a <see cref="T:Logos.Utility.Scope"/> for the specified delegate.
+            </summary>
+            <param name="onDispose">The delegate.</param>
+            <returns>An instance of <see cref="T:Logos.Utility.Scope"/> that calls the delegate when disposed.</returns>
+            <remarks>If <paramref name="onDispose"/> is null, the instance does nothing when disposed.</remarks>
+        </member>
+        <member name="M:Logos.Utility.Scope.Create``1(``0)">
+            <summary>
+            Creates a <see cref="T:Logos.Utility.Scope"/> that disposes the specified object.
+            </summary>
+            <param name="disposable">The object to dispose.</param>
+            <returns>An instance of <see cref="T:Logos.Utility.Scope"/> that disposes the object when disposed.</returns>
+            <remarks>If disposable is null, the instance does nothing when disposed.</remarks>
+        </member>
+        <member name="F:Logos.Utility.Scope.Empty">
+            <summary>
+            An empty scope, which does nothing when disposed.
+            </summary>
+        </member>
+        <member name="M:Logos.Utility.Scope.Cancel">
+            <summary>
+            Cancel the call to the encapsulated delegate.
+            </summary>
+            <remarks>After calling this method, disposing this instance does nothing.</remarks>
+        </member>
+        <member name="M:Logos.Utility.Scope.Transfer">
+            <summary>
+            Returns a new Scope that will call the encapsulated delegate.
+            </summary>
+            <returns>A new Scope that will call the encapsulated delegate.</returns>
+            <remarks>After calling this method, disposing this instance does nothing.</remarks>
+        </member>
+        <member name="M:Logos.Utility.Scope.Dispose">
+            <summary>
+            Calls the encapsulated delegate.
+            </summary>
+        </member>
+        <member name="T:Logos.Utility.Security.Cryptography.Salsa20">
+            <summary>
+            Implements the Salsa20 stream encryption cipher, as defined at http://cr.yp.to/snuffle.html.
+            </summary>
+            <remarks>See <a href="http://code.logos.com/blog/2008/06/salsa20_implementation_in_c_1.html">Salsa20 Implementation in C#</a>.</remarks>
+        </member>
+        <member name="M:Logos.Utility.Security.Cryptography.Salsa20.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Logos.Utility.Security.Cryptography.Salsa20"/> class.
+            </summary>
+            <exception cref="T:System.Security.Cryptography.CryptographicException">The implementation of the class derived from the symmetric algorithm is not valid.</exception>
+        </member>
+        <member name="M:Logos.Utility.Security.Cryptography.Salsa20.CreateDecryptor(System.Byte[],System.Byte[])">
+            <summary>
+            Creates a symmetric decryptor object with the specified <see cref="P:System.Security.Cryptography.SymmetricAlgorithm.Key"/> property
+            and initialization vector (<see cref="P:System.Security.Cryptography.SymmetricAlgorithm.IV"/>).
+            </summary>
+            <param name="rgbKey">The secret key to use for the symmetric algorithm.</param>
+            <param name="rgbIV">The initialization vector to use for the symmetric algorithm.</param>
+            <returns>A symmetric decryptor object.</returns>
+        </member>
+        <member name="M:Logos.Utility.Security.Cryptography.Salsa20.CreateEncryptor(System.Byte[],System.Byte[])">
+            <summary>
+            Creates a symmetric encryptor object with the specified <see cref="P:System.Security.Cryptography.SymmetricAlgorithm.Key"/> property
+            and initialization vector (<see cref="P:System.Security.Cryptography.SymmetricAlgorithm.IV"/>).
+            </summary>
+            <param name="rgbKey">The secret key to use for the symmetric algorithm.</param>
+            <param name="rgbIV">The initialization vector to use for the symmetric algorithm.</param>
+            <returns>A symmetric encryptor object.</returns>
+        </member>
+        <member name="M:Logos.Utility.Security.Cryptography.Salsa20.GenerateIV">
+            <summary>
+            Generates a random initialization vector (<see cref="P:System.Security.Cryptography.SymmetricAlgorithm.IV"/>) to use for the algorithm.
+            </summary>
+        </member>
+        <member name="M:Logos.Utility.Security.Cryptography.Salsa20.GenerateKey">
+            <summary>
+            Generates a random key (<see cref="P:System.Security.Cryptography.SymmetricAlgorithm.Key"/>) to use for the algorithm.
+            </summary>
+        </member>
+        <member name="P:Logos.Utility.Security.Cryptography.Salsa20.IV">
+            <summary>
+            Gets or sets the initialization vector (<see cref="P:System.Security.Cryptography.SymmetricAlgorithm.IV"/>) for the symmetric algorithm.
+            </summary>
+            <value>The initialization vector.</value>
+            <exception cref="T:System.ArgumentNullException">An attempt was made to set the initialization vector to null. </exception>
+            <exception cref="T:System.Security.Cryptography.CryptographicException">An attempt was made to set the initialization vector to an invalid size. </exception>
+        </member>
+        <member name="P:Logos.Utility.Security.Cryptography.Salsa20.Rounds">
+            <summary>
+            Gets or sets the number of rounds used by the Salsa20 algorithm.
+            </summary>
+            <value>The number of rounds.</value>
+        </member>
+        <member name="T:Logos.Utility.Security.Cryptography.Salsa20.Salsa20CryptoTransform">
+            <summary>
+            Salsa20Impl is an implementation of <see cref="T:System.Security.Cryptography.ICryptoTransform"/> that uses the Salsa20 algorithm.
+            </summary>
+        </member>
+        <member name="T:Logos.Utility.ServiceModel.CommunicationObjectUtility">
+            <summary>
+            Provides methods for working with <see cref="T:System.ServiceModel.ICommunicationObject"/>.
+            </summary>
+        </member>
+        <member name="M:Logos.Utility.ServiceModel.CommunicationObjectUtility.CreateScope(System.ServiceModel.ICommunicationObject)">
+            <summary>
+            Creates a <see cref="T:Logos.Utility.Scope"/> that safely closes the specified <see cref="T:System.ServiceModel.ICommunicationObject"/>.
+            </summary>
+            <remarks>The Scope, when disposed, will Close or Abort the session, as appropriate. </remarks>
+            <param name="client">The client.</param>
+            <returns></returns>
+        </member>
+        <member name="M:Logos.Utility.ServiceModel.CommunicationObjectUtility.CloseOrAbort(System.ServiceModel.ICommunicationObject)">
+            <summary>
+            Closes the <see cref="T:System.ServiceModel.ICommunicationObject"/> if it's not in the Faulted state, but Aborts it otherwise.
+            Additionally, if Close throws an expected exception, that exception is swallowed and the operation is Aborted.
+            </summary>
+            <param name="client">The <see cref="T:System.ServiceModel.ICommunicationObject"/> on which <see cref="M:System.ServiceModel.ICommunicationObject.Close"/>
+            or <see cref="M:System.ServiceModel.ICommunicationObject.Abort"/> will be called.</param>
+            <remarks>For more details, see:
+            http://msdn2.microsoft.com/en-us/library/aa355056.aspx
+            http://msdn2.microsoft.com/en-us/library/aa354510.aspx
+            http://bloggingabout.net/blogs/erwyn/archive/2006/12/09/WCF-Service-Proxy-Helper.aspx
+            http://blogs.breezetraining.com.au/mickb/2006/12/19/GreatArticleOnWCF.aspx
+            </remarks>
+        </member>
+        <member name="T:Logos.Utility.IO.StreamUtility">
+            <summary>
+            Provides helper methods for working with <see cref="T:System.IO.Stream"/>.
+            </summary>
+        </member>
+        <member name="M:Logos.Utility.IO.StreamUtility.DetectBestEncoding(System.IO.Stream)">
+            <summary>
+            Detects the best <see cref="T:System.Text.Encoding"/> to use to convert the data in the supplied stream to Unicode, and returns it.
+            </summary>
+            <param name="stream">The stream to detect the character encoding for.</param>
+            <returns>The best <see cref="T:System.Text.Encoding"/> object to be used to decode text from <paramref name="stream"/>
+            into Unicode, or <c>null</c> if the best encoding can't be detected.</returns>
+            <remarks>See <a href="http://code.logos.com/blog/2010/05/detecting_the_character_encoding_of_a_file.html">Detecting the Character Encoding of a File</a>.</remarks>
+        </member>
+        <member name="M:Logos.Utility.IO.StreamUtility.ReadExactly(System.IO.Stream,System.Int32)">
+            <summary>
+            Reads exactly <paramref name="count"/> bytes from <paramref name="stream"/>.
+            </summary>
+            <param name="stream">The stream to read from.</param>
+            <param name="count">The count of bytes to read.</param>
+            <returns>A new byte array containing the data read from the stream.</returns>
+        </member>
+        <member name="M:Logos.Utility.IO.StreamUtility.ReadExactly(System.IO.Stream,System.Byte[],System.Int32,System.Int32)">
+            <summary>
+            Reads exactly <paramref name="count"/> bytes from <paramref name="stream"/> into
+            <paramref name="buffer"/>, starting at the byte given by <paramref name="offset"/>.
+            </summary>
+            <param name="stream">The stream to read from.</param>
+            <param name="buffer">The buffer to read data into.</param>
+            <param name="offset">The offset within the buffer at which data is first written.</param>
+            <param name="count">The count of bytes to read.</param>
+        </member>
+        <member name="T:Logos.Utility.StringUtility">
+            <summary>
+            Provides methods for working with <see cref="T:System.String"/>.
+            </summary>
+        </member>
+        <member name="M:Logos.Utility.StringUtility.FormatInvariant(System.String,System.Object[])">
+            <summary>
+            Formats the string using the invariant culture.
+            </summary>
+            <param name="format">The format string.</param>
+            <param name="args">The format arguments.</param>
+            <returns>The formatted string.</returns>
+        </member>
+        <member name="T:Logos.Utility.Threading.AsyncResult">
+            <summary>
+            Provides a standard implementation of <see cref="T:System.IAsyncResult"/> for asynchronous work that doesn't return a result.
+            </summary>
+            <remarks>This class is based on code published at <a href="http://msdn.microsoft.com/en-us/magazine/cc163467.aspx">Implementing
+            the CLR Asynchronous Programming Model</a>.</remarks>
+        </member>
+        <member name="M:Logos.Utility.Threading.AsyncResult.#ctor(System.AsyncCallback,System.Object)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Logos.Utility.Threading.AsyncResult"/> class.
+            </summary>
+            <param name="callback">The callback.</param>
+            <param name="state">The state.</param>
+        </member>
+        <member name="M:Logos.Utility.Threading.AsyncResult.EndInvoke">
+            <summary>
+            Waits for the asynchronous operation to complete, rethrowing any exception that occurred.
+            </summary>
+        </member>
+        <member name="M:Logos.Utility.Threading.AsyncResult.Finish(System.Boolean)">
+            <summary>
+            Indicates that the asynchronous work has completed.
+            </summary>
+            <param name="bCompletedSynchronously">Indicates that the asynchronous work completed synchronously if set to <c>true</c>.</param>
+        </member>
+        <member name="M:Logos.Utility.Threading.AsyncResult.Finish(System.Exception,System.Boolean)">
+            <summary>
+            Indicates that the asynchronous work has completed.
+            </summary>
+            <param name="exception">The exception that occurred during the asynchronous work.</param>
+            <param name="bCompletedSynchronously">Indicates that the asynchronous work completed synchronously if set to <c>true</c>.</param>
+        </member>
+        <member name="P:Logos.Utility.Threading.AsyncResult.IsCompleted">
+            <summary>
+            Gets a value that indicates whether the asynchronous operation has completed.
+            </summary>
+            <returns>true if the operation is complete; otherwise, false.</returns>
+        </member>
+        <member name="P:Logos.Utility.Threading.AsyncResult.AsyncWaitHandle">
+            <summary>
+            Gets a <see cref="T:System.Threading.WaitHandle"/> that is used to wait for an asynchronous operation to complete.
+            </summary>
+            <returns>A <see cref="T:System.Threading.WaitHandle"/> that is used to wait for an asynchronous operation to complete.</returns>
+        </member>
+        <member name="P:Logos.Utility.Threading.AsyncResult.AsyncState">
+            <summary>
+            Gets a user-defined object that qualifies or contains information about an asynchronous operation.
+            </summary>
+            <returns>A user-defined object that qualifies or contains information about an asynchronous operation.</returns>
+        </member>
+        <member name="P:Logos.Utility.Threading.AsyncResult.CompletedSynchronously">
+            <summary>
+            Gets a value that indicates whether the asynchronous operation completed synchronously.
+            </summary>
+            <returns>true if the asynchronous operation completed synchronously; otherwise, false.</returns>
+        </member>
+        <member name="T:Logos.Utility.Threading.AsyncResult`1">
+            <summary>
+            Provides a standard implementation of <see cref="T:System.IAsyncResult"/> for asynchronous work that returns a result.
+            </summary>
+            <typeparam name="T"></typeparam>
+        </member>
+        <member name="M:Logos.Utility.Threading.AsyncResult`1.#ctor(System.AsyncCallback,System.Object)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Logos.Utility.Threading.AsyncResult`1"/> class.
+            </summary>
+            <param name="callback">The callback.</param>
+            <param name="state">The state.</param>
+        </member>
+        <member name="M:Logos.Utility.Threading.AsyncResult`1.EndInvoke">
+            <summary>
+            Waits for the asynchronous operation to complete, rethrowing any exception that occurred.
+            </summary>
+            <returns>The result set by the asynchronous work.</returns>
+        </member>
+        <member name="M:Logos.Utility.Threading.AsyncResult`1.Finish(`0,System.Boolean)">
+            <summary>
+            Indicates that the asynchronous work has completed
+            </summary>
+            <param name="result">The result generated by the asynchronous work.</param>
+            <param name="bCompletedSynchronously">Indicates that the asynchronous work completed synchronously if set to <c>true</c>.</param>
+        </member>
+        <member name="T:Logos.Utility.Threading.TaskCompletionSourceUtility">
+            <summary>
+            Provides helper methods for working with <see cref="T:System.Threading.Tasks.TaskCompletionSource`1"/>.
+            </summary>
+        </member>
+        <member name="M:Logos.Utility.Threading.TaskCompletionSourceUtility.SetFromTask``1(System.Threading.Tasks.TaskCompletionSource{``0},System.Threading.Tasks.Task{``0})">
+            <summary>
+            Sets the state of the specified <see cref="P:System.Threading.Tasks.TaskCompletionSource`1.Task"/> to that of the specified <see cref="T:System.Threading.Tasks.Task`1"/>.
+            </summary>
+            <param name="source">A <see cref="T:System.Threading.Tasks.TaskCompletionSource`1"/> that will have its Task's status set.</param>
+            <param name="task">The <see cref="T:System.Threading.Tasks.Task`1"/> that supplies the result or exception for the <see cref="T:System.Threading.Tasks.TaskCompletionSource`1"/>.</param>
+        </member>
+        <member name="T:Logos.Utility.Threading.TaskUtility">
+            <summary>
+            Provides helper methods for working with <see cref="T:System.Threading.Tasks.Task"/>.
+            </summary>
+        </member>
+        <member name="M:Logos.Utility.Threading.TaskUtility.CreateAsyncResult``1(System.Threading.Tasks.Task{``0},System.AsyncCallback,System.Object)">
+            <summary>
+            Creates an <see cref="T:System.IAsyncResult"/> object that's suitable to be returned from an APM-style method.
+            </summary>
+            <typeparam name="T">The type of value being returned by the EndXxx APM method.</typeparam>
+            <param name="task">The task that produces the value to be returned.</param>
+            <param name="callback">The <see cref="T:System.AsyncCallback"/> supplied to the BeginXxx APM method.</param>
+            <param name="state">The state object supplied to the BeginXxx APM method.</param>
+            <returns>An <see cref="T:System.IAsyncResult"/> object that can be returned from an APM-style BeginXxx method.</returns>
+        </member>
+        <member name="T:Logos.Utility.Threading.ThreadUtility">
+            <summary>
+            Utility methods for working with threads.
+            </summary>
+        </member>
+        <member name="M:Logos.Utility.Threading.ThreadUtility.EnterBackgroundProcessingMode">
+            <summary>
+            Puts the current thread into background processing mode.
+            </summary>
+            <returns>A Scope that must be disposed to leave background processing mode.</returns>
+            <remarks>See <a href="http://code.logos.com/blog/2008/10/using_background_processing_mode_from_c.html">Using
+            "Background Processing Mode" from C#</a>.</remarks>
+        </member>
+        <member name="T:Logos.Utility.TimeSpanUtility">
+            <summary>
+            Helper methods for working with <see cref="T:System.TimeSpan"/>.
+            </summary>
+        </member>
+        <member name="M:Logos.Utility.TimeSpanUtility.FormatForLogging(System.TimeSpan)">
+            <summary>
+            Formats <paramref name="ts"/> as a concise string suitable for logging; the precision of the returned
+            string (which is not culture-sensitive) depends on the duration of the <see cref="T:System.TimeSpan"/>.
+            </summary>
+            <param name="ts">The TimeSpan to render.</param>
+            <returns>A culture-invariant string with a concise rendering of the TimeSpan.</returns>
+        </member>
+    </members>
+</doc>

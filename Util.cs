@@ -32,12 +32,6 @@ namespace TaleOfTwoWastelands
             }
         }
 
-        public static string GetChecksum(byte[] buf)
-        {
-            MD5 fileHash = MD5.Create();
-            return BitConverter.ToString(fileHash.ComputeHash(buf)).Replace("-", "");
-        }
-
         public static bool ApplyPatch(Dictionary<string, string> CheckSums, string inFile, string patchFile, string outFile)
         {
             System.Diagnostics.Process xDiff = new System.Diagnostics.Process();
