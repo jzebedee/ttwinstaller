@@ -28,7 +28,7 @@ namespace TaleOfTwoWastelands
                         continue;
                     }
 
-                    File.WriteAllBytes(filePath, file.GetSaveData(true));
+                    File.WriteAllBytes(filePath, file.GetContents(true));
                     progress.Report("Extracted " + file.Filename);
                 }
             }
