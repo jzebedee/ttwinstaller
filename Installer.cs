@@ -20,6 +20,9 @@ namespace TaleOfTwoWastelands
         public const string MainDir = "Main Files", OptDir = "Optional Files";
         public const string AssetsDir = "resources";
 
+        public const CompressionStrategy FastStrategy = CompressionStrategy.Unsafe | CompressionStrategy.Speed;
+        public const CompressionStrategy GoodStrategy = CompressionStrategy.Unsafe | CompressionStrategy.Size;
+
         public static readonly HashSet<string> CheckedESMs = new HashSet<string>(new[] { "Fallout3.esm", "Anchorage.esm", "ThePitt.esm", "BrokenSteel.esm", "PointLookout.esm", "Zeta.esm" });
         public static readonly Dictionary<string, string> VoicePaths = new Dictionary<string, string> {
             {Path.Combine("sound", "voice", "fallout3.esm", "playervoicemale"), Path.Combine("PlayerVoice", "sound", "voice", "falloutnv.esm", "playervoicemale")},
@@ -57,6 +60,28 @@ namespace TaleOfTwoWastelands
             {"Zeta - Main", "Zeta - Main"},
             {"Zeta - Sounds", "Zeta - Sounds"},
         };
+        public static readonly Dictionary<string, CompressionOptions> BSAOptions = new Dictionary<string, CompressionOptions>
+        {
+            //example compression options
+            //{"Fallout - Sound", new CompressionOptions(FastStrategy)},
+            ////{"Fallout - MenuVoices", new CompressionOptions(FastStrategy)},
+            ////{"Fallout - Voices", new CompressionOptions(FastStrategy)},
+            //{"Anchorage - Sounds", new CompressionOptions(FastStrategy)},
+            //{"ThePitt - Sounds", new CompressionOptions(FastStrategy)},
+            //{"BrokenSteel - Sounds", new CompressionOptions(FastStrategy)},
+            //{"PointLookout - Sounds", new CompressionOptions(FastStrategy)},
+            //{"Zeta - Sounds", new CompressionOptions(FastStrategy)},
+        };
+        public static readonly CompressionOptions DefaultBSAOptions = new CompressionOptions
+        {
+            Strategy = GoodStrategy,
+            ExtensionCompressionLevel = new Dictionary<string, int>
+            {
+                {".ogg", -1},
+                {".wav", -1},
+                {".mp3", -1},
+            }
+        };
 
         static readonly string TTWBase = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "My Games", "TaleOfTwoWastelands");
 
@@ -68,7 +93,6 @@ namespace TaleOfTwoWastelands
 
         readonly string dirFO3Data, dirFNVData;
         readonly Dictionary<string, string> CheckSums;
-        readonly RegistryKey fo3Key, fnvKey, ttwKey;
 
         private string dirTTWMain { get { return Path.Combine(TTWSavePath, MainDir); } }
         private string dirTTWOptional { get { return Path.Combine(TTWSavePath, OptDir); } }
@@ -98,66 +122,68 @@ namespace TaleOfTwoWastelands
             this.progressLog = new Progress<string>(log => logFile.WriteLine("[{0}]\t{1}", DateTime.Now, log));
             this.WriteLog = (s) => progressLog.Report(s);
 
-            RegistryKey bethKey = GetBethKey(WriteLog);
+            if (Environment.Is64BitOperatingSystem)
+                WriteLog("\t64-bit architecture found.");
+            else
+                WriteLog("\t32-bit architecture found.");
 
             //create or retrieve FO3 path
-            fo3Key = bethKey.CreateSubKey("Fallout3");
-            Fallout3Path = fo3Key.GetValue("Installed Path", "").ToString();
+            Fallout3Path = GetPathFromKey("Fallout3");
             dirFO3Data = Path.Combine(Fallout3Path, "Data");
 
             //create or retrieve FNV path
-            fnvKey = bethKey.CreateSubKey("FalloutNV");
-            FalloutNVPath = fnvKey.GetValue("Installed Path", "").ToString();
+            FalloutNVPath = GetPathFromKey("FalloutNV");
             dirFNVData = Path.Combine(FalloutNVPath, "Data");
 
             //create or retrieve TTW path
-            ttwKey = bethKey.CreateSubKey("TaleOfTwoWastelands");
-            TTWSavePath = ttwKey.GetValue("Installed Path", "").ToString();
+            TTWSavePath = GetPathFromKey("TaleOfTwoWastelands");
 
             CheckSums = BuildChecksumDictionary(Path.Combine(AssetsDir, "TTW Data", "TTW Patches", "TTW_Checksums.txt"));
 
             InstallChecks(openDialog, saveDialog);
         }
 
-        internal static RegistryKey GetBethKey(Action<string> log = null)
+        internal static RegistryKey GetBethKey()
         {
-            log = log ?? ((s) => { });
+            using (var bethKey =
+                Registry.LocalMachine.OpenSubKey(
+                //determine software reg path (depends on architecture)
+                Environment.Is64BitOperatingSystem ? "Software\\Wow6432Node" : "Software", RegistryKeyPermissionCheck.ReadWriteSubTree))
+                //create or retrieve BethSoft path
+                return bethKey.CreateSubKey("Bethesda Softworks", RegistryKeyPermissionCheck.ReadWriteSubTree);
+        }
 
-            RegistryKey bethKey;
+        private string GetPathFromKey(string keyName)
+        {
+            using (var bethKey = GetBethKey())
+            using (var subKey = bethKey.CreateSubKey(keyName))
+                return subKey.GetValue("Installed Path", "").ToString();
+        }
 
-            //determine software reg path (depends on architecture)
-            if (Environment.Is64BitOperatingSystem) //64-bit
-            {
-                log("\t64-bit architecture found.");
-                bethKey = Registry.LocalMachine.OpenSubKey("Software\\Wow6432Node", RegistryKeyPermissionCheck.ReadWriteSubTree);
-            }
-            else //32-bit
-            {
-                log("\t32-bit architecture found.");
-                bethKey = Registry.LocalMachine.OpenSubKey("Software", RegistryKeyPermissionCheck.ReadWriteSubTree);
-            }
-
-            //create or retrieve BethSoft path
-            return bethKey.CreateSubKey("Bethesda Softworks", RegistryKeyPermissionCheck.ReadWriteSubTree);
+        private void SetPathFromKey(string keyName, string path)
+        {
+            using (var bethKey = GetBethKey())
+            using (var subKey = bethKey.CreateSubKey(keyName))
+                subKey.SetValue("Installed Path", path, RegistryValueKind.String);
         }
 
         public void Fallout3Prompt(FileDialog open, bool manual = false)
         {
             open.FilterIndex = 1;
             open.Title = "Fallout 3";
-            Fallout3Path = FindByUserPrompt(open, "Fallout 3", fo3Key, manual);
+            Fallout3Path = FindByUserPrompt(open, "Fallout 3", "Fallout3", manual);
         }
 
         public void FalloutNVPrompt(FileDialog open, bool manual = false)
         {
             open.FilterIndex = 2;
             open.Title = "Fallout New Vegas";
-            FalloutNVPath = FindByUserPrompt(open, "Fallout New Vegas", fnvKey, manual);
+            FalloutNVPath = FindByUserPrompt(open, "Fallout New Vegas", "FalloutNV", manual);
         }
 
         public void TTWPrompt(FileDialog save, bool manual = false)
         {
-            TTWSavePath = FindByUserPrompt(save, "Tale of Two Wastelands", ttwKey, manual);
+            TTWSavePath = FindByUserPrompt(save, "Tale of Two Wastelands", "TaleOfTwoWastelands", manual);
         }
 
         public void Install(CancellationToken inToken)
@@ -323,7 +349,20 @@ namespace TaleOfTwoWastelands
                     {
                         opProg.CurrentOperation = "Building " + Path.GetFileName(KVP.Value);
 
-                        buildResult = BuildBSA(Token, KVP.Key, KVP.Value);
+                        CompressionOptions bsaOptions = null;
+                        if (BSAOptions.TryGetValue(KVP.Key, out bsaOptions))
+                        {
+                            if (bsaOptions.ExtensionCompressionLevel.Count == 0)
+                                bsaOptions.ExtensionCompressionLevel = DefaultBSAOptions.ExtensionCompressionLevel;
+                            if (bsaOptions.Strategy == CompressionOptions.DEFAULT_STRATEGY)
+                                bsaOptions.Strategy = DefaultBSAOptions.Strategy;
+                        }
+                        else
+                        {
+                            bsaOptions = DefaultBSAOptions;
+                        }
+
+                        buildResult = BuildBSA(Token, bsaOptions, KVP.Key, KVP.Value);
                     }
                     finally
                     {
@@ -577,7 +616,7 @@ namespace TaleOfTwoWastelands
             }
         }
 
-        private DialogResult BuildBSA(CancellationToken token, string inBSA, string outBSA)
+        private DialogResult BuildBSA(CancellationToken token, CompressionOptions bsaOptions, string inBSA, string outBSA)
         {
             string outBSAFile = Path.ChangeExtension(outBSA, ".bsa");
             string outBSAPath = Path.Combine(dirTTWMain, outBSAFile);
@@ -614,7 +653,7 @@ namespace TaleOfTwoWastelands
             {
                 watch.Start();
 #endif
-                errors = BSADiff.PatchBSA(progressLog, progressUIMinor, token, inBSAPath, outBSAPath);
+                errors = BSADiff.PatchBSA(progressLog, progressUIMinor, token, bsaOptions, inBSAPath, outBSAPath);
 #if DEBUG
             }
             finally
@@ -685,7 +724,7 @@ namespace TaleOfTwoWastelands
             }
         }
 
-        private string FindByUserPrompt(FileDialog dlg, string name, RegistryKey regKey, bool manual = false)
+        private string FindByUserPrompt(FileDialog dlg, string name, string keyName, bool manual = false)
         {
             WriteLog(string.Format("\t{0} not found, prompting user.", name));
             MessageBox.Show(string.Format("Could not automatically find {0}'s location, please manually indicate its location.", name));
@@ -701,7 +740,8 @@ namespace TaleOfTwoWastelands
                         WriteLog(string.Format("User manually changed {0} directory to: {1}", name, path));
                     else
                         WriteLog("User selected: " + path);
-                    regKey.SetValue("Installed Path", path, RegistryValueKind.String);
+
+                    SetPathFromKey(keyName, path);
 
                     return path;
                 }

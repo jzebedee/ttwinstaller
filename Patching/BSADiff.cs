@@ -19,7 +19,7 @@ namespace TaleOfTwoWastelands.Patching
     {
         public static readonly string PatchDir = Path.Combine(Installer.AssetsDir, "TTW Data", "TTW Patches");
 
-        public static string PatchBSA(IProgress<string> progressLog, IProgress<OperationProgress> progressUI, CancellationToken token, string oldBSA, string newBSA, bool simulate = false)
+        public static string PatchBSA(IProgress<string> progressLog, IProgress<OperationProgress> progressUI, CancellationToken token, CompressionOptions bsaOptions, string oldBSA, string newBSA, bool simulate = false)
         {
             if (string.IsNullOrEmpty(PatchDir))
                 throw new ArgumentNullException("PatchDir was not set");
@@ -34,7 +34,7 @@ namespace TaleOfTwoWastelands.Patching
             {
                 opProg.CurrentOperation = "Opening " + Path.GetFileName(oldBSA);
 
-                BSA = new BSAWrapper(oldBSA);
+                BSA = new BSAWrapper(oldBSA, bsaOptions);
             }
             finally
             {
@@ -261,7 +261,11 @@ namespace TaleOfTwoWastelands.Patching
             if (patch.Data != null)
             {
                 //a patch exists for the file
-                using (MemoryStream input = bsaFile.GetSaveStream(true), output = new MemoryStream())
+                using (MemoryStream
+                    //InflaterInputStream won't let the patcher seek it,
+                    //so we have to perform a new allocate-and-copy
+                    input = new MemoryStream(bsaFile.GetContents(true)),
+                    output = new MemoryStream())
                 {
                     unsafe
                     {
