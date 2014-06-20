@@ -46,7 +46,7 @@ namespace TaleOfTwoWastelands.Patching
             {
                 opProg.CurrentOperation = "Opening rename database";
 
-                var renamePath = Path.Combine(PatchDir, "Checksums", Path.ChangeExtension(outBsaFilename, ".ren"));
+                var renamePath = Path.Combine(PatchDir, Path.ChangeExtension(outBsaFilename, ".ren"));
                 if (File.Exists(renamePath))
                 {
                     using (var stream = File.OpenRead(renamePath))
@@ -65,7 +65,7 @@ namespace TaleOfTwoWastelands.Patching
             {
                 opProg.CurrentOperation = "Opening patch database";
 
-                var patchPath = Path.Combine(PatchDir, "Checksums", Path.ChangeExtension(outBsaFilename, ".pat"));
+                var patchPath = Path.Combine(PatchDir, Path.ChangeExtension(outBsaFilename, ".pat"));
                 if (File.Exists(patchPath))
                 {
                     using (var stream = File.OpenRead(patchPath))
