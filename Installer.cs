@@ -97,6 +97,7 @@ namespace TaleOfTwoWastelands
         private string dirTTWMain { get { return Path.Combine(TTWSavePath, MainDir); } }
         private string dirTTWOptional { get { return Path.Combine(TTWSavePath, OptDir); } }
 
+        private CancellationTokenSource LinkedSource { get; set; }
         private CancellationToken Token { get; set; }
 
         public string Fallout3Path { get; private set; }
@@ -188,9 +189,10 @@ namespace TaleOfTwoWastelands
 
         public void Install(CancellationToken inToken)
         {
-            this.Token = inToken;
+            LinkedSource = CancellationTokenSource.CreateLinkedTokenSource(inToken);
+            this.Token = LinkedSource.Token;
 
-            var opProg = new OperationProgress(progressUIMajor, inToken) { ItemsTotal = 7 + BuildableBSAs.Count + CheckedESMs.Count };
+            var opProg = new OperationProgress(progressUIMajor, Token) { ItemsTotal = 7 + BuildableBSAs.Count + CheckedESMs.Count };
             try
             {
                 try
@@ -343,12 +345,11 @@ namespace TaleOfTwoWastelands
                 //outBSA - KVP.Value
 
                 DialogResult buildResult;
-                do
+                try
                 {
-                    try
+                    opProg.CurrentOperation = "Building " + Path.GetFileName(KVP.Value);
+                    do
                     {
-                        opProg.CurrentOperation = "Building " + Path.GetFileName(KVP.Value);
-
                         CompressionOptions bsaOptions = null;
                         if (BSAOptions.TryGetValue(KVP.Key, out bsaOptions))
                         {
@@ -363,14 +364,17 @@ namespace TaleOfTwoWastelands
                         }
 
                         buildResult = BuildBSA(Token, bsaOptions, KVP.Key, KVP.Value);
-                    }
-                    finally
-                    {
-                        opProg.Step();
-                    }
-                } while (!Token.IsCancellationRequested && buildResult == DialogResult.Retry);
+                    } while (!Token.IsCancellationRequested && buildResult == DialogResult.Retry);
+                }
+                finally
+                {
+                    opProg.Step();
+                }
 
-                if (Token.IsCancellationRequested || buildResult == DialogResult.Abort)
+                if (buildResult == DialogResult.Abort)
+                    LinkedSource.Cancel();
+
+                if (Token.IsCancellationRequested)
                     return;
             }
         }
