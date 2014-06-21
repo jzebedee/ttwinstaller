@@ -1,4 +1,4 @@
-﻿#define RECHECK
+﻿//#define RECHECK
 using BSAsharp;
 using ProtoBuf;
 using System;
@@ -37,30 +37,30 @@ namespace TaleOfTwoWastelands.Patching
             var Fallout3Path = fo3Key.GetValue("Installed Path", "").ToString();
             var dirFO3Data = Path.Combine(Fallout3Path, "Data");
 
-            foreach (var ESM in Installer.CheckedESMs)
-            {
-                var fixPath = Path.Combine(BUILD_DIR, ESM + ".pat");
-                if (!File.Exists(fixPath))
-                {
-                    var dataESM = Path.Combine(dirFO3Data, ESM);
-                    var ttwESM = Path.Combine(dirTTWMain, ESM);
+//            foreach (var ESM in Installer.CheckedESMs)
+//            {
+//                var fixPath = Path.Combine(BUILD_DIR, ESM + ".pat");
+//                if (!File.Exists(fixPath))
+//                {
+//                    var dataESM = Path.Combine(dirFO3Data, ESM);
+//                    var ttwESM = Path.Combine(dirTTWMain, ESM);
 
-                    //var fvOriginal = FileValidation.FromFile(dataESM);
+//                    //var fvOriginal = FileValidation.FromFile(dataESM);
 
-                    var patch = PatchInfo.FromFile("", dataESM, ttwESM);
+//                    var patch = PatchInfo.FromFile("", dataESM, ttwESM);
 
-                    using (var fixStream = File.OpenWrite(fixPath))
-                        Serializer.Serialize(fixStream, patch);
-                }
-#if RECHECK
-                using (var fixStream = File.OpenRead(fixPath))
-                {
-                    var p = Serializer.Deserialize<PatchInfo>(fixStream);
-                    if (keepGoing)
-                        Debugger.Break();
-                }
-#endif
-            }
+//                    using (var fixStream = File.OpenWrite(fixPath))
+//                        Serializer.Serialize(fixStream, patch);
+//                }
+//#if RECHECK
+//                using (var fixStream = File.OpenRead(fixPath))
+//                {
+//                    var p = Serializer.Deserialize<PatchInfo>(fixStream);
+//                    if (keepGoing)
+//                        Debugger.Break();
+//                }
+//#endif
+//            }
 
             var progressLog = new Progress<string>(s => Debug.Write(s));
             var progressUIMinor = new Progress<OperationProgress>();
@@ -155,6 +155,13 @@ namespace TaleOfTwoWastelands.Patching
                         if (string.IsNullOrEmpty(join.oldChk.Key))
                             Debug.Fail("File not found: " + join.file);
 
+                        var oldFilename = join.oldBsaFile.Filename;
+                        if (oldFilename.StartsWith(BSADiff.voicePrefix))
+                        {
+                            checkDict.Add(join.file, new PatchInfo());
+                            continue;
+                        }
+
                         var oldChkLazy = join.oldChk.Value;
                         var newChkLazy = join.patch;
 
@@ -164,10 +171,10 @@ namespace TaleOfTwoWastelands.Patching
                         PatchInfo patchInfo;
                         if (!newChk.Equals(oldChk))
                         {
-                            var antiqueOldChk = GetChecksum(join.oldBsaFile.GetSaveData(true));
-                            var antiqueNewChk = GetChecksum(join.newBsaFile.GetSaveData(true));
+                            var antiqueOldChk = GetChecksum(join.oldBsaFile.GetContents(true));
+                            var antiqueNewChk = GetChecksum(join.newBsaFile.GetContents(true));
 
-                            patchInfo = PatchInfo.FromFileChecksum(outBsaName, join.oldBsaFile.Filename, antiqueOldChk, antiqueNewChk, newChk);
+                            patchInfo = PatchInfo.FromFileChecksum(outBsaName, oldFilename, antiqueOldChk, antiqueNewChk, newChk);
                             Debug.Assert(patchInfo.Data != null);
                         }
                         else

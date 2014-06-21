@@ -23,7 +23,7 @@ namespace TaleOfTwoWastelands
         public const CompressionStrategy FastStrategy = CompressionStrategy.Unsafe | CompressionStrategy.Speed;
         public const CompressionStrategy GoodStrategy = CompressionStrategy.Unsafe | CompressionStrategy.Size;
 
-        public static readonly HashSet<string> CheckedESMs = new HashSet<string>(new[] { "Fallout3.esm", "Anchorage.esm", "ThePitt.esm", "BrokenSteel.esm", "PointLookout.esm", "Zeta.esm" });
+        public static readonly string[] CheckedESMs = new[] { "Fallout3.esm", "Anchorage.esm", "ThePitt.esm", "BrokenSteel.esm", "PointLookout.esm", "Zeta.esm" };
         public static readonly Dictionary<string, string> VoicePaths = new Dictionary<string, string> {
             {Path.Combine("sound", "voice", "fallout3.esm", "playervoicemale"), Path.Combine("PlayerVoice", "sound", "voice", "falloutnv.esm", "playervoicemale")},
             {Path.Combine("sound", "voice", "fallout3.esm", "playervoicefemale"), Path.Combine("PlayerVoice", "sound", "voice", "falloutnv.esm", "playervoicefemale")}
@@ -85,7 +85,7 @@ namespace TaleOfTwoWastelands
 
         static readonly string TTWBase = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "My Games", "TaleOfTwoWastelands");
 
-        readonly private IProgress<string> progressLog, progressText;
+        readonly private IProgress<string> progressLog, progressText, progressDual;
         readonly private StreamWriter logFile;
         readonly private IProgress<OperationProgress> progressUIMinor, progressUIMajor;
 
@@ -122,6 +122,12 @@ namespace TaleOfTwoWastelands
 
             this.progressLog = new Progress<string>(log => logFile.WriteLine("[{0}]\t{1}", DateTime.Now, log));
             this.WriteLog = (s) => progressLog.Report(s);
+
+            this.progressDual = new Progress<string>(s =>
+            {
+                LogOutput(s);
+                WriteLog(s);
+            });
 
             if (Environment.Is64BitOperatingSystem)
                 WriteLog("\t64-bit architecture found.");
@@ -192,7 +198,7 @@ namespace TaleOfTwoWastelands
             LinkedSource = CancellationTokenSource.CreateLinkedTokenSource(inToken);
             this.Token = LinkedSource.Token;
 
-            var opProg = new OperationProgress(progressUIMajor, Token) { ItemsTotal = 7 + BuildableBSAs.Count + CheckedESMs.Count };
+            var opProg = new OperationProgress(progressUIMajor, Token) { ItemsTotal = 7 + BuildableBSAs.Count + CheckedESMs.Length };
             try
             {
                 try
@@ -649,7 +655,7 @@ namespace TaleOfTwoWastelands
             string inBSAFile = Path.ChangeExtension(inBSA, ".bsa");
             string inBSAPath = Path.Combine(dirFO3Data, inBSAFile);
 
-            string errors;
+            bool patchSuccess;
 
 #if DEBUG
             var watch = new Stopwatch();
@@ -657,7 +663,9 @@ namespace TaleOfTwoWastelands
             {
                 watch.Start();
 #endif
-                errors = BSADiff.PatchBSA(progressLog, progressUIMinor, token, bsaOptions, inBSAPath, outBSAPath);
+                patchSuccess = BSADiff.PatchBSA(progressDual, progressUIMinor, token, bsaOptions, inBSAPath, outBSAPath);
+                if (!patchSuccess)
+                    progressDual.Report(string.Format("Patching BSA {0} failed", inBSA));
 #if DEBUG
             }
             finally
@@ -667,17 +675,13 @@ namespace TaleOfTwoWastelands
             }
 #endif
 
-            WriteLog(errors);
-            LogOutput(errors);
-
-            if (errors.Length > 0)
+            if (!patchSuccess)
             {
-                var errPeek = string.Join(Environment.NewLine, errors.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).Take(10));
-                switch (MessageBox.Show("The following errors have occurred:\r\n" + errPeek, "Error Log", MessageBoxButtons.AbortRetryIgnore))
+                switch (MessageBox.Show("Errors occurred while patching " + inBSA, "Error Warning", MessageBoxButtons.AbortRetryIgnore))
                 {
                     case System.Windows.Forms.DialogResult.Abort:   //Quit install
-                        WriteLog("Install Aborted.");
-                        LogOutput("Install Aborted.");
+                        WriteLog("Install aborted.");
+                        LogOutput("Install aborted.");
                         return System.Windows.Forms.DialogResult.Abort;
                     case System.Windows.Forms.DialogResult.Retry:   //Start over from scratch
                         WriteLog("Retrying build.");

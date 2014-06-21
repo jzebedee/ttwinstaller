@@ -6,7 +6,7 @@ using ICSharpCode.SharpZipLib.BZip2;
 using Logos.Utility;
 using Logos.Utility.IO;
 
-namespace TaleOfTwoWastelands
+namespace TaleOfTwoWastelands.Patching
 {
     /*
     The original bsdiff.c source code (http://www.daemonology.net/bsdiff/) is

@@ -80,7 +80,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BinaryPatchUtility.cs" />
+    <Compile Include="Patching\BinaryPatchUtility.cs" />
     <Compile Include="BSA.cs" />
     <Compile Include="Patching\BSADiff.cs" />
     <Compile Include="Patching\BuildPatchDB.cs" Condition="$(DefineConstants.Contains('BUILD_PATCHDB'))" />
