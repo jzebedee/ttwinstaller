@@ -2,6 +2,7 @@
 #define CREATE
 using System;
 using System.IO;
+using ICSharpCode.SharpZipLib.BZip2;
 using SevenZip;
 
 namespace TaleOfTwoWastelands.Patching
@@ -524,9 +525,9 @@ namespace TaleOfTwoWastelands.Patching
                 compressedExtraStream.Seek(c_headerSize + controlLength + diffLength, SeekOrigin.Current);
 
                 // decompress each part (to read it)
-                using (var controlStream = new LzmaDecodeStream(compressedControlStream))
-                using (var diffStream = new LzmaDecodeStream(compressedDiffStream))
-                using (var extraStream = new LzmaDecodeStream(compressedExtraStream))
+                using (var controlStream = new BZip2InputStream(compressedControlStream))
+                using (var diffStream = new BZip2InputStream(compressedDiffStream))
+                using (var extraStream = new BZip2InputStream(compressedExtraStream))
                 {
                     long[] control = new long[3];
                     byte[] buffer = new byte[8];

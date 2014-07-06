@@ -49,10 +49,10 @@ namespace TaleOfTwoWastelands.Patching
                 var renamePath = Path.Combine(PatchDir, Path.ChangeExtension(outBsaFilename, ".ren"));
                 if (File.Exists(renamePath))
                 {
-                    using (var stream = File.OpenRead(renamePath))
+                    foreach (var line in File.ReadLines(renamePath))
                     {
-                        throw new NotImplementedException();
-                        //renameDict = Serializer.Deserialize<Dictionary<string, string>>(stream);
+                        var lsplit = line.Split('\0');
+                        renameDict.Add(lsplit.First(), lsplit.Last());
                     }
                 }
             }
@@ -61,7 +61,7 @@ namespace TaleOfTwoWastelands.Patching
                 opProg.Step();
             }
 
-            var patchDict = new Dictionary<string, PatchInfo>();
+            IDictionary<string, PatchInfo[]> patchDict;
             try
             {
                 opProg.CurrentOperation = "Opening patch database";
@@ -69,11 +69,8 @@ namespace TaleOfTwoWastelands.Patching
                 var patchPath = Path.Combine(PatchDir, Path.ChangeExtension(outBsaFilename, ".pat"));
                 if (File.Exists(patchPath))
                 {
-                    using (var stream = File.OpenRead(patchPath))
-                    {
-                        throw new NotImplementedException();
-                        //patchDict = Serializer.Deserialize<Dictionary<string, PatchInfo>>(stream);
-                    }
+                    var patchMap = new PatchMap(patchPath);
+                    patchDict = patchMap.ToDictionary();
                 }
                 else
                 {
@@ -123,7 +120,7 @@ namespace TaleOfTwoWastelands.Patching
                                         {
                                             bsaFile,
                                             file = patKvp.Key,
-                                            patchInfo = patKvp.Value,
+                                            patches = patKvp.Value,
                                             oldChk = foundOld.SingleOrDefault()
                                         };
 
@@ -147,40 +144,43 @@ namespace TaleOfTwoWastelands.Patching
 #endif
                             }
 
-                            var newChk = join.patchInfo.Metadata;
-                            if (newChk == null && join.patchInfo.Data == null)
+                            foreach (var patchInfo in join.patches)
                             {
-                                if (join.bsaFile.Filename.StartsWith(voicePrefix))
+                                var newChk = patchInfo.Metadata;
+                                if (FileValidation.IsEmpty(newChk) && patchInfo.Data.Length == 0)
                                 {
-                                    progressLog.Report("Skipping voice file " + join.bsaFile.Filename);
+                                    if (join.bsaFile.Filename.StartsWith(voicePrefix))
+                                    {
+                                        progressLog.Report("Skipping voice file " + join.bsaFile.Filename);
 #if PARALLEL
-                                    return;
+                                        return;
 #else
                                     continue;
 #endif
-                                }
-                                else
-                                {
-                                    progressLog.Report("Corrupted patch for file " + join.bsaFile.Filename);
+                                    }
+                                    else
+                                    {
+                                        progressLog.Report("Corrupted patch for file " + join.bsaFile.Filename);
 #if PARALLEL
-                                    return;
+                                        return;
 #else
                                     continue;
 #endif
+                                    }
                                 }
-                            }
 
-                            var lazyOldChk = join.oldChk.Value;
-                            using (var oldChk = lazyOldChk.Value)
-                            {
-                                opChk.CurrentOperation = "Validating " + join.bsaFile.Name;
-
-                                if (!newChk.Equals(oldChk))
+                                var lazyOldChk = join.oldChk.Value;
+                                using (var oldChk = lazyOldChk.Value)
                                 {
-                                    opChk.CurrentOperation = "Patching " + join.bsaFile.Name;
+                                    opChk.CurrentOperation = "Validating " + join.bsaFile.Name;
 
-                                    if (!PatchFile(progressLog, join.bsaFile, oldChk, join.patchInfo))
-                                        progressLog.Report(string.Format("Patching {0} failed", join.bsaFile.Filename));
+                                    if (!newChk.Equals(oldChk))
+                                    {
+                                        opChk.CurrentOperation = "Patching " + join.bsaFile.Name;
+
+                                        if (!PatchFile(progressLog, join.bsaFile, oldChk, patchInfo))
+                                            progressLog.Report(string.Format("Patching {0} failed", join.bsaFile.Filename));
+                                    }
                                 }
                             }
                         }

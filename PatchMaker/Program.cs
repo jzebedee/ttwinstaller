@@ -93,11 +93,14 @@ namespace PatchMaker
                     {
                         renameDict = new Dictionary<string, string>(renDict);
                         var newRenPath = Path.Combine(BUILD_DIR, Path.ChangeExtension(outBsaName, ".ren"));
-
-                        throw new NotImplementedException();
-                        //if (!File.Exists(newRenPath))
-                        //    using (var stream = File.OpenWrite(newRenPath))
-                        //        Serializer.Serialize(stream, renameDict);
+                        if (!File.Exists(newRenPath))
+                            using (var writer = new StreamWriter(newRenPath))
+                                foreach (var kvp in renameDict)
+                                {
+                                    writer.Write(kvp.Key);
+                                    writer.Write('\0');
+                                    writer.WriteLine(kvp.Value);
+                                }
                     }
                     else
                     {
@@ -160,9 +163,10 @@ namespace PatchMaker
                                             patch = patKvp.Value,
                                             oldChk = foundOld.SingleOrDefault()
                                         };
+                    var allJoinedPatches = joinedPatches.ToList();
 
-                    var checkDict = new Dictionary<string, PatchInfo>();
-                    foreach (var join in joinedPatches)
+                    var patchMap = new PatchMap((uint)allJoinedPatches.Count);
+                    foreach (var join in allJoinedPatches)
                     {
                         if (string.IsNullOrEmpty(join.oldChk.Key))
                             Debug.Fail("File not found: " + join.file);
@@ -170,7 +174,7 @@ namespace PatchMaker
                         var oldFilename = join.oldBsaFile.Filename;
                         if (oldFilename.StartsWith(BSADiff.voicePrefix))
                         {
-                            checkDict.Add(join.file, new PatchInfo());
+                            patchMap.Put(join.file, new PatchInfo());
                             continue;
                         }
 
@@ -192,7 +196,7 @@ namespace PatchMaker
                         else
                             //without this, we will generate sparse (patch-only) fixups
                             patchInfo = new PatchInfo { Metadata = newChk };
-                        checkDict.Add(join.file, patchInfo);
+                        patchMap.Put(join.file, patchInfo);
                     }
 
 #if RECHECK
@@ -200,9 +204,8 @@ namespace PatchMaker
                                 Trace.Assert(ancCheckDict.Keys.SequenceEqual(checkDict.Keys.OrderBy(key => key)));
 #endif
 
-                    throw new NotImplementedException();
-                    //using (var stream = File.OpenWrite(patPath))
-                    //    Serializer.Serialize(stream, checkDict);
+                    using (var stream = File.OpenWrite(patPath))
+                        patchMap.WriteAll(stream);
                 }
             }
         }

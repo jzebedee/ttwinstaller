@@ -130,6 +130,11 @@ namespace TaleOfTwoWastelands.Patching
             };
         }
 
+        public static bool IsEmpty(FileValidation fv)
+        {
+            return fv == null || (fv.Filesize == 0 && fv.Checksums.Count() == 0);
+        }
+
         private static IEnumerable<byte[]> ReadWindow(Stream readStream)
         {
             int bytesRead;

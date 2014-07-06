@@ -21,12 +21,16 @@ namespace TaleOfTwoWastelands.Patching
         }
         public PatchMap(string file)
         {
+            var fileInfo = new FileInfo(file);
+
             _mmf = MemoryMappedFile.CreateFromFile(file, FileMode.Open);
 
             long off = 0;
-            using (var acc = _mmf.CreateViewAccessor())
+            using (var acc = _mmf.CreateViewAccessor(0, 0))
             {
-                while (off < acc.Capacity)
+                //while (off < acc.Capacity)
+                //MMF length/capacity is aligned to page, NOT file!
+                while (off < fileInfo.Length)
                 {
                     off += sizeof(uint); //skip hash
 
@@ -39,11 +43,15 @@ namespace TaleOfTwoWastelands.Patching
                     var keyBytes = new byte[keySize];
                     off += acc.ReadArray<byte>(off, keyBytes, 0, keySize);
 
-                    var key = Encoding.Unicode.GetString(keyBytes);
+                    var key = Encoding.UTF8.GetString(keyBytes);
 
+                    if (string.IsNullOrEmpty(key))
+                        System.Diagnostics.Debugger.Break();
+
+                    var newOff = off;
                     _lazyMapHitter.Add(key, () =>
                     {
-                        using (var valStream = _mmf.CreateViewStream(off, valSize))
+                        using (var valStream = _mmf.CreateViewStream(newOff, valSize))
                         using (var reader = new BinaryReader(valStream))
                         {
                             _map.Put(key, reader.ReadBytes(valSize));
@@ -57,12 +65,20 @@ namespace TaleOfTwoWastelands.Patching
             }
         }
 
+        public Dictionary<string, PatchInfo[]> ToDictionary()
+        {
+            return _lazyMapHitter.ToDictionary(kvp => kvp.Key, kvp => Get(kvp.Key));
+        }
+
         public void WriteAll(Stream outStream)
         {
             using (var writer = new BinaryWriter(outStream))
             {
                 foreach (var bucket in _map.Buckets)
                 {
+                    if (RHBackshiftMap.IsEmpty(bucket.entry))
+                        continue;
+
                     writer.Write(bucket.hash);
                     writer.Write(bucket.entry.keySize);
                     writer.Write(bucket.entry.valSize);
@@ -107,7 +123,7 @@ namespace TaleOfTwoWastelands.Patching
                 return patches;
             }
         }
-        public bool Put(string key, PatchInfo[] patchInfos)
+        public bool Put(string key, params PatchInfo[] patchInfos)
         {
             using (var ms = new MemoryStream())
             using (var writer = new BinaryWriter(ms))
@@ -115,13 +131,35 @@ namespace TaleOfTwoWastelands.Patching
                 writer.Write(patchInfos.Length);
                 foreach (var patch in patchInfos)
                 {
-                    writer.Write(patch.Metadata.Filesize);
-                    writer.Write(patch.Metadata.Checksums.Count());
-                    foreach (var chk in patch.Metadata.Checksums)
-                        writer.Write(chk);
+                    if (patch.Metadata != null)
+                    {
+                        writer.Write(patch.Metadata.Filesize);
+                        if (patch.Metadata.Filesize > 0)
+                        {
+                            writer.Write(patch.Metadata.Checksums.Count());
+                            foreach (var chk in patch.Metadata.Checksums)
+                                writer.Write(chk);
+                        }
+                        else
+                        {
+                            writer.Write(0);
+                        }
+                    }
+                    else
+                    {
+                        writer.Write(0);
+                        writer.Write(0);
+                    }
 
-                    writer.Write(patch.Data.Length);
-                    writer.Write(patch.Data);
+                    if (patch.Data != null)
+                    {
+                        writer.Write(patch.Data.Length);
+                        writer.Write(patch.Data);
+                    }
+                    else
+                    {
+                        writer.Write(0);
+                    }
                 }
 
                 return _map.Put(key, ms.ToArray());

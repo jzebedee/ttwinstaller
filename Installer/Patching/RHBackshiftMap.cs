@@ -46,7 +46,7 @@ namespace TaleOfTwoWastelands.Patching
 
         public byte[] Get(string key)
         {
-            var keyBytes = Encoding.Unicode.GetBytes(key);
+            var keyBytes = Encoding.UTF8.GetBytes(key);
             var keySize = keyBytes.Length;
 
             var hash = getHash(key);
@@ -81,7 +81,7 @@ namespace TaleOfTwoWastelands.Patching
 
             bucketsUsedCount++;
 
-            var keyBytes = Encoding.Unicode.GetBytes(key);
+            var keyBytes = Encoding.UTF8.GetBytes(key);
             var keySize = keyBytes.Length;
 
             var valSize = valBytes.Length;
@@ -109,7 +109,7 @@ namespace TaleOfTwoWastelands.Patching
             {
                 indexCurrent = (indexInit + i) % bucketsCount;
                 //if (buckets[index_current].entry == null)
-                if (DefaultEquals(buckets[indexCurrent].entry, default(Entry)))
+                if (IsEmpty(buckets[indexCurrent].entry))
                 {
                     buckets[indexCurrent].entry = entry;
                     buckets[indexCurrent].hash = hash;
@@ -144,7 +144,7 @@ namespace TaleOfTwoWastelands.Patching
 
         private uint? FillDistanceToInitIndex(uint indexStored)
         {
-            if (DefaultEquals(buckets[indexStored].entry, default(Entry)))
+            if (IsEmpty(buckets[indexStored].entry))
                 return null;
 
             uint indexInit = buckets[indexStored].hash % bucketsCount;
@@ -154,14 +154,14 @@ namespace TaleOfTwoWastelands.Patching
                 return indexStored + (bucketsCount - indexInit);
         }
 
-        private static bool DefaultEquals<T>(T x, T y)
+        public static bool IsEmpty(Entry entry)
         {
-            return EqualityComparer<T>.Default.Equals(x, y);
+            return entry.data == null && entry.keySize == 0 && entry.valSize == 0;
         }
 
         private uint getHash(string key)
         {
-            var keyBytes = Encoding.Unicode.GetBytes(key);
+            var keyBytes = Encoding.UTF8.GetBytes(key);
             using (var Hash32 = MurmurHash.Create32(managed: false))
                 return BitConverter.ToUInt32(Hash32.ComputeHash(keyBytes), 0);
         }
