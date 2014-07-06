@@ -12,11 +12,10 @@ using System.Diagnostics;
 using BSAsharp;
 using System.IO.MemoryMappedFiles;
 using TaleOfTwoWastelands.ProgressTypes;
-using ProtoBuf;
 
 namespace TaleOfTwoWastelands.Patching
 {
-    class BSADiff
+    public class BSADiff
     {
         public const string voicePrefix = @"sound\voice";
         public static readonly string PatchDir = Path.Combine(Installer.AssetsDir, "TTW Data", "TTW Patches");
@@ -52,7 +51,8 @@ namespace TaleOfTwoWastelands.Patching
                 {
                     using (var stream = File.OpenRead(renamePath))
                     {
-                        renameDict = Serializer.Deserialize<Dictionary<string, string>>(stream);
+                        throw new NotImplementedException();
+                        //renameDict = Serializer.Deserialize<Dictionary<string, string>>(stream);
                     }
                 }
             }
@@ -71,7 +71,8 @@ namespace TaleOfTwoWastelands.Patching
                 {
                     using (var stream = File.OpenRead(patchPath))
                     {
-                        patchDict = Serializer.Deserialize<Dictionary<string, PatchInfo>>(stream);
+                        throw new NotImplementedException();
+                        //patchDict = Serializer.Deserialize<Dictionary<string, PatchInfo>>(stream);
                     }
                 }
                 else

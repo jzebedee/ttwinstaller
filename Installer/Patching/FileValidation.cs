@@ -38,13 +38,15 @@ namespace TaleOfTwoWastelands.Patching
 
         public FileValidation(byte[] data, uint size)
         {
-            _lazyInflatedChecksums = new Lazy<IEnumerable<long>>(() => IncrementalChecksum(data));
+            throw new NotImplementedException();
+            //_lazyInflatedChecksums = new Lazy<IEnumerable<long>>(() => IncrementalChecksum(data));
             InflatedFilesize = size;
         }
         public FileValidation(Stream stream, uint? size = null)
         {
+            throw new NotImplementedException();
             _inStream = stream;
-            _lazyInflatedChecksums = new Lazy<IEnumerable<long>>(() => IncrementalChecksum(stream, size ?? (uint)stream.Length));
+            //_lazyInflatedChecksums = new Lazy<IEnumerable<long>>(() => IncrementalChecksum(stream, size ?? (uint)stream.Length));
             InflatedFilesize = size ?? (uint)stream.Length;
         }
         private FileValidation() { }

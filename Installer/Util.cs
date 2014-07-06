@@ -23,7 +23,7 @@ namespace TaleOfTwoWastelands
             zip.Close();
         }
 
-        public static string GetChecksum(string fileIn)
+        public static string GetMD5(string fileIn)
         {
             MD5 fileHash = MD5.Create();
             using (var checkFile = File.OpenRead(fileIn))
@@ -44,7 +44,7 @@ namespace TaleOfTwoWastelands
             string hash;
             CheckSums.TryGetValue(Path.GetFileName(inFile), out hash);
 
-            return GetChecksum(outFile) == hash;
+            return GetMD5(outFile) == hash;
         }
 
         public static void CopyFolder(string inFolder, string destFolder, Action<string> failHandler)

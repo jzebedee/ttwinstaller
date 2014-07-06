@@ -1,29 +1,39 @@
-﻿//#define RECHECK
-using BSAsharp;
-using ProtoBuf;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Runtime.Serialization.Formatters.Binary;
-using System.Security.Cryptography;
-using System.Text;
 using System.Threading;
+using BSAsharp;
+using TaleOfTwoWastelands;
+using TaleOfTwoWastelands.Patching;
 using TaleOfTwoWastelands.ProgressTypes;
 
-namespace TaleOfTwoWastelands.Patching
+namespace PatchMaker
 {
-    class BuildPatchDB
+    class Program
     {
         const string SOURCE_DIR = "BuildDB";
-        const string BUILD_DIR = "Checksums";
+        const string BUILD_DIR = "OutDB";
 
-        //Shameless code duplication. So sue me.
-        public static void Build()
+        static void Main(string[] args)
         {
+            Console.WriteLine("Building {0} folder from {1} folder. Existing files are skipped. OK?", BUILD_DIR, SOURCE_DIR);
+            Console.Write("y/n: ");
+            var keyInfo = Console.ReadKey();
+            switch (keyInfo.Key)
+            {
+                case ConsoleKey.Y:
+                    Console.WriteLine();
+                    break;
+                case ConsoleKey.N:
+                default:
+                    return;
+            }
+
 #if RECHECK
-            bool keepGoing = true;
+                        bool keepGoing = true;
 #endif
 
             Directory.CreateDirectory(BUILD_DIR);
@@ -37,30 +47,30 @@ namespace TaleOfTwoWastelands.Patching
             var Fallout3Path = fo3Key.GetValue("Installed Path", "").ToString();
             var dirFO3Data = Path.Combine(Fallout3Path, "Data");
 
-//            foreach (var ESM in Installer.CheckedESMs)
-//            {
-//                var fixPath = Path.Combine(BUILD_DIR, ESM + ".pat");
-//                if (!File.Exists(fixPath))
-//                {
-//                    var dataESM = Path.Combine(dirFO3Data, ESM);
-//                    var ttwESM = Path.Combine(dirTTWMain, ESM);
+            //            foreach (var ESM in Installer.CheckedESMs)
+            //            {
+            //                var fixPath = Path.Combine(BUILD_DIR, ESM + ".pat");
+            //                if (!File.Exists(fixPath))
+            //                {
+            //                    var dataESM = Path.Combine(dirFO3Data, ESM);
+            //                    var ttwESM = Path.Combine(dirTTWMain, ESM);
 
-//                    //var fvOriginal = FileValidation.FromFile(dataESM);
+            //                    //var fvOriginal = FileValidation.FromFile(dataESM);
 
-//                    var patch = PatchInfo.FromFile("", dataESM, ttwESM);
+            //                    var patch = PatchInfo.FromFile("", dataESM, ttwESM);
 
-//                    using (var fixStream = File.OpenWrite(fixPath))
-//                        Serializer.Serialize(fixStream, patch);
-//                }
-//#if RECHECK
-//                using (var fixStream = File.OpenRead(fixPath))
-//                {
-//                    var p = Serializer.Deserialize<PatchInfo>(fixStream);
-//                    if (keepGoing)
-//                        Debugger.Break();
-//                }
-//#endif
-//            }
+            //                    using (var fixStream = File.OpenWrite(fixPath))
+            //                        Serializer.Serialize(fixStream, patch);
+            //                }
+            //#if RECHECK
+            //                using (var fixStream = File.OpenRead(fixPath))
+            //                {
+            //                    var p = Serializer.Deserialize<PatchInfo>(fixStream);
+            //                    if (keepGoing)
+            //                        Debugger.Break();
+            //                }
+            //#endif
+            //            }
 
             var progressLog = new Progress<string>(s => Debug.Write(s));
             var progressUIMinor = new Progress<OperationProgress>();
@@ -184,8 +194,8 @@ namespace TaleOfTwoWastelands.Patching
                     }
 
 #if RECHECK
-                    var ancCheckDict = ReadOldDict(outBsaName, "Checksums.dict");
-                    Trace.Assert(ancCheckDict.Keys.SequenceEqual(checkDict.Keys.OrderBy(key => key)));
+                                var ancCheckDict = ReadOldDict(outBsaName, "Checksums.dict");
+                                Trace.Assert(ancCheckDict.Keys.SequenceEqual(checkDict.Keys.OrderBy(key => key)));
 #endif
 
                     using (var stream = File.OpenWrite(patPath))
@@ -194,18 +204,19 @@ namespace TaleOfTwoWastelands.Patching
             }
         }
 
+        //Shameless code duplication. So sue me.
         private static IDictionary<string, string> ReadOldDict(string outFilename, string dictName)
         {
             var dictPath = Path.Combine(BSADiff.PatchDir, outFilename, dictName);
             if (!File.Exists(dictPath))
                 return null;
             using (var stream = File.OpenRead(dictPath))
-                return (IDictionary<string, string>)new BinaryFormatter().Deserialize(stream);
+                return (IDictionary<string, string>)new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter().Deserialize(stream);
         }
 
         private static string GetChecksum(byte[] buf)
         {
-            MD5 fileHash = MD5.Create();
+            var fileHash = System.Security.Cryptography.MD5.Create();
             return BitConverter.ToString(fileHash.ComputeHash(buf)).Replace("-", "");
         }
     }

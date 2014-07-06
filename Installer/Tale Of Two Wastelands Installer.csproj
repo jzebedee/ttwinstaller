@@ -57,7 +57,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="BSAsharp">
-      <HintPath>.\BSAsharp.dll</HintPath>
+      <HintPath>..\BSAsharp.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Threading.Tasks">
       <HintPath>..\packages\Microsoft.Bcl.Async.1.0.168\lib\net40\Microsoft.Threading.Tasks.dll</HintPath>
@@ -99,7 +99,6 @@
     <Compile Include="Patching\BinaryPatchUtility.cs" />
     <Compile Include="BSA.cs" />
     <Compile Include="Patching\BSADiff.cs" />
-    <Compile Include="Patching\BuildPatchDB.cs" Condition="$(DefineConstants.Contains('BUILD_PATCHDB'))" />
     <Compile Include="Patching\PatchInfo.cs" />
     <Compile Include="Patching\FileValidation.cs" />
     <Compile Include="UI\frm_Main.cs">

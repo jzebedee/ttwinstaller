@@ -16,7 +16,7 @@ using Microsoft;
 
 namespace TaleOfTwoWastelands
 {
-    class Installer
+    public class Installer
     {
         public const string MainDir = "Main Files", OptDir = "Optional Files";
         public const string AssetsDir = "resources";
@@ -151,7 +151,7 @@ namespace TaleOfTwoWastelands
             InstallChecks(openDialog, saveDialog);
         }
 
-        internal static RegistryKey GetBethKey()
+        public static RegistryKey GetBethKey()
         {
             using (var bethKey =
                 Registry.LocalMachine.OpenSubKey(
@@ -537,7 +537,7 @@ namespace TaleOfTwoWastelands
             if (File.Exists(patchPath))
             {
                 CheckSums.TryGetValue(filePatch, out newChecksum);
-                curChecksum = Util.GetChecksum(Path.Combine(dirTTWMain, filePatch));
+                curChecksum = Util.GetMD5(Path.Combine(dirTTWMain, filePatch));
 
                 var diffPath = Path.Combine(AssetsDir, "TTW Data", "TTW Patches", filePatch + "." + curChecksum + "." + newChecksum + ".diff");
 
@@ -575,7 +575,7 @@ namespace TaleOfTwoWastelands
                 WriteLog("\tChecking " + Fallout3Path);
 
                 CheckSums.TryGetValue(filePatch, out newChecksum);
-                curChecksum = Util.GetChecksum(fo3PatchPath);
+                curChecksum = Util.GetMD5(fo3PatchPath);
 
                 var diffPath = Path.Combine(AssetsDir, "TTW Data", "TTW Patches", filePatch + "." + curChecksum + "." + newChecksum + ".diff");
 
