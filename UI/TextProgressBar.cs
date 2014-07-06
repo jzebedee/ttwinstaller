@@ -20,8 +20,6 @@ namespace TaleOfTwoWastelands.UI
     //http://stackoverflow.com/a/3529945
     class TextProgressBar : ProgressBar
     {
-        const int WS_EX_COMPOSITED = 0x02000000;
-
         //Property to set to decide whether to print a % or Text
         public ProgressBarDisplayText DisplayStyle { get; set; }
 
@@ -47,18 +45,7 @@ namespace TaleOfTwoWastelands.UI
         {
             // Modify the ControlStyles flags
             //http://msdn.microsoft.com/en-us/library/system.windows.forms.controlstyles.aspx
-            SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint, true);
-        }
-
-        protected override CreateParams CreateParams
-        {
-            get
-            {
-                var cParams = base.CreateParams;
-                cParams.ExStyle |= WS_EX_COMPOSITED;
-
-                return cParams;
-            }
+            SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, true);
         }
 
         protected override void OnPaint(PaintEventArgs e)
@@ -77,14 +64,13 @@ namespace TaleOfTwoWastelands.UI
 
             // Set the Display text (Either a % amount or our custom text
             string text = DisplayStyle == ProgressBarDisplayText.Percentage ? Value.ToString() + '%' : CustomText;
-            using (Font f = new Font(FontFamily.GenericSansSerif, 10, FontStyle.Bold))
-            {
-                SizeF len = g.MeasureString(text, f);
-                // Calculate the location of the text (the middle of progress bar)
-                Point location = new Point(Convert.ToInt32((rect.Width - len.Width) / 2), Convert.ToInt32((rect.Height - len.Height) / 2));
-                // Draw the custom text
-                g.DrawString(text, f, SystemBrushes.InfoText, location);
-            }
+
+            SizeF len = g.MeasureString(text, Font);
+
+            // Calculate the location of the text (the middle of progress bar)
+            Point location = new Point(Convert.ToInt32((rect.Width - len.Width) / 2), Convert.ToInt32((rect.Height - len.Height) / 2));
+            // Draw the custom text
+            g.DrawString(text, Font, SystemBrushes.InfoText, location);
         }
     }
 }
