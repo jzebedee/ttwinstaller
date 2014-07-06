@@ -2,9 +2,7 @@
 //#define CREATE
 using System;
 using System.IO;
-using ICSharpCode.SharpZipLib.BZip2;
-using Logos.Utility;
-using Logos.Utility.IO;
+using SevenZip;
 
 namespace TaleOfTwoWastelands.Patching
 {
@@ -494,7 +492,8 @@ namespace TaleOfTwoWastelands.Patching
                 if (!patchStream.CanSeek)
                     throw new ArgumentException("Patch stream must be seekable.", "openPatchStream");
 
-                byte[] header = patchStream.ReadExactly(c_headerSize);
+                byte[] header = new byte[c_headerSize];
+                patchStream.Read(header, 0, c_headerSize);
 
                 // check for appropriate magic
                 long signature = ReadInt64(header, 0);
@@ -525,9 +524,9 @@ namespace TaleOfTwoWastelands.Patching
                 compressedExtraStream.Seek(c_headerSize + controlLength + diffLength, SeekOrigin.Current);
 
                 // decompress each part (to read it)
-                using (BZip2InputStream controlStream = new BZip2InputStream(compressedControlStream))
-                using (BZip2InputStream diffStream = new BZip2InputStream(compressedDiffStream))
-                using (BZip2InputStream extraStream = new BZip2InputStream(compressedExtraStream))
+                using (var controlStream = new LzmaDecodeStream(compressedControlStream))
+                using (var diffStream = new LzmaDecodeStream(compressedDiffStream))
+                using (var extraStream = new LzmaDecodeStream(compressedExtraStream))
                 {
                     long[] control = new long[3];
                     byte[] buffer = new byte[8];
@@ -539,7 +538,7 @@ namespace TaleOfTwoWastelands.Patching
                         // read control data
                         for (int i = 0; i < 3; i++)
                         {
-                            controlStream.ReadExactly(buffer, 0, 8);
+                            controlStream.Read(buffer, 0, 8);
                             control[i] = ReadInt64(buffer, 0);
                         }
 
@@ -556,18 +555,16 @@ namespace TaleOfTwoWastelands.Patching
                             int actualBytesToCopy = Math.Min(bytesToCopy, c_bufferSize);
 
                             // read diff string
-                            diffStream.ReadExactly(newData, 0, actualBytesToCopy);
+                            diffStream.Read(newData, 0, actualBytesToCopy);
 
                             // add old data to diff string
                             int availableInputBytes = Math.Min(actualBytesToCopy, (int)(input.Length - input.Position));
-                            input.ReadExactly(oldData, 0, availableInputBytes);
+                            input.Read(oldData, 0, availableInputBytes);
 
                             fixed (byte* pN = newData)
                             fixed (byte* pO = oldData)
-                            {
                                 for (int i = 0; i < availableInputBytes; i++)
-                                    *(pN + i) += *(pO + i);
-                            }
+                                    pN[i] += pO[i];
 
                             output.Write(newData, 0, actualBytesToCopy);
 
@@ -587,7 +584,7 @@ namespace TaleOfTwoWastelands.Patching
                         {
                             int actualBytesToCopy = Math.Min(bytesToCopy, c_bufferSize);
 
-                            extraStream.ReadExactly(newData, 0, actualBytesToCopy);
+                            extraStream.Read(newData, 0, actualBytesToCopy);
                             output.Write(newData, 0, actualBytesToCopy);
 
                             newPosition += actualBytesToCopy;

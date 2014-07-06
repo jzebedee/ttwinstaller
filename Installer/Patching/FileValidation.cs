@@ -1,7 +1,5 @@
 ﻿using BSAsharp;
 using BSAsharp.Extensions;
-using ICSharpCode.SharpZipLib.Checksums;
-using ProtoBuf;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -13,15 +11,13 @@ using System.Threading.Tasks;
 
 namespace TaleOfTwoWastelands.Patching
 {
-    [ProtoContract]
     public class FileValidation : IDisposable
     {
         const int WINDOW = 0x1000;
 
-        [ProtoMember(1)]
         public uint InflatedFilesize { get; private set; }
-        [ProtoMember(2)]
         private long[] _writtenInflatedChecksums;
+
         public IEnumerable<long> InflatedChecksums
         {
             get
@@ -40,11 +36,6 @@ namespace TaleOfTwoWastelands.Patching
         private readonly Stream _inStream;
         private readonly Lazy<IEnumerable<long>> _lazyInflatedChecksums;
 
-        public FileValidation(IEnumerable<byte[]> data, uint size)
-        {
-            _lazyInflatedChecksums = new Lazy<IEnumerable<long>>(() => IncrementalChecksum(data, size));
-            InflatedFilesize = size;
-        }
         public FileValidation(byte[] data, uint size)
         {
             _lazyInflatedChecksums = new Lazy<IEnumerable<long>>(() => IncrementalChecksum(data));
@@ -53,7 +44,7 @@ namespace TaleOfTwoWastelands.Patching
         public FileValidation(Stream stream, uint? size = null)
         {
             _inStream = stream;
-            _lazyInflatedChecksums = new Lazy<IEnumerable<long>>(() => IncrementalChecksum(ReadWindow(stream), size ?? (uint)stream.Length));
+            _lazyInflatedChecksums = new Lazy<IEnumerable<long>>(() => IncrementalChecksum(stream, size ?? (uint)stream.Length));
             InflatedFilesize = size ?? (uint)stream.Length;
         }
         private FileValidation() { }
@@ -130,52 +121,6 @@ namespace TaleOfTwoWastelands.Patching
         private static uint WindowCount(uint size)
         {
             return (size + WINDOW - 1) / WINDOW;
-        }
-
-        private static IEnumerable<byte[]> ReadWindow(Stream readStream)
-        {
-            int bytesRead;
-            byte[] buf = new byte[WINDOW];
-
-            using (readStream)
-                while ((bytesRead = readStream.Read(buf, 0, WINDOW)) != 0)
-                    yield return buf.TrimBuffer(0, bytesRead);
-        }
-
-        private static IEnumerable<long> IncrementalChecksum(byte[] data)
-        {
-            IChecksum chk;
-            if (data.Length < WINDOW)
-                chk = new Crc32();
-            else
-                chk = new Adler32();
-
-            for (int i = 0; i < data.Length; i += WINDOW)
-            {
-                var len = i + WINDOW > data.Length ? data.Length - i : WINDOW;
-
-                chk.Update(data, i, len);
-                yield return chk.Value;
-            }
-        }
-
-        private static IEnumerable<long> IncrementalChecksum(IEnumerable<byte[]> data, uint size)
-        {
-            //Debug.Assert(size > 0 || data.SelectMany(buf => buf).Count() == 0);
-            if (size == 0) //still need a check that this isn't happening when data isn't blank
-                yield break;
-
-            IChecksum chk;
-            if (size < WINDOW)
-                chk = new Crc32();
-            else
-                chk = new Adler32();
-
-            foreach (var buf in data)
-            {
-                chk.Update(buf);
-                yield return chk.Value;
-            }
         }
     }
 }
