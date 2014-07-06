@@ -12,6 +12,7 @@ using System.Diagnostics;
 using BSAsharp;
 using TaleOfTwoWastelands.ProgressTypes;
 using TaleOfTwoWastelands.Patching;
+using Microsoft;
 
 namespace TaleOfTwoWastelands
 {
