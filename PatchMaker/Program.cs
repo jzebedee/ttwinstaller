@@ -93,9 +93,11 @@ namespace PatchMaker
                     {
                         renameDict = new Dictionary<string, string>(renDict);
                         var newRenPath = Path.Combine(BUILD_DIR, Path.ChangeExtension(outBsaName, ".ren"));
-                        if (!File.Exists(newRenPath))
-                            using (var stream = File.OpenWrite(newRenPath))
-                                Serializer.Serialize(stream, renameDict);
+
+                        throw new NotImplementedException();
+                        //if (!File.Exists(newRenPath))
+                        //    using (var stream = File.OpenWrite(newRenPath))
+                        //        Serializer.Serialize(stream, renameDict);
                     }
                     else
                     {
@@ -198,8 +200,9 @@ namespace PatchMaker
                                 Trace.Assert(ancCheckDict.Keys.SequenceEqual(checkDict.Keys.OrderBy(key => key)));
 #endif
 
-                    using (var stream = File.OpenWrite(patPath))
-                        Serializer.Serialize(stream, checkDict);
+                    throw new NotImplementedException();
+                    //using (var stream = File.OpenWrite(patPath))
+                    //    Serializer.Serialize(stream, checkDict);
                 }
             }
         }

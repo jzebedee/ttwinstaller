@@ -8,6 +8,7 @@ using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
+using Murmur;
 
 namespace TaleOfTwoWastelands.Patching
 {
@@ -15,39 +16,39 @@ namespace TaleOfTwoWastelands.Patching
     {
         const int WINDOW = 0x1000;
 
-        public uint InflatedFilesize { get; private set; }
-        private long[] _writtenInflatedChecksums;
+        private readonly Murmur32 Hash32 = MurmurHash.Create32(managed: false);
 
-        public IEnumerable<long> InflatedChecksums
+        public uint Filesize { get; private set; }
+        private uint[] _writtenChecksums;
+
+        public IEnumerable<uint> Checksums
         {
             get
             {
-                return _writtenInflatedChecksums ?? (_lazyInflatedChecksums != null ? (InflatedChecksums = _lazyInflatedChecksums.Value) : null);
+                return _writtenChecksums ?? (_lazyChecksums != null ? (Checksums = _lazyChecksums.Value) : null);
             }
             private set
             {
-                if (_writtenInflatedChecksums != value)
+                if (_writtenChecksums != value)
                 {
-                    _writtenInflatedChecksums = value != null ? value.ToArray() : null;
+                    _writtenChecksums = value != null ? value.ToArray() : null;
                 }
             }
         }
 
         private readonly Stream _inStream;
-        private readonly Lazy<IEnumerable<long>> _lazyInflatedChecksums;
+        private readonly Lazy<IEnumerable<uint>> _lazyChecksums;
 
         public FileValidation(byte[] data, uint size)
         {
-            throw new NotImplementedException();
-            //_lazyInflatedChecksums = new Lazy<IEnumerable<long>>(() => IncrementalChecksum(data));
-            InflatedFilesize = size;
+            _lazyChecksums = new Lazy<IEnumerable<uint>>(() => getHashes(data));
+            Filesize = size;
         }
         public FileValidation(Stream stream, uint? size = null)
         {
-            throw new NotImplementedException();
             _inStream = stream;
-            //_lazyInflatedChecksums = new Lazy<IEnumerable<long>>(() => IncrementalChecksum(stream, size ?? (uint)stream.Length));
-            InflatedFilesize = size ?? (uint)stream.Length;
+            _lazyChecksums = new Lazy<IEnumerable<uint>>(() => getHashes(stream));
+            Filesize = size ?? (uint)stream.Length;
         }
         private FileValidation() { }
         ~FileValidation()
@@ -81,8 +82,8 @@ namespace TaleOfTwoWastelands.Patching
             //if you stringify ones of these in a debugger window, you're going to get
             //an exception from re-reading the stream after it's finished enumerating
             //NOTE: Lazy<T> makes this not true any more
-            if (InflatedChecksums != null)
-                return string.Format("({0}, {1} bytes)", InflatedChecksums.LastOrDefault(), InflatedFilesize);
+            if (Checksums != null)
+                return string.Format("({0}, {1} bytes)", Checksums.LastOrDefault(), Filesize);
             return base.ToString();
         }
 
@@ -96,14 +97,14 @@ namespace TaleOfTwoWastelands.Patching
             if (obj == null)
                 return false;
 
-            if (InflatedFilesize == 0 && obj.InflatedFilesize == 0)
+            if (Filesize == 0 && obj.Filesize == 0)
                 return true;
 
-            if (InflatedChecksums != null && obj.InflatedChecksums != null)
+            if (Checksums != null && obj.Checksums != null)
             {
-                if (InflatedFilesize == obj.InflatedFilesize)
+                if (Filesize == obj.Filesize)
                 {
-                    return InflatedChecksums.SequenceEqual(obj.InflatedChecksums);
+                    return Checksums.SequenceEqual(obj.Checksums);
                 }
             }
 
@@ -120,9 +121,39 @@ namespace TaleOfTwoWastelands.Patching
             return new FileValidation(File.OpenRead(path));
         }
 
-        private static uint WindowCount(uint size)
+        internal static FileValidation FromMap(uint Filesize, uint[] Checksums)
         {
-            return (size + WINDOW - 1) / WINDOW;
+            return new FileValidation()
+            {
+                Filesize = Filesize,
+                _writtenChecksums = Checksums
+            };
+        }
+
+        private static IEnumerable<byte[]> ReadWindow(Stream readStream)
+        {
+            int bytesRead;
+            byte[] buf = new byte[WINDOW];
+
+            while ((bytesRead = readStream.Read(buf, 0, WINDOW)) != 0)
+                yield return buf.TrimBuffer(0, bytesRead);
+        }
+
+        private uint getHash(byte[] buf)
+        {
+            return BitConverter.ToUInt32(Hash32.ComputeHash(buf), 0);
+        }
+
+        private IEnumerable<uint> getHashes(byte[] buf)
+        {
+            return getHashes(new MemoryStream(buf));
+        }
+
+        private IEnumerable<uint> getHashes(Stream stream)
+        {
+            using (stream)
+                foreach (var buf in ReadWindow(stream))
+                    yield return getHash(buf);
         }
     }
 }

@@ -1,5 +1,5 @@
 ﻿#define PATCH
-//#define CREATE
+#define CREATE
 using System;
 using System.IO;
 using SevenZip;
@@ -89,8 +89,8 @@ namespace TaleOfTwoWastelands.Patching
             int dblen = 0;
             int eblen = 0;
 
-            using (WrappingStream wrappingStream = new WrappingStream(output, Ownership.None))
-            using (BZip2OutputStream bz2Stream = new BZip2OutputStream(wrappingStream))
+            using (WrappingStream wrappingStream = new WrappingStream(output, false))
+            using (var lzmaStream = new LzmaEncodeStream(wrappingStream))
             {
                 // compute the differences, writing ctrl as we go
                 int scan = 0;
@@ -187,13 +187,13 @@ namespace TaleOfTwoWastelands.Patching
 
                         byte[] buf = new byte[8];
                         WriteInt64(lenf, buf, 0);
-                        bz2Stream.Write(buf, 0, 8);
+                        lzmaStream.Write(buf, 0, 8);
 
                         WriteInt64((scan - lenb) - (lastscan + lenf), buf, 0);
-                        bz2Stream.Write(buf, 0, 8);
+                        lzmaStream.Write(buf, 0, 8);
 
                         WriteInt64((pos - lenb) - (lastpos + lenf), buf, 0);
-                        bz2Stream.Write(buf, 0, 8);
+                        lzmaStream.Write(buf, 0, 8);
 
                         lastscan = scan - lenb;
                         lastpos = pos - lenb;
@@ -207,10 +207,10 @@ namespace TaleOfTwoWastelands.Patching
             WriteInt64(controlEndPosition - startPosition - c_headerSize, header, 8);
 
             // write compressed diff data
-            using (WrappingStream wrappingStream = new WrappingStream(output, Ownership.None))
-            using (BZip2OutputStream bz2Stream = new BZip2OutputStream(wrappingStream))
+            using (WrappingStream wrappingStream = new WrappingStream(output, false))
+            using (var lzmaStream = new LzmaEncodeStream(wrappingStream))
             {
-                bz2Stream.Write(db, 0, dblen);
+                lzmaStream.Write(db, 0, dblen);
             }
 
             // compute size of compressed diff data
@@ -218,10 +218,10 @@ namespace TaleOfTwoWastelands.Patching
             WriteInt64(diffEndPosition - controlEndPosition, header, 16);
 
             // write compressed extra data
-            using (WrappingStream wrappingStream = new WrappingStream(output, Ownership.None))
-            using (BZip2OutputStream bz2Stream = new BZip2OutputStream(wrappingStream))
+            using (WrappingStream wrappingStream = new WrappingStream(output, false))
+            using (var lzmaStream = new LzmaEncodeStream(wrappingStream))
             {
-                bz2Stream.Write(eb, 0, eblen);
+                lzmaStream.Write(eb, 0, eblen);
             }
 
             // seek to the beginning, write the header, then seek back to end
