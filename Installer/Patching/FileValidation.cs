@@ -1,13 +1,9 @@
-﻿using BSAsharp;
-using BSAsharp.Extensions;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.Serialization;
-using System.Text;
-using System.Threading.Tasks;
+using BSAsharp;
+using BSAsharp.Extensions;
 using Murmur;
 
 namespace TaleOfTwoWastelands.Patching
@@ -19,35 +15,14 @@ namespace TaleOfTwoWastelands.Patching
         private readonly Murmur32 Hash32 = MurmurHash.Create32(managed: false);
 
         public uint Filesize { get; private set; }
-        private uint[] _writtenChecksums;
-
-        public IEnumerable<uint> Checksums
-        {
-            get
-            {
-                return _writtenChecksums ?? (_lazyChecksums != null ? (Checksums = _lazyChecksums.Value) : null);
-            }
-            private set
-            {
-                if (_writtenChecksums != value)
-                {
-                    _writtenChecksums = value != null ? value.ToArray() : null;
-                }
-            }
-        }
+        public IEnumerable<uint> Checksums { get; private set; }
 
         private readonly Stream _inStream;
-        private readonly Lazy<IEnumerable<uint>> _lazyChecksums;
 
-        public FileValidation(byte[] data, uint size)
-        {
-            _lazyChecksums = new Lazy<IEnumerable<uint>>(() => getHashes(data));
-            Filesize = size;
-        }
         public FileValidation(Stream stream, uint? size = null)
         {
             _inStream = stream;
-            _lazyChecksums = new Lazy<IEnumerable<uint>>(() => getHashes(stream));
+            Checksums = getHashes(stream).Memoize();
             Filesize = size ?? (uint)stream.Length;
         }
         private FileValidation() { }
@@ -81,7 +56,9 @@ namespace TaleOfTwoWastelands.Patching
         {
             //if you stringify ones of these in a debugger window, you're going to get
             //an exception from re-reading the stream after it's finished enumerating
-            //NOTE: Lazy<T> makes this not true any more
+            //NOTE: memoization makes this not true any more
+
+            //TODO: fix this to return a meaningful checksum
             if (Checksums != null)
                 return string.Format("({0}, {1} bytes)", Checksums.LastOrDefault(), Filesize);
             return base.ToString();
@@ -126,7 +103,7 @@ namespace TaleOfTwoWastelands.Patching
             return new FileValidation()
             {
                 Filesize = Filesize,
-                _writtenChecksums = Checksums
+                Checksums = Checksums
             };
         }
 
@@ -147,11 +124,6 @@ namespace TaleOfTwoWastelands.Patching
         private uint getHash(byte[] buf)
         {
             return BitConverter.ToUInt32(Hash32.ComputeHash(buf), 0);
-        }
-
-        private IEnumerable<uint> getHashes(byte[] buf)
-        {
-            return getHashes(new MemoryStream(buf));
         }
 
         private IEnumerable<uint> getHashes(Stream stream)

@@ -82,6 +82,9 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Interactive">
+      <HintPath>..\packages\Ix-Main.1.2.2\lib\net40\System.Interactive.dll</HintPath>
+    </Reference>
     <Reference Include="System.IO">
       <HintPath>..\packages\Microsoft.Bcl.1.1.9\lib\net40\System.IO.dll</HintPath>
     </Reference>
@@ -105,10 +108,9 @@
     <Compile Include="Patching\BinaryPatchUtility.cs" />
     <Compile Include="BSA.cs" />
     <Compile Include="Patching\BSADiff.cs" />
-    <Compile Include="Patching\PatchMap.cs" />
+    <Compile Include="Patching\PatchDict.cs" />
     <Compile Include="Patching\PatchInfo.cs" />
     <Compile Include="Patching\FileValidation.cs" />
-    <Compile Include="Patching\RHBackshiftMap.cs" />
     <Compile Include="Patching\WrappingStream.cs" />
     <Compile Include="UI\frm_Main.cs">
       <SubType>Form</SubType>

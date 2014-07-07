@@ -2,6 +2,7 @@
 #define CREATE
 using System;
 using System.IO;
+using System.Runtime.InteropServices;
 using ICSharpCode.SharpZipLib.BZip2;
 using SevenZip;
 
@@ -37,9 +38,9 @@ namespace TaleOfTwoWastelands.Patching
     */
     class BinaryPatchUtility
     {
-        const long c_fileSignature = 0x3034464649445342L;
-        const int c_headerSize = 32;
-        const int c_bufferSize = 0x100000;
+        public const long FILE_SIGNATURE = 0x3034464649445342L;
+        public const int HEADER_SIZE = 32;
+        public const int BUFFER_SIZE = 0x100000;
 
 #if CREATE
         /// <summary>
@@ -73,8 +74,8 @@ namespace TaleOfTwoWastelands.Patching
                 32	??	Bzip2ed ctrl block
                 ??	??	Bzip2ed diff block
                 ??	??	Bzip2ed extra block */
-            byte[] header = new byte[c_headerSize];
-            WriteInt64(c_fileSignature, header, 0); // "BSDIFF40"
+            byte[] header = new byte[HEADER_SIZE];
+            WriteInt64(FILE_SIGNATURE, header, 0); // "BSDIFF40"
             WriteInt64(0, header, 8);
             WriteInt64(0, header, 16);
             WriteInt64(newData.Length, header, 24);
@@ -205,7 +206,7 @@ namespace TaleOfTwoWastelands.Patching
 
             // compute size of compressed ctrl data
             long controlEndPosition = output.Position;
-            WriteInt64(controlEndPosition - startPosition - c_headerSize, header, 8);
+            WriteInt64(controlEndPosition - startPosition - HEADER_SIZE, header, 8);
 
             // write compressed diff data
             using (WrappingStream wrappingStream = new WrappingStream(output, false))
@@ -438,7 +439,7 @@ namespace TaleOfTwoWastelands.Patching
             second = temp;
         }
 
-        private static void WriteInt64(long value, byte[] buf, int offset)
+        public static void WriteInt64(long value, byte[] buf, int offset)
         {
             var valBytes = BitConverter.GetBytes(value < 0 ? -value : value);
             Buffer.BlockCopy(valBytes, 0, buf, offset, valBytes.Length);
@@ -458,12 +459,13 @@ namespace TaleOfTwoWastelands.Patching
         /// This stream must support reading and seeking, and <paramref name="openPatchStream"/> must allow multiple streams on
         /// the patch to be opened concurrently.</param>
         /// <param name="output">A <see cref="Stream"/> to which the patched data is written.</param>
-        public static unsafe void Apply(Stream input, byte* pData, long length, Stream output)
+        public static unsafe void Apply(byte* pInput, long length, byte* pPatch, long patchLength, Stream output)
         {
-            Func<Stream> openPatchStream = () => new UnmanagedMemoryStream(pData, length);
+            Func<long, long, Stream> openPatchStream = (u_offset, u_length) =>
+                new UnmanagedMemoryStream(pPatch + u_offset, u_length > 0 ? u_length : patchLength - u_offset);
 
             // check arguments
-            if (input == null)
+            if (pInput == null)
                 throw new ArgumentNullException("input");
             if (openPatchStream == null)
                 throw new ArgumentNullException("openPatchStream");
@@ -472,20 +474,21 @@ namespace TaleOfTwoWastelands.Patching
 
             /*
             File format:
-                0	8	"BSDIFF40"
-                8	8	X
-                16	8	Y
-                24	8	sizeof(newfile)
-                32	X	bzip2(control block)
+                0	    8	"BSDIFF40"
+                8	    8	X
+                16	    8	Y
+                24	    8	sizeof(newfile)
+                32      X	bzip2(control block)
                 32+X	Y	bzip2(diff block)
                 32+X+Y	???	bzip2(extra block)
             with control block a set of triples (x,y,z) meaning "add x bytes
             from oldfile to x bytes from the diff block; copy y bytes from the
             extra block; seek forwards in oldfile by z bytes".
             */
+
             // read header
             long controlLength, diffLength, newSize;
-            using (Stream patchStream = openPatchStream())
+            using (Stream patchStream = openPatchStream(0, HEADER_SIZE))
             {
                 // check patch stream capabilities
                 if (!patchStream.CanRead)
@@ -493,12 +496,12 @@ namespace TaleOfTwoWastelands.Patching
                 if (!patchStream.CanSeek)
                     throw new ArgumentException("Patch stream must be seekable.", "openPatchStream");
 
-                byte[] header = new byte[c_headerSize];
-                patchStream.Read(header, 0, c_headerSize);
+                byte[] header = new byte[HEADER_SIZE];
+                patchStream.Read(header, 0, HEADER_SIZE);
 
                 // check for appropriate magic
                 long signature = ReadInt64(header, 0);
-                if (signature != c_fileSignature)
+                if (signature != FILE_SIGNATURE)
                     throw new InvalidOperationException("Corrupt patch.");
 
                 // read lengths from header
@@ -510,20 +513,14 @@ namespace TaleOfTwoWastelands.Patching
             }
 
             // preallocate buffers for reading and writing
-            byte[] newData = new byte[c_bufferSize];
-            byte[] oldData = new byte[c_bufferSize];
+            byte[] newData = new byte[BUFFER_SIZE];
 
             // prepare to read three parts of the patch in parallel
             using (
-                Stream compressedControlStream = openPatchStream(),
-                compressedDiffStream = openPatchStream(),
-                compressedExtraStream = openPatchStream())
+                Stream compressedControlStream = openPatchStream(HEADER_SIZE, controlLength),
+                compressedDiffStream = openPatchStream(HEADER_SIZE + controlLength, diffLength),
+                compressedExtraStream = openPatchStream(HEADER_SIZE + controlLength + diffLength, -1))
             {
-                // seek to the start of each part
-                compressedControlStream.Seek(c_headerSize, SeekOrigin.Current);
-                compressedDiffStream.Seek(c_headerSize + controlLength, SeekOrigin.Current);
-                compressedExtraStream.Seek(c_headerSize + controlLength + diffLength, SeekOrigin.Current);
-
                 // decompress each part (to read it)
                 using (var controlStream = new BZip2InputStream(compressedControlStream))
                 using (var diffStream = new BZip2InputStream(compressedDiffStream))
@@ -547,25 +544,19 @@ namespace TaleOfTwoWastelands.Patching
                         if (newPosition + control[0] > newSize)
                             throw new InvalidOperationException("Corrupt patch.");
 
-                        // seek old file to the position that the new data is diffed against
-                        input.Position = oldPosition;
-
                         int bytesToCopy = (int)control[0];
                         while (bytesToCopy > 0)
                         {
-                            int actualBytesToCopy = Math.Min(bytesToCopy, c_bufferSize);
+                            int actualBytesToCopy = Math.Min(bytesToCopy, BUFFER_SIZE);
 
                             // read diff string
                             diffStream.Read(newData, 0, actualBytesToCopy);
 
                             // add old data to diff string
-                            int availableInputBytes = Math.Min(actualBytesToCopy, (int)(input.Length - input.Position));
-                            input.Read(oldData, 0, availableInputBytes);
-
+                            int availableInputBytes = Math.Min(actualBytesToCopy, (int)(length - oldPosition));
                             fixed (byte* pN = newData)
-                            fixed (byte* pO = oldData)
                                 for (int i = 0; i < availableInputBytes; i++)
-                                    pN[i] += pO[i];
+                                    pN[i] += pInput[oldPosition + i];
 
                             output.Write(newData, 0, actualBytesToCopy);
 
@@ -583,7 +574,7 @@ namespace TaleOfTwoWastelands.Patching
                         bytesToCopy = (int)control[1];
                         while (bytesToCopy > 0)
                         {
-                            int actualBytesToCopy = Math.Min(bytesToCopy, c_bufferSize);
+                            int actualBytesToCopy = Math.Min(bytesToCopy, BUFFER_SIZE);
 
                             extraStream.Read(newData, 0, actualBytesToCopy);
                             output.Write(newData, 0, actualBytesToCopy);
@@ -600,7 +591,7 @@ namespace TaleOfTwoWastelands.Patching
         }
 #endif
 
-        private static unsafe long ReadInt64(byte[] buf, int offset)
+        public static unsafe long ReadInt64(byte[] buf, int offset)
         {
             long y;
 

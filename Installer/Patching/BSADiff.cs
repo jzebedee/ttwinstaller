@@ -48,13 +48,10 @@ namespace TaleOfTwoWastelands.Patching
 
                 var renamePath = Path.Combine(PatchDir, Path.ChangeExtension(outBsaFilename, ".ren"));
                 if (File.Exists(renamePath))
-                {
-                    foreach (var line in File.ReadLines(renamePath))
-                    {
-                        var lsplit = line.Split('\0');
-                        renameDict.Add(lsplit.First(), lsplit.Last());
-                    }
-                }
+                    using (var stream = File.OpenRead(renamePath))
+                    using (var reader = new BinaryReader(stream))
+                        while (stream.Position < stream.Length)
+                            renameDict.Add(reader.ReadString(), reader.ReadString());
             }
             finally
             {
@@ -69,8 +66,7 @@ namespace TaleOfTwoWastelands.Patching
                 var patchPath = Path.Combine(PatchDir, Path.ChangeExtension(outBsaFilename, ".pat"));
                 if (File.Exists(patchPath))
                 {
-                    var patchMap = new PatchMap(patchPath);
-                    patchDict = patchMap.ToDictionary();
+                    patchDict = new PatchDict(patchPath);
                 }
                 else
                 {
@@ -160,7 +156,7 @@ namespace TaleOfTwoWastelands.Patching
                                     }
                                     else
                                     {
-                                        progressLog.Report("Corrupted patch for file " + join.bsaFile.Filename);
+                                        progressLog.Report("Empty patch for file " + join.bsaFile.Filename);
 #if PARALLEL
                                         return;
 #else
@@ -289,16 +285,19 @@ namespace TaleOfTwoWastelands.Patching
             if (patch.Data != null)
             {
                 //a patch exists for the file
+
+                //InflaterInputStream won't let the patcher seek it,
+                //so we have to perform a new allocate-and-copy
+                var inputBytes = bsaFile.GetContents(true);
+
                 using (MemoryStream
-                    //InflaterInputStream won't let the patcher seek it,
-                    //so we have to perform a new allocate-and-copy
-                    input = new MemoryStream(bsaFile.GetContents(true)),
                     output = new MemoryStream())
                 {
                     unsafe
                     {
-                        fixed (byte* pData = patch.Data)
-                            BinaryPatchUtility.Apply(input, pData, patch.Data.Length, output);
+                        fixed (byte* pInput = inputBytes)
+                        fixed (byte* pPatch = patch.Data)
+                            BinaryPatchUtility.Apply(pInput, inputBytes.Length, pPatch, patch.Data.Length, output);
                     }
 
                     output.Seek(0, SeekOrigin.Begin);

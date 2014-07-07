@@ -9,7 +9,6 @@ using BSAsharp;
 using TaleOfTwoWastelands;
 using TaleOfTwoWastelands.Patching;
 using TaleOfTwoWastelands.ProgressTypes;
-
 namespace PatchMaker
 {
     class Program
@@ -32,10 +31,6 @@ namespace PatchMaker
                     return;
             }
 
-#if RECHECK
-                        bool keepGoing = true;
-#endif
-
             Directory.CreateDirectory(BUILD_DIR);
 
             var dirTTWMain = Path.Combine(SOURCE_DIR, Installer.MainDir);
@@ -47,30 +42,21 @@ namespace PatchMaker
             var Fallout3Path = fo3Key.GetValue("Installed Path", "").ToString();
             var dirFO3Data = Path.Combine(Fallout3Path, "Data");
 
-            //            foreach (var ESM in Installer.CheckedESMs)
-            //            {
-            //                var fixPath = Path.Combine(BUILD_DIR, ESM + ".pat");
-            //                if (!File.Exists(fixPath))
-            //                {
-            //                    var dataESM = Path.Combine(dirFO3Data, ESM);
-            //                    var ttwESM = Path.Combine(dirTTWMain, ESM);
+            foreach (var ESM in Installer.CheckedESMs)
+            {
+                var fixPath = Path.Combine(BUILD_DIR, ESM + ".pat");
+                if (!File.Exists(fixPath))
+                {
+                    var dataESM = Path.Combine(dirFO3Data, ESM);
+                    var ttwESM = Path.Combine(dirTTWMain, ESM);
 
-            //                    //var fvOriginal = FileValidation.FromFile(dataESM);
+                    var patch = PatchInfo.FromFile("", dataESM, ttwESM);
 
-            //                    var patch = PatchInfo.FromFile("", dataESM, ttwESM);
-
-            //                    using (var fixStream = File.OpenWrite(fixPath))
-            //                        Serializer.Serialize(fixStream, patch);
-            //                }
-            //#if RECHECK
-            //                using (var fixStream = File.OpenRead(fixPath))
-            //                {
-            //                    var p = Serializer.Deserialize<PatchInfo>(fixStream);
-            //                    if (keepGoing)
-            //                        Debugger.Break();
-            //                }
-            //#endif
-            //            }
+                    using (var fixStream = File.OpenWrite(fixPath))
+                    using (var writer = new BinaryWriter(fixStream))
+                        patch.WriteTo(writer);
+                }
+            }
 
             var progressLog = new Progress<string>(s => Debug.Write(s));
             var progressUIMinor = new Progress<OperationProgress>();
@@ -94,12 +80,12 @@ namespace PatchMaker
                         renameDict = new Dictionary<string, string>(renDict);
                         var newRenPath = Path.Combine(BUILD_DIR, Path.ChangeExtension(outBsaName, ".ren"));
                         if (!File.Exists(newRenPath))
-                            using (var writer = new StreamWriter(newRenPath))
+                            using (var stream = File.OpenWrite(newRenPath))
+                            using (var writer = new BinaryWriter(stream))
                                 foreach (var kvp in renameDict)
                                 {
                                     writer.Write(kvp.Key);
-                                    writer.Write('\0');
-                                    writer.WriteLine(kvp.Value);
+                                    writer.Write(kvp.Value);
                                 }
                     }
                     else
@@ -165,7 +151,7 @@ namespace PatchMaker
                                         };
                     var allJoinedPatches = joinedPatches.ToList();
 
-                    var patchMap = new PatchMap((uint)allJoinedPatches.Count);
+                    var patchDict = new PatchDict(allJoinedPatches.Count);
                     foreach (var join in allJoinedPatches)
                     {
                         if (string.IsNullOrEmpty(join.oldChk.Key))
@@ -174,7 +160,7 @@ namespace PatchMaker
                         var oldFilename = join.oldBsaFile.Filename;
                         if (oldFilename.StartsWith(BSADiff.voicePrefix))
                         {
-                            patchMap.Put(join.file, new PatchInfo());
+                            patchDict.Add(join.file, new PatchInfo());
                             continue;
                         }
 
@@ -196,16 +182,11 @@ namespace PatchMaker
                         else
                             //without this, we will generate sparse (patch-only) fixups
                             patchInfo = new PatchInfo { Metadata = newChk };
-                        patchMap.Put(join.file, patchInfo);
+                        patchDict.Add(join.file, patchInfo);
                     }
 
-#if RECHECK
-                                var ancCheckDict = ReadOldDict(outBsaName, "Checksums.dict");
-                                Trace.Assert(ancCheckDict.Keys.SequenceEqual(checkDict.Keys.OrderBy(key => key)));
-#endif
-
                     using (var stream = File.OpenWrite(patPath))
-                        patchMap.WriteAll(stream);
+                        patchDict.WriteAll(stream);
                 }
             }
         }
