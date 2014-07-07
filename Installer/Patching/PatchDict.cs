@@ -21,9 +21,7 @@ namespace TaleOfTwoWastelands.Patching
                 while (stream.Position < stream.Length)
                 {
                     var key = reader.ReadString();
-                    var valSize = reader.ReadInt32();
-
-                    Add(key, ReadPatches(reader.ReadBytes(valSize)));
+                    Add(key, ReadPatches(reader));
                 }
             }
         }
@@ -35,7 +33,6 @@ namespace TaleOfTwoWastelands.Patching
                 foreach (var kvp in this)
                 {
                     writer.Write(kvp.Key);
-                    writer.Write(kvp.Value.Length);
                     writer.Write(WritePatches(kvp.Value));
                 }
             }
@@ -46,20 +43,16 @@ namespace TaleOfTwoWastelands.Patching
             base.Add(key, patches);
         }
 
-        private PatchInfo[] ReadPatches(byte[] buf)
+        private PatchInfo[] ReadPatches(BinaryReader reader)
         {
-            using (var ms = new MemoryStream(buf))
-            using (var reader = new BinaryReader(ms))
+            var patchCount = reader.ReadInt32();
+            var patches = new PatchInfo[patchCount];
+            for (int i = 0; i < patchCount; i++)
             {
-                var patchCount = reader.ReadInt32();
-                var patches = new PatchInfo[patchCount];
-                for (int i = 0; i < patchCount; i++)
-                {
-                    patches[i] = new PatchInfo(reader);
-                }
-
-                return patches;
+                patches[i] = new PatchInfo(reader);
             }
+
+            return patches;
         }
 
         private byte[] WritePatches(PatchInfo[] patches)

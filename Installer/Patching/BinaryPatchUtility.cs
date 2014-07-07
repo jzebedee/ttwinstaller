@@ -1,9 +1,10 @@
 ﻿#define PATCH
 #define CREATE
 using System;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
-using ICSharpCode.SharpZipLib.BZip2;
 using SevenZip;
 
 namespace TaleOfTwoWastelands.Patching
@@ -439,13 +440,10 @@ namespace TaleOfTwoWastelands.Patching
             second = temp;
         }
 
-        public static void WriteInt64(long value, byte[] buf, int offset)
+        public static unsafe void WriteInt64(long value, byte[] buf, int offset)
         {
-            var valBytes = BitConverter.GetBytes(value < 0 ? -value : value);
-            Buffer.BlockCopy(valBytes, 0, buf, offset, valBytes.Length);
-
-            if (value < 0)
-                buf[offset + 7] |= 0x80;
+            fixed (byte* pBuf = &buf[offset])
+                *((ulong*)pBuf) = (ulong)value;
         }
 #endif
 
@@ -522,9 +520,9 @@ namespace TaleOfTwoWastelands.Patching
                 compressedExtraStream = openPatchStream(HEADER_SIZE + controlLength + diffLength, -1))
             {
                 // decompress each part (to read it)
-                using (var controlStream = new BZip2InputStream(compressedControlStream))
-                using (var diffStream = new BZip2InputStream(compressedDiffStream))
-                using (var extraStream = new BZip2InputStream(compressedExtraStream))
+                using (var controlStream = new LzmaDecodeStream(compressedControlStream))
+                using (var diffStream = new LzmaDecodeStream(compressedDiffStream))
+                using (var extraStream = new LzmaDecodeStream(compressedExtraStream))
                 {
                     long[] control = new long[3];
                     byte[] buffer = new byte[8];
@@ -604,8 +602,11 @@ namespace TaleOfTwoWastelands.Patching
                     y += pBuf[i];
                 }
 
-                return (pBuf[7] & 0x80) != 0 ? -y : y;
+                y = (pBuf[7] & 0x80) != 0 ? -y : y;
             }
+
+            //Debug.Assert(y == BitConverter.ToInt64(buf, offset));
+            return y;
         }
     }
 }

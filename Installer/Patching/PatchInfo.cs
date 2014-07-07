@@ -191,7 +191,8 @@ namespace TaleOfTwoWastelands.Patching
                     writer.Write(signature);
                     writer.Write(lzmaControlBytes.LongLength);
                     writer.Write(lzmaDiffBytes.LongLength);
-                    writer.Write(lzmaExtraBytes.LongLength);
+                    //BinaryPatchUtility.WriteInt64(lzmaExtraBytes.LongLength, writer);
+                    writer.Write(newSize);
                     writer.Write(lzmaControlBytes);
                     writer.Write(lzmaDiffBytes);
                     writer.Write(lzmaExtraBytes);
