@@ -58,8 +58,8 @@ namespace PatchMaker
                 }
             }
 
-            var progressLog = new Progress<string>(s => Debug.Write(s));
-            var progressUIMinor = new Progress<OperationProgress>();
+            var progressLog = new System.Progress<string>(s => Debug.Write(s));
+            var progressUIMinor = new System.Progress<InstallOperation>();
             var token = new CancellationTokenSource().Token;
             foreach (var kvpBsa in Installer.BuildableBSAs)
             {
@@ -158,7 +158,7 @@ namespace PatchMaker
                             Debug.Fail("File not found: " + join.file);
 
                         var oldFilename = join.oldBsaFile.Filename;
-                        if (oldFilename.StartsWith(BSADiff.voicePrefix))
+                        if (oldFilename.StartsWith(BSADiff.VOICE_PREFIX))
                         {
                             patchDict.Add(join.file, new PatchInfo());
                             continue;
