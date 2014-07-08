@@ -15,6 +15,8 @@ using System.Security.Principal;
 using System.Diagnostics;
 using TaleOfTwoWastelands.ProgressTypes;
 using Microsoft;
+using System.Reactive.Subjects;
+using System.Reactive.Linq;
 
 namespace TaleOfTwoWastelands.UI
 {
@@ -35,21 +37,27 @@ namespace TaleOfTwoWastelands.UI
             Trace.Assert(new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator));
 
             //Progress<T> maintains SynchronizationContext
-            var progText = new Progress<string>(msg => UpdateLog(msg));
-            var progUIMinor = new Progress<OperationProgress>(opProg => UpdateProgressBar(opProg, prgCurrent));
-            var progUIMajor = new Progress<OperationProgress>(opProg => UpdateProgressBar(opProg, prgOverall));
+            _install = new Installer(dlg_FindGame, dlg_SaveTTW);
+            _install.ProgressLog.ProgressChanged += (s, m) => UpdateLog(m);
+            _install.ProgressMinorOperation.ProgressChanged += (s, m) => UpdateProgressBar(m, prgCurrent);
+            _install.ProgressMajorOperation.ProgressChanged += (s, m) => UpdateProgressBar(m, prgOverall);
 
-            _install = new Installer(progText, progUIMinor, progUIMajor, dlg_FindGame, dlg_SaveTTW);
             txt_FO3Location.Text = _install.Fallout3Path;
             txt_FNVLocation.Text = _install.FalloutNVPath;
             txt_TTWLocation.Text = _install.TTWSavePath;
         }
 
-        private void UpdateProgressBar(OperationProgress opProg, TextProgressBar bar)
+        private void UpdateProgressBar(OperationProgressUpdate update, TextProgressBar bar)
         {
-            bar.Maximum = opProg.ItemsTotal;
-            bar.Value = opProg.ItemsDone;
-            bar.CustomText = opProg.CurrentOperation;
+            var change = update.Change;
+            var opProg = update.Progress;
+
+            if (change.HasFlag(ChangeType.ItemsTotal))
+                bar.Maximum = opProg.ItemsTotal;
+            if (change.HasFlag(ChangeType.ItemsDone))
+                bar.Value = opProg.ItemsDone;
+            if (change.HasFlag(ChangeType.CurrentOperation))
+                bar.CustomText = opProg.CurrentOperation;
         }
 
         private void UpdateLog(string msg)

@@ -13,6 +13,9 @@ using BSAsharp;
 using TaleOfTwoWastelands.ProgressTypes;
 using TaleOfTwoWastelands.Patching;
 using Microsoft;
+using System.Reactive.Subjects;
+using System.Reactive;
+using System.Reactive.Linq;
 
 namespace TaleOfTwoWastelands
 {
@@ -86,11 +89,7 @@ namespace TaleOfTwoWastelands
 
         static readonly string TTWBase = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "My Games", "TaleOfTwoWastelands");
 
-        readonly private IProgress<string> progressLog, progressText, progressDual;
-        readonly private StreamWriter logFile;
-        readonly private IProgress<OperationProgress> progressUIMinor, progressUIMajor;
-
-        readonly private Action<string> WriteLog, LogOutput;
+        readonly private StreamWriter logWriter;
 
         readonly string dirFO3Data, dirFNVData;
         readonly Dictionary<string, string> CheckSums;
@@ -105,7 +104,34 @@ namespace TaleOfTwoWastelands
         public string FalloutNVPath { get; private set; }
         public string TTWSavePath { get; private set; }
 
-        public Installer(IProgress<string> progressText, IProgress<OperationProgress> progressUIMinor, IProgress<OperationProgress> progressUIMajor, OpenFileDialog openDialog, SaveFileDialog saveDialog)
+        private BSADiff bsaDiff;
+
+        /// <summary>
+        /// Provides progress messages tailored for user display
+        /// </summary>
+        public Progress<string> ProgressLog { get; private set; }
+        /// <summary>
+        /// Provides progress messages for debugging
+        /// </summary>
+        private Progress<string> ProgressFile { get; set; }
+        /// <summary>
+        /// Reports progress messages to both user display and debugging
+        /// </summary>
+        private Progress<string> ProgressDual { get; set; }
+        /// <summary>
+        /// Provides progress updates for minor operations
+        /// </summary>
+        public Progress<OperationProgressUpdate> ProgressMinorOperation { get; private set; }
+        /// <summary>
+        /// Provides progress updates for major operations
+        /// </summary>
+        public Progress<OperationProgressUpdate> ProgressMajorOperation { get; private set; }
+
+        private IProgress<string> progressLog { get { return ProgressLog; } }
+        private IProgress<string> progressFile { get { return ProgressFile; } }
+        private IProgress<string> progressDual { get { return ProgressDual; } }
+
+        public Installer(OpenFileDialog openDialog, SaveFileDialog saveDialog)
         {
             //Create TTW log directory
             Directory.CreateDirectory(TTWBase);
@@ -113,27 +139,20 @@ namespace TaleOfTwoWastelands
             //Create and open TTW log file
             var logFilename = "Install Log " + DateTime.Now.ToString("MM_dd_yyyy - HH_mm_ss") + ".txt";
             var logFilepath = Path.Combine(TTWBase, logFilename);
-            this.logFile = new StreamWriter(logFilepath, true) { AutoFlush = true };
+            this.logWriter = new StreamWriter(logFilepath, true) { AutoFlush = true };
 
-            this.progressUIMinor = progressUIMinor;
-            this.progressUIMajor = progressUIMajor;
+            ProgressLog = new Progress<string>();
+            ProgressFile = new Progress<string>(msg => logWriter.WriteLine("[{0}]\t{1}", DateTime.Now, msg));
 
-            this.progressText = progressText;
-            this.LogOutput = (s) => progressText.Report(s);
+            ProgressDual = new Progress<string>(msg => LogDual(msg));
 
-            this.progressLog = new Progress<string>(log => logFile.WriteLine("[{0}]\t{1}", DateTime.Now, log));
-            this.WriteLog = (s) => progressLog.Report(s);
-
-            this.progressDual = new Progress<string>(s =>
-            {
-                LogOutput(s);
-                WriteLog(s);
-            });
+            ProgressMinorOperation = new Progress<OperationProgressUpdate>();
+            ProgressMajorOperation = new Progress<OperationProgressUpdate>();
 
             if (Environment.Is64BitOperatingSystem)
-                WriteLog("\t64-bit architecture found.");
+                LogFile("\t64-bit architecture found.");
             else
-                WriteLog("\t32-bit architecture found.");
+                LogFile("\t32-bit architecture found.");
 
             //create or retrieve FO3 path
             Fallout3Path = GetPathFromKey("Fallout3");
@@ -149,6 +168,20 @@ namespace TaleOfTwoWastelands
             CheckSums = BuildChecksumDictionary(Path.Combine(AssetsDir, "TTW Data", "TTW Patches", "TTW_Checksums.txt"));
 
             InstallChecks(openDialog, saveDialog);
+        }
+
+        private void LogDisplay(string s)
+        {
+            progressLog.Report(s);
+        }
+        private void LogFile(string s)
+        {
+            progressFile.Report(s);
+        }
+        private void LogDual(string s)
+        {
+            LogDisplay(s);
+            LogFile(s);
         }
 
         public static RegistryKey GetBethKey()
@@ -199,7 +232,9 @@ namespace TaleOfTwoWastelands
             LinkedSource = CancellationTokenSource.CreateLinkedTokenSource(inToken);
             this.Token = LinkedSource.Token;
 
-            var opProg = new OperationProgress(progressUIMajor, Token) { ItemsTotal = 7 + BuildableBSAs.Count + CheckedESMs.Length };
+            bsaDiff = new BSADiff(ProgressLog, ProgressMinorOperation, Token);
+
+            var opProg = new InstallOperation(ProgressMajorOperation, Token) { ItemsTotal = 7 + BuildableBSAs.Count + CheckedESMs.Length };
             try
             {
                 try
@@ -208,13 +243,13 @@ namespace TaleOfTwoWastelands
 
                     if (CheckFiles())
                     {
-                        WriteLog("All files found.");
-                        LogOutput("All files found. Proceeding with installation.");
+                        LogFile("All files found.");
+                        LogDisplay("All files found. Proceeding with installation.");
                     }
                     else
                     {
-                        WriteLog("Missing files detected. Aborting install.");
-                        LogOutput("The above files were not found. Make sure your Fallout 3 location is accurate and try again.\nInstallation failed.");
+                        LogFile("Missing files detected. Aborting install.");
+                        LogDisplay("The above files were not found. Make sure your Fallout 3 location is accurate and try again.\nInstallation failed.");
                         return;
                     }
                 }
@@ -229,8 +264,8 @@ namespace TaleOfTwoWastelands
                     var curOp = "Creating FOMOD foundation";
                     opProg.CurrentOperation = curOp;
 
-                    WriteLog(curOp);
-                    Util.CopyFolder(Path.Combine(AssetsDir, "TTW Data", "TTW Files"), TTWSavePath, (s) => WriteLog(s));
+                    LogFile(curOp);
+                    Util.CopyFolder(Path.Combine(AssetsDir, "TTW Data", "TTW Files"), TTWSavePath, (s) => LogFile(s));
                 }
                 finally
                 {
@@ -317,18 +352,18 @@ namespace TaleOfTwoWastelands
 
                 opProg.Finish();
 
-                LogOutput("Install completed successfully.");
+                LogDisplay("Install completed successfully.");
                 MessageBox.Show("Tale of Two Wastelands has been installed successfully.");
             }
             catch (OperationCanceledException)
             {
                 //intentionally cancelled - swallow exception
-                WriteLog("Install was cancelled.");
+                LogFile("Install was cancelled.");
             }
             catch (Exception ex)
             {
-                WriteLog(ex.Message);
-                LogOutput(ex.Message);
+                LogFile(ex.Message);
+                LogDisplay(ex.Message);
                 MessageBox.Show("An unhandled exception has occurred:\n" + ex.Message, "Exception");
             }
         }
@@ -344,7 +379,7 @@ namespace TaleOfTwoWastelands
             }
         }
 
-        private void BuildBSAs(OperationProgress opProg)
+        private void BuildBSAs(InstallOperation opProg)
         {
             foreach (var KVP in BuildableBSAs)
             {
@@ -370,7 +405,7 @@ namespace TaleOfTwoWastelands
                             bsaOptions = DefaultBSAOptions;
                         }
 
-                        buildResult = BuildBSA(Token, bsaOptions, KVP.Key, KVP.Value);
+                        buildResult = BuildBSA(bsaOptions, KVP.Key, KVP.Value);
                     } while (!Token.IsCancellationRequested && buildResult == DialogResult.Retry);
                 }
                 finally
@@ -395,19 +430,19 @@ namespace TaleOfTwoWastelands
                 outBsa = new BSAWrapper(inBsa.Settings))
             {
 
-                LogOutput("Extracting songs");
+                LogDisplay("Extracting songs");
 
                 var songsPath = Path.Combine("sound", "songs");
                 bool skipExisting = false;
                 if (Directory.Exists(Path.Combine(dirTTWMain, songsPath)))
                     skipExisting = ShowSkipDialog("Fallout 3 songs");
-                BSA.ExtractBSA(progressLog, Token, inBsa.Where(folder => folder.Path.StartsWith(songsPath)), dirTTWMain, skipExisting, "Fallout - Sound");
+                BSA.ExtractBSA(ProgressLog, Token, inBsa.Where(folder => folder.Path.StartsWith(songsPath)), dirTTWMain, skipExisting, "Fallout - Sound");
 
                 var outBsaPath = Path.Combine(dirTTWOptional, "Fallout3 Sound Effects", "TaleOfTwoWastelands - SFX.bsa");
                 if (File.Exists(outBsaPath))
                     return;
 
-                LogOutput("Building optional TaleOfTwoWastelands - SFX.bsa...");
+                LogDisplay("Building optional TaleOfTwoWastelands - SFX.bsa...");
 
                 var fxuiPath = Path.Combine("sound", "fx", "ui");
 
@@ -428,11 +463,11 @@ namespace TaleOfTwoWastelands
                     outBsa.Add(group.Key);
                 }
 
-                WriteLog("Building TaleOfTwoWastelands - SFX.bsa.");
+                LogFile("Building TaleOfTwoWastelands - SFX.bsa.");
                 outBsa.Save(outBsaPath);
             }
 
-            LogOutput("Done\n");
+            LogDisplay("Done\n");
         }
 
         private void BuildVoice()
@@ -456,7 +491,7 @@ namespace TaleOfTwoWastelands
             }
         }
 
-        private bool PatchMasters(OperationProgress opProg)
+        private bool PatchMasters(InstallOperation opProg)
         {
             foreach (var ESM in CheckedESMs)
                 try
@@ -476,20 +511,20 @@ namespace TaleOfTwoWastelands
 
         private void BuildFOMODs()
         {
-            WriteLog("Building FOMODs.");
-            LogOutput("Building FOMODs...\n\tThis can take some time.");
+            LogFile("Building FOMODs.");
+            LogDisplay("Building FOMODs...\n\tThis can take some time.");
             Util.BuildFOMOD(dirTTWMain, Path.Combine(TTWSavePath, "TaleOfTwoWastelands_Main.fomod"));
             Util.BuildFOMOD(dirTTWOptional, Path.Combine(TTWSavePath, "TaleOfTwoWastelands_Options.fomod"));
-            WriteLog("Done.");
-            LogOutput("FOMODs built.");
+            LogFile("Done.");
+            LogDisplay("FOMODs built.");
         }
 
         private void FalloutLineCopy(string name, string path)
         {
             bool skipExisting = false, asked = false;
 
-            WriteLog("Copying " + name);
-            LogOutput("Copying " + name + "...");
+            LogFile("Copying " + name);
+            LogDisplay("Copying " + name + "...");
             foreach (var line in File.ReadLines(path))
             {
                 var linePath = Path.Combine(dirTTWMain, line);
@@ -515,21 +550,21 @@ namespace TaleOfTwoWastelands
                     }
                     catch (System.UnauthorizedAccessException error)
                     {
-                        WriteLog("ERROR: " + line + " did not copy successfully due to: Unauthorized Access Exception " + error.Source + ".");
+                        LogFile("ERROR: " + line + " did not copy successfully due to: Unauthorized Access Exception " + error.Source + ".");
                     }
                 }
                 else
-                    WriteLog("File Not Found:\t" + foLinePath);
+                    LogFile("File Not Found:\t" + foLinePath);
             }
-            WriteLog("Done.");
-            LogOutput("Done.");
+            LogFile("Done.");
+            LogDisplay("Done.");
         }
 
         private bool PatchFile(string filePatch, bool bSearchFO3 = true)
         {
             string newChecksum, curChecksum;
-            WriteLog("Patching " + filePatch + "...");
-            LogOutput("Patching " + filePatch + "...");
+            LogFile("Patching " + filePatch + "...");
+            LogDisplay("Patching " + filePatch + "...");
 
             var patchPath = Path.Combine(dirTTWMain, filePatch);
             var patchPathNew = Path.Combine(dirTTWMain, Path.ChangeExtension(filePatch, ".new"));
@@ -543,36 +578,36 @@ namespace TaleOfTwoWastelands
 
                 if (curChecksum == newChecksum)
                 {
-                    LogOutput(filePatch + " is up to date.");
-                    WriteLog(patchPath + " is already up to date.");
+                    LogDisplay(filePatch + " is up to date.");
+                    LogFile(patchPath + " is already up to date.");
                     return true;
                 }
                 else if (File.Exists(diffPath))
                 {
-                    WriteLog("\tApplying patch " + diffPath);
+                    LogFile("\tApplying patch " + diffPath);
                     if (Util.ApplyPatch(CheckSums, patchPath, diffPath, patchPathNew))
                     {
                         File.Replace(patchPathNew, patchPath, null);
-                        WriteLog("Patch successful.");
-                        LogOutput("Patch successful.");
+                        LogFile("Patch successful.");
+                        LogDisplay("Patch successful.");
                         return true;
                     }
                     else
-                        WriteLog("Patch failed.");
+                        LogFile("Patch failed.");
                 }
                 else
                 {
-                    WriteLog("No patch exists for " + patchPath + ", deleting.");
+                    LogFile("No patch exists for " + patchPath + ", deleting.");
                     File.Delete(patchPath);
                 }
             }
             else
-                WriteLog("\t" + filePatch + " not found in " + dirTTWMain);
+                LogFile("\t" + filePatch + " not found in " + dirTTWMain);
 
             var fo3PatchPath = Path.Combine(dirFO3Data, filePatch);
             if (File.Exists(fo3PatchPath) && bSearchFO3)
             {
-                WriteLog("\tChecking " + Fallout3Path);
+                LogFile("\tChecking " + Fallout3Path);
 
                 CheckSums.TryGetValue(filePatch, out newChecksum);
                 curChecksum = Util.GetMD5(fo3PatchPath);
@@ -581,31 +616,31 @@ namespace TaleOfTwoWastelands
 
                 if (curChecksum == newChecksum)
                 {
-                    LogOutput(filePatch + " is up to date.");
-                    WriteLog(fo3PatchPath + " is already up to date. Moving to " + dirTTWMain);
+                    LogDisplay(filePatch + " is up to date.");
+                    LogFile(fo3PatchPath + " is already up to date. Moving to " + dirTTWMain);
                     File.Copy(fo3PatchPath, patchPath);
                     return true;
                 }
                 else if (File.Exists(diffPath))
                 {
-                    WriteLog("\tApplying patch " + diffPath);
+                    LogFile("\tApplying patch " + diffPath);
                     if (Util.ApplyPatch(CheckSums, fo3PatchPath, diffPath, patchPath))
                     {
-                        WriteLog("Patch successful.");
-                        LogOutput("Patch successful.");
+                        LogFile("Patch successful.");
+                        LogDisplay("Patch successful.");
                         return true;
                     }
                     else
                     {
-                        WriteLog("Patch failed.");
-                        LogOutput("Patch failed for an unknown reason, try to install again. If this problem persists, please report it.");
+                        LogFile("Patch failed.");
+                        LogDisplay("Patch failed for an unknown reason, try to install again. If this problem persists, please report it.");
                         return false;
                     }
                 }
                 else
                 {
-                    WriteLog("No patch for this version of " + fo3PatchPath + " Exists. Install aborted.");
-                    LogOutput("Your version of " + filePatch + " cannot be patched.\n" +
+                    LogFile("No patch for this version of " + fo3PatchPath + " Exists. Install aborted.");
+                    LogDisplay("Your version of " + filePatch + " cannot be patched.\n" +
                         "\tCurrently Tale of Two Wastelands only works on legal, fully patched versions of Fallout3.\n" +
                         "Install aborted.");
                     return false;
@@ -613,21 +648,21 @@ namespace TaleOfTwoWastelands
             }
             else if (bSearchFO3)
             {
-                WriteLog(filePatch + " could not be found. Install aborted.");
-                LogOutput("The installer could not find " + filePatch + " in " + dirTTWMain + " or " + dirFO3Data +
+                LogFile(filePatch + " could not be found. Install aborted.");
+                LogDisplay("The installer could not find " + filePatch + " in " + dirTTWMain + " or " + dirFO3Data +
                     "\t Make sure you have selected the proper paths.\n" +
                     "\nInstall aborted.");
                 return false;
             }
             else
             {
-                WriteLog(patchPath + " cannot be patched. Install aborted.");
-                LogOutput("Your version of " + filePatch + " cannot be patched. This is abnormal.");
+                LogFile(patchPath + " cannot be patched. Install aborted.");
+                LogDisplay("Your version of " + filePatch + " cannot be patched. This is abnormal.");
                 return false;
             }
         }
 
-        private DialogResult BuildBSA(CancellationToken token, CompressionOptions bsaOptions, string inBSA, string outBSA)
+        private DialogResult BuildBSA(CompressionOptions bsaOptions, string inBSA, string outBSA)
         {
             string outBSAFile = Path.ChangeExtension(outBSA, ".bsa");
             string outBSAPath = Path.Combine(dirTTWMain, outBSAFile);
@@ -638,19 +673,19 @@ namespace TaleOfTwoWastelands
                 {
                     case System.Windows.Forms.DialogResult.Yes:
                         File.Delete(outBSAPath);
-                        WriteLog("Rebuilding " + outBSA);
-                        LogOutput("Rebuilding " + outBSA);
+                        LogFile("Rebuilding " + outBSA);
+                        LogDisplay("Rebuilding " + outBSA);
                         break;
                     case System.Windows.Forms.DialogResult.No:
-                        WriteLog(outBSA + " has already been built. Skipping.");
-                        LogOutput(outBSA + " has already been built. Skipping.");
+                        LogFile(outBSA + " has already been built. Skipping.");
+                        LogDisplay(outBSA + " has already been built. Skipping.");
                         return DialogResult.No;
                 }
             }
             else
             {
-                WriteLog("Building " + outBSA);
-                LogOutput("Building " + outBSA);
+                LogFile("Building " + outBSA);
+                LogDisplay("Building " + outBSA);
             }
 
             string inBSAFile = Path.ChangeExtension(inBSA, ".bsa");
@@ -664,7 +699,7 @@ namespace TaleOfTwoWastelands
             {
                 watch.Start();
 #endif
-                patchSuccess = BSADiff.PatchBSA(progressDual, progressUIMinor, token, bsaOptions, inBSAPath, outBSAPath);
+                patchSuccess = bsaDiff.PatchBSA(bsaOptions, inBSAPath, outBSAPath);
                 if (!patchSuccess)
                     progressDual.Report(string.Format("Patching BSA {0} failed", inBSA));
 #if DEBUG
@@ -681,51 +716,51 @@ namespace TaleOfTwoWastelands
                 switch (MessageBox.Show("Errors occurred while patching " + inBSA, "Error Warning", MessageBoxButtons.AbortRetryIgnore))
                 {
                     case System.Windows.Forms.DialogResult.Abort:   //Quit install
-                        WriteLog("Install aborted.");
-                        LogOutput("Install aborted.");
+                        LogFile("Install aborted.");
+                        LogDisplay("Install aborted.");
                         return System.Windows.Forms.DialogResult.Abort;
                     case System.Windows.Forms.DialogResult.Retry:   //Start over from scratch
-                        WriteLog("Retrying build.");
-                        LogOutput("Retrying build.");
+                        LogFile("Retrying build.");
+                        LogDisplay("Retrying build.");
                         return System.Windows.Forms.DialogResult.Retry;
                     case System.Windows.Forms.DialogResult.Ignore:  //Ignore errors and move on
-                        WriteLog("Ignoring errors.");
-                        LogOutput("Ignoring errors.");
+                        LogFile("Ignoring errors.");
+                        LogDisplay("Ignoring errors.");
                         return System.Windows.Forms.DialogResult.Ignore;
                 }
             }
 
-            WriteLog("Build successful.");
-            LogOutput("Build successful.");
+            LogFile("Build successful.");
+            LogDisplay("Build successful.");
             return System.Windows.Forms.DialogResult.OK;
         }
 
         private void InstallChecks(FileDialog open, FileDialog save)
         {
-            WriteLog("Looking for Fallout3.exe");
+            LogFile("Looking for Fallout3.exe");
             if (File.Exists(Path.Combine(Fallout3Path, "Fallout3.exe")))
             {
-                WriteLog("\tFound.");
+                LogFile("\tFound.");
             }
             else
             {
                 Fallout3Prompt(open);
             }
 
-            WriteLog("Looking for FalloutNV.exe");
+            LogFile("Looking for FalloutNV.exe");
             if (File.Exists(Path.Combine(FalloutNVPath, "FalloutNV.exe")))
             {
-                WriteLog("\tFound.");
+                LogFile("\tFound.");
             }
             else
             {
                 FalloutNVPrompt(open);
             }
 
-            WriteLog("Looking for Tale of Two Wastelands");
+            LogFile("Looking for Tale of Two Wastelands");
             if (TTWSavePath != null && TTWSavePath != "\\")
             {
-                WriteLog("\tDefault path found.");
+                LogFile("\tDefault path found.");
             }
             else
             {
@@ -735,7 +770,7 @@ namespace TaleOfTwoWastelands
 
         private string FindByUserPrompt(FileDialog dlg, string name, string keyName, bool manual = false)
         {
-            WriteLog(string.Format("\t{0} not found, prompting user.", name));
+            LogFile(string.Format("\t{0} not found, prompting user.", name));
             MessageBox.Show(string.Format("Could not automatically find {0}'s location, please manually indicate its location.", name));
 
             DialogResult dlgResult;
@@ -746,9 +781,9 @@ namespace TaleOfTwoWastelands
                 {
                     var path = Path.GetDirectoryName(dlg.FileName);
                     if (manual)
-                        WriteLog(string.Format("User manually changed {0} directory to: {1}", name, path));
+                        LogFile(string.Format("User manually changed {0} directory to: {1}", name, path));
                     else
-                        WriteLog("User selected: " + path);
+                        LogFile("User selected: " + path);
 
                     SetPathFromKey(keyName, path);
 
@@ -770,22 +805,22 @@ namespace TaleOfTwoWastelands
         private Dictionary<string, string> BuildChecksumDictionary(string listFile)
         {
             var dictList = new Dictionary<string, string>();
-            WriteLog("Building checksum dictionary using " + listFile);
+            LogFile("Building checksum dictionary using " + listFile);
 
             foreach (var line in File.ReadLines(listFile))
             {
                 var s = line.Split(',');
                 if (s.Length > 2)
                 {
-                    WriteLog("Invalid checksum data found: \n\r" + s);
+                    LogFile("Invalid checksum data found: \n\r" + s);
                     continue;
                 }
 
-                WriteLog("\t" + s[0] + " = " + s[1]);
+                LogFile("\t" + s[0] + " = " + s[1]);
                 dictList.Add(s[0], s[1]);
             }
 
-            WriteLog("Done.");
+            LogFile("Done.");
             return dictList;
         }
 
@@ -794,8 +829,8 @@ namespace TaleOfTwoWastelands
             string errFileNotFound = "{0} could not be found.";
             bool fileCheck = true;
 
-            WriteLog("Checking for required files.");
-            LogOutput("Checking for required files...");
+            LogFile("Checking for required files.");
+            LogDisplay("Checking for required files...");
 
             foreach (var ESM in CheckedESMs)
             {
@@ -805,8 +840,8 @@ namespace TaleOfTwoWastelands
                 {
                     var errMsg = string.Format(errFileNotFound, ESM);
 
-                    WriteLog(errMsg);
-                    LogOutput(errMsg);
+                    LogFile(errMsg);
+                    LogDisplay(errMsg);
 
                     fileCheck = false;
                 }
@@ -825,8 +860,8 @@ namespace TaleOfTwoWastelands
                         {
                             var errMsg = string.Format(errFileNotFound, subBSA);
 
-                            WriteLog(errMsg);
-                            LogOutput(errMsg);
+                            LogFile(errMsg);
+                            LogDisplay(errMsg);
 
                             fileCheck = false;
                         }
