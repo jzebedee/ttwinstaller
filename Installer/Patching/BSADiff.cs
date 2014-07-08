@@ -12,7 +12,6 @@ using System.Diagnostics;
 using BSAsharp;
 using System.IO.MemoryMappedFiles;
 using TaleOfTwoWastelands.ProgressTypes;
-using System.Reactive.Subjects;
 
 namespace TaleOfTwoWastelands.Patching
 {
@@ -22,7 +21,7 @@ namespace TaleOfTwoWastelands.Patching
         public static readonly string PatchDir = Path.Combine(Installer.AssetsDir, "TTW Data", "TTW Patches");
 
         protected IProgress<string> ProgressLog { get; set; }
-        protected IProgress<OperationProgressUpdate> ProgressMinorUI { get; set; }
+        protected IProgress<InstallOperation> ProgressMinorUI { get; set; }
         protected CancellationToken Token { get; set; }
         protected InstallOperation Op { get; set; }
 
@@ -31,7 +30,7 @@ namespace TaleOfTwoWastelands.Patching
             ProgressLog.Report('\t' + msg);
         }
 
-        public BSADiff(IProgress<string> ProgressLog, IProgress<OperationProgressUpdate> ProgressMinorUI, CancellationToken Token)
+        public BSADiff(IProgress<string> ProgressLog, IProgress<InstallOperation> ProgressMinorUI, CancellationToken Token)
         {
             this.ProgressLog = ProgressLog;
             this.ProgressMinorUI = ProgressMinorUI;
@@ -158,6 +157,8 @@ namespace TaleOfTwoWastelands.Patching
                                 var newChk = patchInfo.Metadata;
                                 if (FileValidation.IsEmpty(newChk) && patchInfo.Data.Length == 0)
                                 {
+                                    opChk.CurrentOperation = "Skipping " + join.bsaFile.Name;
+
                                     if (join.bsaFile.Filename.StartsWith(VOICE_PREFIX))
                                     {
                                         Log("Skipping voice file " + join.bsaFile.Filename);

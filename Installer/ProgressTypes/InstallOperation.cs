@@ -1,54 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reactive.Subjects;
 using System.Text;
 using System.Threading;
 
 namespace TaleOfTwoWastelands.ProgressTypes
 {
-    [Flags]
-    public enum ChangeType
-    {
-        None,
-
-        ItemsDone,
-        ItemsTotal,
-        CurrentOperation,
-
-        All = ItemsDone | ItemsTotal | CurrentOperation
-    }
-
-    public struct OperationProgress
-    {
-        public OperationProgress(int itemsDone, int itemsTotal, string currentOperation)
-        {
-            this.ItemsDone = itemsDone;
-            this.ItemsTotal = itemsTotal;
-            this.CurrentOperation = currentOperation;
-        }
-
-        public int ItemsDone;
-        public int ItemsTotal;
-        public string CurrentOperation;
-    }
-
-    public struct OperationProgressUpdate
-    {
-        public OperationProgressUpdate(OperationProgress progress, ChangeType change)
-        {
-            this.Progress = progress;
-            this.Change = change;
-        }
-
-        public readonly OperationProgress Progress;
-        public readonly ChangeType Change;
-    }
-
     public class InstallOperation
     {
         private readonly CancellationToken? _token;
-        private readonly IProgress<OperationProgressUpdate> _progress;
+        private readonly IProgress<InstallOperation> _progress;
 
         private int _itemsDone;
         public int ItemsDone
@@ -62,7 +23,7 @@ namespace TaleOfTwoWastelands.ProgressTypes
                 if (_itemsDone != value)
                 {
                     _itemsDone = value;
-                    Update(ChangeType.ItemsDone);
+                    Update();
                 }
             }
         }
@@ -79,7 +40,7 @@ namespace TaleOfTwoWastelands.ProgressTypes
                 if (_itemsTotal != value)
                 {
                     _itemsTotal = value;
-                    Update(ChangeType.ItemsTotal);
+                    Update();
                 }
             }
         }
@@ -96,12 +57,12 @@ namespace TaleOfTwoWastelands.ProgressTypes
                 if (_currentOperation != value)
                 {
                     _currentOperation = value;
-                    Update(ChangeType.CurrentOperation);
+                    Update();
                 }
             }
         }
 
-        public InstallOperation(IProgress<OperationProgressUpdate> progress, CancellationToken? token = null)
+        public InstallOperation(IProgress<InstallOperation> progress, CancellationToken? token = null)
         {
             this._token = token;
             this._progress = progress;
@@ -113,7 +74,7 @@ namespace TaleOfTwoWastelands.ProgressTypes
             if (itemsDone > ItemsTotal)
                 throw new ArgumentOutOfRangeException();
 
-            Update(ChangeType.ItemsDone);
+            Update();
             return itemsDone;
         }
 
@@ -122,21 +83,15 @@ namespace TaleOfTwoWastelands.ProgressTypes
             _itemsDone = 0;
             _itemsTotal = 0;
             _currentOperation = "";
-            Update(ChangeType.All);
+            Update();
         }
 
-        private OperationProgressUpdate CreateUpdate(ChangeType change)
-        {
-            var currentProgress = new OperationProgress(ItemsDone, ItemsTotal, CurrentOperation);
-            return new OperationProgressUpdate(currentProgress, change);
-        }
-
-        private void Update(ChangeType change)
+        private void Update()
         {
             if (_token.HasValue)
                 _token.Value.ThrowIfCancellationRequested();
 
-            _progress.Report(CreateUpdate(change));
+            _progress.Report(this);
         }
     }
 }

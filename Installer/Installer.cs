@@ -13,9 +13,6 @@ using BSAsharp;
 using TaleOfTwoWastelands.ProgressTypes;
 using TaleOfTwoWastelands.Patching;
 using Microsoft;
-using System.Reactive.Subjects;
-using System.Reactive;
-using System.Reactive.Linq;
 
 namespace TaleOfTwoWastelands
 {
@@ -109,29 +106,21 @@ namespace TaleOfTwoWastelands
         /// <summary>
         /// Provides progress messages tailored for user display
         /// </summary>
-        public Progress<string> ProgressLog { get; private set; }
-        /// <summary>
-        /// Provides progress messages for debugging
-        /// </summary>
-        private Progress<string> ProgressFile { get; set; }
+        public IProgress<string> ProgressLog { get; private set; }
         /// <summary>
         /// Reports progress messages to both user display and debugging
         /// </summary>
-        private Progress<string> ProgressDual { get; set; }
+        private IProgress<string> ProgressDual { get; set; }
         /// <summary>
         /// Provides progress updates for minor operations
         /// </summary>
-        public Progress<OperationProgressUpdate> ProgressMinorOperation { get; private set; }
+        public IProgress<InstallOperation> ProgressMinorOperation { get; private set; }
         /// <summary>
         /// Provides progress updates for major operations
         /// </summary>
-        public Progress<OperationProgressUpdate> ProgressMajorOperation { get; private set; }
+        public IProgress<InstallOperation> ProgressMajorOperation { get; private set; }
 
-        private IProgress<string> progressLog { get { return ProgressLog; } }
-        private IProgress<string> progressFile { get { return ProgressFile; } }
-        private IProgress<string> progressDual { get { return ProgressDual; } }
-
-        public Installer(OpenFileDialog openDialog, SaveFileDialog saveDialog)
+        public Installer(IProgress<string> progressLog, IProgress<InstallOperation> uiMinor, IProgress<InstallOperation> uiMajor, OpenFileDialog openDialog, SaveFileDialog saveDialog)
         {
             //Create TTW log directory
             Directory.CreateDirectory(TTWBase);
@@ -141,13 +130,12 @@ namespace TaleOfTwoWastelands
             var logFilepath = Path.Combine(TTWBase, logFilename);
             this.logWriter = new StreamWriter(logFilepath, true) { AutoFlush = true };
 
-            ProgressLog = new Progress<string>();
-            ProgressFile = new Progress<string>(msg => logWriter.WriteLine("[{0}]\t{1}", DateTime.Now, msg));
+            ProgressLog = progressLog;
 
             ProgressDual = new Progress<string>(msg => LogDual(msg));
 
-            ProgressMinorOperation = new Progress<OperationProgressUpdate>();
-            ProgressMajorOperation = new Progress<OperationProgressUpdate>();
+            ProgressMinorOperation = uiMinor;
+            ProgressMajorOperation = uiMajor;
 
             if (Environment.Is64BitOperatingSystem)
                 LogFile("\t64-bit architecture found.");
@@ -172,11 +160,11 @@ namespace TaleOfTwoWastelands
 
         private void LogDisplay(string s)
         {
-            progressLog.Report(s);
+            ProgressLog.Report(s);
         }
         private void LogFile(string s)
         {
-            progressFile.Report(s);
+            logWriter.WriteLine("[{0}]\t{1}", DateTime.Now, s);
         }
         private void LogDual(string s)
         {
@@ -701,7 +689,7 @@ namespace TaleOfTwoWastelands
 #endif
                 patchSuccess = bsaDiff.PatchBSA(bsaOptions, inBSAPath, outBSAPath);
                 if (!patchSuccess)
-                    progressDual.Report(string.Format("Patching BSA {0} failed", inBSA));
+                    ProgressDual.Report(string.Format("Patching BSA {0} failed", inBSA));
 #if DEBUG
             }
             finally

@@ -58,8 +58,8 @@ namespace PatchMaker
                 }
             }
 
-            var progressLog = new Progress<string>(s => Debug.Write(s));
-            var progressUIMinor = new Progress<InstallOperation>();
+            var progressLog = new System.Progress<string>(s => Debug.Write(s));
+            var progressUIMinor = new System.Progress<InstallOperation>();
             var token = new CancellationTokenSource().Token;
             foreach (var kvpBsa in Installer.BuildableBSAs)
             {

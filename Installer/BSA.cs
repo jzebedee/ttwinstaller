@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading;
 using BSAsharp;
 using System.IO;
+using TaleOfTwoWastelands.ProgressTypes;
 
 namespace TaleOfTwoWastelands
 {

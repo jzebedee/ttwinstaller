@@ -15,8 +15,7 @@ using System.Security.Principal;
 using System.Diagnostics;
 using TaleOfTwoWastelands.ProgressTypes;
 using Microsoft;
-using System.Reactive.Subjects;
-using System.Reactive.Linq;
+using System.Collections.Concurrent;
 
 namespace TaleOfTwoWastelands.UI
 {
@@ -36,33 +35,48 @@ namespace TaleOfTwoWastelands.UI
             //verify we are running as administrator
             Trace.Assert(new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator));
 
+            _logUpdate = new System.Windows.Forms.Timer() { Interval = 500 };
+            _logUpdate.Tick += (tsender, te) =>
+            {
+                var sb = new StringBuilder();
+                var sortedKvps = new SortedList<int, StringBuilder>(_pendingMessages);
+
+                StringBuilder dummy;
+                foreach (var kvp in sortedKvps)
+                {
+                    _pendingMessages.TryRemove(kvp.Key, out dummy);
+                    sb.Append(kvp.Value);
+                }
+
+                txt_Progress.AppendText(sb.ToString());
+            };
+            _logUpdate.Start();
+
             //Progress<T> maintains SynchronizationContext
-            _install = new Installer(dlg_FindGame, dlg_SaveTTW);
-            _install.ProgressLog.ProgressChanged += (s, m) => UpdateLog(m);
-            _install.ProgressMinorOperation.ProgressChanged += (s, m) => UpdateProgressBar(m, prgCurrent);
-            _install.ProgressMajorOperation.ProgressChanged += (s, m) => UpdateProgressBar(m, prgOverall);
+            var progressLog = new Progress<string>(s => UpdateLog(s));
+            var uiMinor = new Progress<InstallOperation>(m => UpdateProgressBar(m, prgCurrent));
+            var uiMajor = new Progress<InstallOperation>(m => UpdateProgressBar(m, prgOverall));
+            _install = new Installer(progressLog, uiMinor, uiMajor, dlg_FindGame, dlg_SaveTTW);
 
             txt_FO3Location.Text = _install.Fallout3Path;
             txt_FNVLocation.Text = _install.FalloutNVPath;
             txt_TTWLocation.Text = _install.TTWSavePath;
         }
 
-        private void UpdateProgressBar(OperationProgressUpdate update, TextProgressBar bar)
+        private void UpdateProgressBar(InstallOperation opProg, TextProgressBar bar)
         {
-            var change = update.Change;
-            var opProg = update.Progress;
-
-            if (change.HasFlag(ChangeType.ItemsTotal))
-                bar.Maximum = opProg.ItemsTotal;
-            if (change.HasFlag(ChangeType.ItemsDone))
-                bar.Value = opProg.ItemsDone;
-            if (change.HasFlag(ChangeType.CurrentOperation))
-                bar.CustomText = opProg.CurrentOperation;
+            bar.Maximum = opProg.ItemsTotal;
+            bar.Value = opProg.ItemsDone;
+            bar.CustomText = opProg.CurrentOperation;
         }
 
-        private void UpdateLog(string msg)
+        private System.Windows.Forms.Timer _logUpdate;
+
+        private ConcurrentDictionary<int, StringBuilder> _pendingMessages = new ConcurrentDictionary<int, StringBuilder>();
+        private volatile int _messageID;
+        private void UpdateLog(string msg, int pumpCheck = -1)
         {
-            txt_Progress.AppendText(string.Format("[{0}]\t{1}{2}", DateTime.Now, msg, Environment.NewLine));
+            Debug.Assert(_pendingMessages.TryAdd(++_messageID, new StringBuilder().Append("[").Append(DateTime.Now).Append("]").Append("\t").AppendLine(msg)));
         }
 
         private void btn_FO3Browse_Click(object sender, EventArgs e)
