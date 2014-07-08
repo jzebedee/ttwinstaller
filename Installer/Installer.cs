@@ -511,8 +511,7 @@ namespace TaleOfTwoWastelands
         {
             bool skipExisting = false, asked = false;
 
-            LogFile("Copying " + name);
-            LogDisplay("Copying " + name + "...");
+            LogDual("Copying " + name + "...");
             foreach (var line in File.ReadLines(path))
             {
                 var linePath = Path.Combine(dirTTWMain, line);
@@ -544,15 +543,13 @@ namespace TaleOfTwoWastelands
                 else
                     LogFile("File Not Found:\t" + foLinePath);
             }
-            LogFile("Done.");
-            LogDisplay("Done.");
+            LogDual("Done.");
         }
 
         private bool PatchFile(string filePatch, bool bSearchFO3 = true)
         {
             string newChecksum, curChecksum;
-            LogFile("Patching " + filePatch + "...");
-            LogDisplay("Patching " + filePatch + "...");
+            LogDual("Patching " + filePatch + "...");
 
             var patchPath = Path.Combine(dirTTWMain, filePatch);
             var patchPathNew = Path.Combine(dirTTWMain, Path.ChangeExtension(filePatch, ".new"));
@@ -576,8 +573,7 @@ namespace TaleOfTwoWastelands
                     if (Util.ApplyPatch(CheckSums, patchPath, diffPath, patchPathNew))
                     {
                         File.Replace(patchPathNew, patchPath, null);
-                        LogFile("Patch successful.");
-                        LogDisplay("Patch successful.");
+                        LogDual("Patch successful.");
                         return true;
                     }
                     else
@@ -614,8 +610,7 @@ namespace TaleOfTwoWastelands
                     LogFile("\tApplying patch " + diffPath);
                     if (Util.ApplyPatch(CheckSums, fo3PatchPath, diffPath, patchPath))
                     {
-                        LogFile("Patch successful.");
-                        LogDisplay("Patch successful.");
+                        LogDual("Patch successful.");
                         return true;
                     }
                     else
@@ -661,19 +656,16 @@ namespace TaleOfTwoWastelands
                 {
                     case System.Windows.Forms.DialogResult.Yes:
                         File.Delete(outBSAPath);
-                        LogFile("Rebuilding " + outBSA);
-                        LogDisplay("Rebuilding " + outBSA);
+                        LogDual("Rebuilding " + outBSA);
                         break;
                     case System.Windows.Forms.DialogResult.No:
-                        LogFile(outBSA + " has already been built. Skipping.");
-                        LogDisplay(outBSA + " has already been built. Skipping.");
+                        LogDual(outBSA + " has already been built. Skipping.");
                         return DialogResult.No;
                 }
             }
             else
             {
-                LogFile("Building " + outBSA);
-                LogDisplay("Building " + outBSA);
+                LogDual("Building " + outBSA);
             }
 
             string inBSAFile = Path.ChangeExtension(inBSA, ".bsa");
@@ -704,22 +696,18 @@ namespace TaleOfTwoWastelands
                 switch (MessageBox.Show("Errors occurred while patching " + inBSA, "Error Warning", MessageBoxButtons.AbortRetryIgnore))
                 {
                     case System.Windows.Forms.DialogResult.Abort:   //Quit install
-                        LogFile("Install aborted.");
-                        LogDisplay("Install aborted.");
+                        LogDual("Install aborted.");
                         return System.Windows.Forms.DialogResult.Abort;
                     case System.Windows.Forms.DialogResult.Retry:   //Start over from scratch
-                        LogFile("Retrying build.");
-                        LogDisplay("Retrying build.");
+                        LogDual("Retrying build.");
                         return System.Windows.Forms.DialogResult.Retry;
                     case System.Windows.Forms.DialogResult.Ignore:  //Ignore errors and move on
-                        LogFile("Ignoring errors.");
-                        LogDisplay("Ignoring errors.");
+                        LogDual("Ignoring errors.");
                         return System.Windows.Forms.DialogResult.Ignore;
                 }
             }
 
-            LogFile("Build successful.");
-            LogDisplay("Build successful.");
+            LogDual("Build successful.");
             return System.Windows.Forms.DialogResult.OK;
         }
 
@@ -817,8 +805,7 @@ namespace TaleOfTwoWastelands
             string errFileNotFound = "{0} could not be found.";
             bool fileCheck = true;
 
-            LogFile("Checking for required files.");
-            LogDisplay("Checking for required files...");
+            LogDual("Checking for required files...");
 
             foreach (var ESM in CheckedESMs)
             {
@@ -828,8 +815,7 @@ namespace TaleOfTwoWastelands
                 {
                     var errMsg = string.Format(errFileNotFound, ESM);
 
-                    LogFile(errMsg);
-                    LogDisplay(errMsg);
+                    LogDual(errMsg);
 
                     fileCheck = false;
                 }
@@ -848,8 +834,7 @@ namespace TaleOfTwoWastelands
                         {
                             var errMsg = string.Format(errFileNotFound, subBSA);
 
-                            LogFile(errMsg);
-                            LogDisplay(errMsg);
+                            LogDual(errMsg);
 
                             fileCheck = false;
                         }
