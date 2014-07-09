@@ -39,9 +39,9 @@ namespace TaleOfTwoWastelands.UI
             _logUpdate.Tick += (tsender, te) =>
             {
                 var sb = new StringBuilder();
-                var sortedKvps = new SortedList<int, StringBuilder>(_pendingMessages);
+                var sortedKvps = new SortedList<int, string>(_pendingMessages);
 
-                StringBuilder dummy;
+                string dummy;
                 foreach (var kvp in sortedKvps)
                 {
                     _pendingMessages.TryRemove(kvp.Key, out dummy);
@@ -72,11 +72,11 @@ namespace TaleOfTwoWastelands.UI
 
         private System.Windows.Forms.Timer _logUpdate;
 
-        private ConcurrentDictionary<int, StringBuilder> _pendingMessages = new ConcurrentDictionary<int, StringBuilder>();
+        private ConcurrentDictionary<int, string> _pendingMessages = new ConcurrentDictionary<int, string>();
         private volatile int _messageID;
         private void UpdateLog(string msg, int pumpCheck = -1)
         {
-            Debug.Assert(_pendingMessages.TryAdd(++_messageID, new StringBuilder().Append("[").Append(DateTime.Now).Append("]").Append("\t").AppendLine(msg)));
+            Debug.Assert(_pendingMessages.TryAdd(++_messageID, "[" + DateTime.Now + "]\t" + msg + Environment.NewLine));
         }
 
         private void btn_FO3Browse_Click(object sender, EventArgs e)

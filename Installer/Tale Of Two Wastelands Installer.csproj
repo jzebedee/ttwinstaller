@@ -62,9 +62,6 @@
     <Reference Include="ICSharpCode.SharpZipLib">
       <HintPath>..\packages\SharpZipLib.0.86.0\lib\20\ICSharpCode.SharpZipLib.dll</HintPath>
     </Reference>
-    <Reference Include="MurmurHash">
-      <HintPath>..\packages\murmurhash.1.0.0\lib\net40\MurmurHash.dll</HintPath>
-    </Reference>
     <Reference Include="SevenZipSharp">
       <HintPath>..\packages\SevenZipSharp.0.64\lib\SevenZipSharp.dll</HintPath>
     </Reference>
@@ -87,6 +84,8 @@
     <Compile Include="Patching\BinaryPatchUtility.cs" />
     <Compile Include="BSA.cs" />
     <Compile Include="Patching\BSADiff.cs" />
+    <Compile Include="Patching\Murmur\Extensions.cs" />
+    <Compile Include="Patching\Murmur\MurmurHash.cs" />
     <Compile Include="Patching\PatchDict.cs" />
     <Compile Include="Patching\PatchInfo.cs" />
     <Compile Include="Patching\FileValidation.cs" />

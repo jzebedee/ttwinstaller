@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using BSAsharp;
 using BSAsharp.Extensions;
-using Murmur;
+using TaleOfTwoWastelands.Patching.Murmur;
 
 namespace TaleOfTwoWastelands.Patching
 {
@@ -12,7 +12,7 @@ namespace TaleOfTwoWastelands.Patching
     {
         const int WINDOW = 0x1000;
 
-        private readonly Murmur32 Hash32 = MurmurHash.Create32(managed: false);
+        private readonly Murmur32 Hash32 = new Murmur32();
 
         public uint Filesize { get; private set; }
         public IEnumerable<uint> Checksums { get; private set; }
@@ -109,7 +109,7 @@ namespace TaleOfTwoWastelands.Patching
 
         public static bool IsEmpty(FileValidation fv)
         {
-            return fv == null || (fv.Filesize == 0 && fv.Checksums.Count() == 0);
+            return fv == null || fv.Filesize == 0;
         }
 
         private static IEnumerable<byte[]> ReadWindow(Stream readStream)
