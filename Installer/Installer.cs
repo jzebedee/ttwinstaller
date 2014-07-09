@@ -81,6 +81,7 @@ namespace TaleOfTwoWastelands
                 {".ogg", -1},
                 {".wav", -1},
                 {".mp3", -1},
+                {".lip", -1},
             }
         };
 
@@ -108,9 +109,13 @@ namespace TaleOfTwoWastelands
         /// </summary>
         public IProgress<string> ProgressLog { get; private set; }
         /// <summary>
+        /// Provides progress messages for debugging
+        /// </summary>
+        public IProgress<string> ProgressFile { get; private set; }
+        /// <summary>
         /// Reports progress messages to both user display and debugging
         /// </summary>
-        private IProgress<string> ProgressDual { get; set; }
+        public IProgress<string> ProgressDual { get; set; }
         /// <summary>
         /// Provides progress updates for minor operations
         /// </summary>
@@ -129,6 +134,7 @@ namespace TaleOfTwoWastelands
             var logFilename = "Install Log " + DateTime.Now.ToString("MM_dd_yyyy - HH_mm_ss") + ".txt";
             var logFilepath = Path.Combine(TTWBase, logFilename);
             this.logWriter = new StreamWriter(logFilepath, true) { AutoFlush = true };
+            ProgressFile = new Progress<string>(msg => LogFile(msg));
 
             ProgressLog = progressLog;
 
@@ -220,7 +226,7 @@ namespace TaleOfTwoWastelands
             LinkedSource = CancellationTokenSource.CreateLinkedTokenSource(inToken);
             this.Token = LinkedSource.Token;
 
-            bsaDiff = new BSADiff(ProgressLog, ProgressMinorOperation, Token);
+            bsaDiff = new BSADiff(this, Token);
 
             var opProg = new InstallOperation(ProgressMajorOperation, Token) { ItemsTotal = 7 + BuildableBSAs.Count + CheckedESMs.Length };
             try

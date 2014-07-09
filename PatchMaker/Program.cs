@@ -167,8 +167,8 @@ namespace PatchMaker
                         var oldChkLazy = join.oldChk.Value;
                         var newChkLazy = join.patch;
 
-                        var oldChk = oldChkLazy.Value;
-                        var newChk = newChkLazy.Value;
+                        var oldChk = oldChkLazy;
+                        var newChk = newChkLazy;
 
                         PatchInfo patchInfo;
                         if (!newChk.Equals(oldChk))

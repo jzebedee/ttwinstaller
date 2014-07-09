@@ -1,5 +1,4 @@
-﻿#define PARALLEL
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -17,23 +16,44 @@ namespace TaleOfTwoWastelands.Patching
 {
     public class BSADiff
     {
+        class PatchJoin
+        {
+            public PatchJoin(BSAFile newFile, BSAFile oldFile, PatchInfo[] patches)
+            {
+                this.newFile = newFile;
+                this.oldFile = oldFile;
+                this.patches = patches;
+            }
+
+            public BSAFile newFile;
+            public BSAFile oldFile;
+            public PatchInfo[] patches;
+        }
+
         public const string VOICE_PREFIX = @"sound\voice";
         public static readonly string PatchDir = Path.Combine(Installer.AssetsDir, "TTW Data", "TTW Patches");
 
-        protected IProgress<string> ProgressLog { get; set; }
+        protected IProgress<string> ProgressDual { get; set; }
+        protected IProgress<string> ProgressFile { get; set; }
         protected IProgress<InstallOperation> ProgressMinorUI { get; set; }
         protected CancellationToken Token { get; set; }
         protected InstallOperation Op { get; set; }
 
         private void Log(string msg)
         {
-            ProgressLog.Report('\t' + msg);
+            ProgressDual.Report('\t' + msg);
         }
 
-        public BSADiff(IProgress<string> ProgressLog, IProgress<InstallOperation> ProgressMinorUI, CancellationToken Token)
+        private void LogFile(string msg)
         {
-            this.ProgressLog = ProgressLog;
-            this.ProgressMinorUI = ProgressMinorUI;
+            ProgressFile.Report('\t' + msg);
+        }
+
+        public BSADiff(Installer parent, CancellationToken Token)
+        {
+            this.ProgressDual = parent.ProgressDual;
+            this.ProgressFile = parent.ProgressFile;
+            this.ProgressMinorUI = parent.ProgressMinorOperation;
             this.Token = Token;
         }
 
@@ -118,89 +138,36 @@ namespace TaleOfTwoWastelands.Patching
                 {
                     var opChk = new InstallOperation(ProgressMinorUI, Token);
 
-                    var oldChkDict = FileValidation.FromBSA(BSA);
                     opChk.ItemsTotal = patchDict.Count;
 
                     var joinedPatches = from patKvp in patchDict
-                                        join oldKvp in oldChkDict on patKvp.Key equals oldKvp.Key into foundOld
+                                        join oldFile in allFiles on patKvp.Key equals oldFile.Filename into foundOld
                                         join bsaFile in allFiles on patKvp.Key equals bsaFile.Filename
-                                        select new
-                                        {
-                                            bsaFile,
-                                            file = patKvp.Key,
-                                            patches = patKvp.Value,
-                                            oldChk = foundOld.SingleOrDefault()
-                                        };
+                                        select new PatchJoin(bsaFile, foundOld.SingleOrDefault(), patKvp.Value);
 
-#if PARALLEL
-                    Parallel.ForEach(joinedPatches, join =>
-#else
-                    foreach (var join in joinedPatches)
-#endif
+#if DEBUG
+                    var watch = new Stopwatch();
+                    try
                     {
-                        try
-                        {
-                            if (string.IsNullOrEmpty(join.oldChk.Key))
-                            {
-                                //file not found
-                                Log("File not found: " + join.file);
-
-#if PARALLEL
-                                return;
-#else
-                                continue;
+                        watch.Start();
 #endif
-                            }
-
-                            foreach (var patchInfo in join.patches)
-                            {
-                                var newChk = patchInfo.Metadata;
-                                if (FileValidation.IsEmpty(newChk) && patchInfo.Data.Length == 0)
-                                {
-                                    opChk.CurrentOperation = "Skipping " + join.bsaFile.Name;
-
-                                    if (join.bsaFile.Filename.StartsWith(VOICE_PREFIX))
-                                    {
-                                        Log("Skipping voice file " + join.bsaFile.Filename);
 #if PARALLEL
-                                        return;
+                        Parallel.ForEach(joinedPatches, join =>
 #else
-                                    continue;
+                        foreach (var join in joinedPatches)
 #endif
-                                    }
-                                    else
-                                    {
-                                        Log("Empty patch for file " + join.bsaFile.Filename);
+                            HandleFile(opChk, join)
 #if PARALLEL
-                                        return;
-#else
-                                    continue;
+)
 #endif
-                                    }
-                                }
-
-                                var lazyOldChk = join.oldChk.Value;
-                                using (var oldChk = lazyOldChk.Value)
-                                {
-                                    opChk.CurrentOperation = "Validating " + join.bsaFile.Name;
-
-                                    if (!newChk.Equals(oldChk))
-                                    {
-                                        opChk.CurrentOperation = "Patching " + join.bsaFile.Name;
-
-                                        if (!PatchFile(join.bsaFile, oldChk, patchInfo))
-                                            Log(string.Format("Patching {0} failed", join.bsaFile.Filename));
-                                    }
-                                }
-                            }
-                        }
-                        finally
-                        {
-                            opChk.Step();
-                        }
+;
+#if DEBUG
                     }
-#if PARALLEL
-);
+                    finally
+                    {
+                        watch.Stop();
+                        Debug.WriteLine(outBsaFilename + " HandleFile loop finished in " + watch.Elapsed);
+                    }
 #endif
                 }
                 finally
@@ -225,7 +192,7 @@ namespace TaleOfTwoWastelands.Patching
 
                 try
                 {
-                    Op.CurrentOperation = "Building " + Path.GetFileName(newBSA);
+                    Op.CurrentOperation = "Saving " + Path.GetFileName(newBSA);
 
                     if (!simulate)
                         BSA.Save(newBSA.ToLowerInvariant());
@@ -239,6 +206,65 @@ namespace TaleOfTwoWastelands.Patching
             Op.Finish();
 
             return true;
+        }
+
+        private void HandleFile(InstallOperation opChk, PatchJoin join)
+        {
+            try
+            {
+                var filepath = join.newFile.Filename;
+                var filename = join.newFile.Name;
+
+                if (join.oldFile == null)
+                {
+                    Log("ERROR: File not found: " + filepath);
+                    return;
+                }
+
+                foreach (var patchInfo in join.patches)
+                {
+                    var newChk = patchInfo.Metadata;
+                    if (FileValidation.IsEmpty(newChk) && patchInfo.Data.Length == 0)
+                    {
+                        opChk.CurrentOperation = "Skipping " + filename;
+
+                        if (join.newFile.Filename.StartsWith(VOICE_PREFIX))
+                        {
+                            //LogFile("Skipping voice file " + filepath);
+                            continue;
+                        }
+                        else
+                        {
+                            var msg = "Empty patch for file " + filepath;
+                            if (newChk == null)
+                                Log("ERROR: " + msg);
+                            else
+                                LogFile(msg);
+                            continue;
+                        }
+                    }
+
+                    using (var oldChk = FileValidation.FromBSAFile(join.oldFile))
+                    {
+                        if (!newChk.Equals(oldChk))
+                        {
+                            opChk.CurrentOperation = "Patching " + filename;
+
+                            if (!PatchFile(join.newFile, oldChk, patchInfo))
+                                Log("ERROR: Patching " + join.newFile.Filename + " failed");
+                        }
+                        else
+                        {
+                            opChk.CurrentOperation = "Compressing " + filename;
+                            join.newFile.Cache();
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                opChk.Step();
+            }
         }
 
         public void RenameFiles(BSAWrapper BSA, Dictionary<string, string> renameDict)
@@ -262,31 +288,33 @@ namespace TaleOfTwoWastelands.Patching
                                group a by newDirectory into outs
                                select outs;
 
-            var newBsaFolders = from g in renameCopies
-                                let folderAdded = BSA.Add(new BSAFolder(g.Key))
-                                select g;
-            newBsaFolders.ToList();
+            var newBsaFolders = renameCopies.ToList();
+            newBsaFolders.ForEach(g => BSA.Add(new BSAFolder(g.Key)));
 
-            opRename.ItemsTotal = BSA.SelectMany(folder => folder).Count();
+            opRename.ItemsTotal = BSA.SelectMany(folder => folder).Count(); //allFiles count
 
             var renameFixes = from g in newBsaFolders
                               from a in g
                               join newFolder in BSA on g.Key equals newFolder.Path
                               let newFile = a.file.DeepCopy(g.Key, Path.GetFileName(a.newFilename))
                               let addedFile = newFolder.Add(newFile)
-                              //let removedFile = a.folder.Remove(a.file)
-                              //don't say this too fast
-                              let cleanedDict = renameDict.Remove(a.newFilename)
+                              select new { oldName = a.file.Name, newName = newFile.Name, a.newFilename };
 
-                              let curOp = (opRename.CurrentOperation = opPrefix + ": " + a.file.Name + " -> " + newFile.Name)
-                              let curDone = opRename.Step()
-
-                              select new { a.folder, a.file, newFolder, newFile, a.newFilename };
-            renameFixes
 #if PARALLEL
-.AsParallel()
+            Parallel.ForEach(renameFixes, a =>
+#else
+            foreach (var a in renameFixes)
 #endif
-.ToList(); // execute query
+            {
+                renameDict.Remove(a.newFilename);
+
+                opRename.CurrentOperation = opPrefix + ": " + a.oldName + " -> " + a.newName;
+                opRename.Step();
+            }
+#if PARALLEL
+)
+#endif
+            ;
         }
 
         public bool PatchFile(BSAFile bsaFile, FileValidation oldChk, PatchInfo patch, bool failFast = false)
@@ -319,13 +347,13 @@ namespace TaleOfTwoWastelands.Patching
                             bsaFile.UpdateData(output.ToArray(), false);
                         else
                         {
-                            var err = "Patching " + bsaFile.Filename + " has failed - " + testChk;
+                            var err = "ERROR: Patching " + bsaFile.Filename + " has failed - " + testChk.ToLongString();
                             if (failFast)
                                 Trace.Fail(err);
                             else
                             {
                                 perfect = false;
-                                Log(err);
+                                LogFile(err);
                             }
                         }
                     }
@@ -334,7 +362,7 @@ namespace TaleOfTwoWastelands.Patching
             else
             {
                 //no patch exists for the file
-                var err = "File is of an unexpected version: " + bsaFile.Filename + " - " + oldChk;
+                var err = "WARNING: File is of an unexpected version: " + bsaFile.Filename + " - " + oldChk.ToLongString();
 
                 if (failFast)
                     Trace.Fail(err);
@@ -342,7 +370,7 @@ namespace TaleOfTwoWastelands.Patching
                 {
                     perfect = false;
                     Log(err);
-                    Log("\tThis file cannot be patched. Errors may occur.");
+                    Log("This file cannot be patched. Errors may occur.");
                 }
             }
 

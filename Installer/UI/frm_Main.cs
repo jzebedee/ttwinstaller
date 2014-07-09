@@ -35,23 +35,6 @@ namespace TaleOfTwoWastelands.UI
             //verify we are running as administrator
             Trace.Assert(new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator));
 
-            _logUpdate = new System.Windows.Forms.Timer() { Interval = 500 };
-            _logUpdate.Tick += (tsender, te) =>
-            {
-                var sb = new StringBuilder();
-                var sortedKvps = new SortedList<int, string>(_pendingMessages);
-
-                string dummy;
-                foreach (var kvp in sortedKvps)
-                {
-                    _pendingMessages.TryRemove(kvp.Key, out dummy);
-                    sb.Append(kvp.Value);
-                }
-
-                txt_Progress.AppendText(sb.ToString());
-            };
-            _logUpdate.Start();
-
             //Progress<T> maintains SynchronizationContext
             var progressLog = new Progress<string>(s => UpdateLog(s));
             var uiMinor = new Progress<InstallOperation>(m => UpdateProgressBar(m, prgCurrent));
@@ -70,13 +53,9 @@ namespace TaleOfTwoWastelands.UI
             bar.CustomText = opProg.CurrentOperation;
         }
 
-        private System.Windows.Forms.Timer _logUpdate;
-
-        private ConcurrentDictionary<int, string> _pendingMessages = new ConcurrentDictionary<int, string>();
-        private volatile int _messageID;
-        private void UpdateLog(string msg, int pumpCheck = -1)
+        private void UpdateLog(string msg)
         {
-            Debug.Assert(_pendingMessages.TryAdd(++_messageID, "[" + DateTime.Now + "]\t" + msg + Environment.NewLine));
+            txt_Progress.AppendText("[" + DateTime.Now + "]\t" + msg + Environment.NewLine);
         }
 
         private void btn_FO3Browse_Click(object sender, EventArgs e)

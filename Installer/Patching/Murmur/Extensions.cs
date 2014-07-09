@@ -10,7 +10,7 @@ namespace TaleOfTwoWastelands.Patching.Murmur
 #if NETFX45
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
-        internal static uint ToUInt32(this byte[] data, int start)
+        internal static uint ToUInt32(this byte[] data, int start = 0)
         {
             return BitConverter.IsLittleEndian
                     ? (uint)(data[start] | data[start + 1] << 8 | data[start + 2] << 16 | data[start + 3] << 24)

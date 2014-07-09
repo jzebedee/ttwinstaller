@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using BSAsharp;
 using BSAsharp.Extensions;
 using TaleOfTwoWastelands.Patching.Murmur;
@@ -12,7 +13,7 @@ namespace TaleOfTwoWastelands.Patching
     {
         const int WINDOW = 0x1000;
 
-        private readonly Murmur32 Hash32 = new Murmur32();
+        private readonly HashAlgorithm Hash32 = new Murmur32();
 
         public uint Filesize { get; private set; }
         public IEnumerable<uint> Checksums { get; private set; }
@@ -22,7 +23,7 @@ namespace TaleOfTwoWastelands.Patching
         public FileValidation(Stream stream, uint? size = null)
         {
             _inStream = stream;
-            Checksums = getHashes(stream).Memoize();
+            Checksums = getHashes(stream);
             Filesize = size ?? (uint)stream.Length;
         }
         private FileValidation() { }
@@ -37,6 +38,7 @@ namespace TaleOfTwoWastelands.Patching
             {
                 if (_inStream != null)
                     _inStream.Dispose();
+                Hash32.Dispose();
             }
         }
         public void Dispose()
@@ -45,11 +47,11 @@ namespace TaleOfTwoWastelands.Patching
             GC.SuppressFinalize(this);
         }
 
-        public static Dictionary<string, Lazy<FileValidation>> FromBSA(BSAWrapper BSA)
+        public static Dictionary<string, FileValidation> FromBSA(BSAWrapper BSA)
         {
             return BSA
                 .SelectMany(folder => folder)
-                .ToDictionary(file => file.Filename, file => new Lazy<FileValidation>(() => FromBSAFile(file)));
+                .ToDictionary(file => file.Filename, file => FromBSAFile(file));
         }
 
         public override string ToString()
@@ -60,8 +62,13 @@ namespace TaleOfTwoWastelands.Patching
 
             //TODO: fix this to return a meaningful checksum
             if (Checksums != null)
-                return string.Format("({0}, {1} bytes)", Checksums.LastOrDefault(), Filesize);
+                return string.Format("({0:x8}, {1} bytes)", Checksums.LastOrDefault(), Filesize);
             return base.ToString();
+        }
+
+        public string ToLongString()
+        {
+            return "[" + Filesize + Checksums.Aggregate(";", (s, chk) => s + chk.ToString("x8") + ",").TrimEnd(',') + "]";
         }
 
         public override bool Equals(object obj)
@@ -121,16 +128,11 @@ namespace TaleOfTwoWastelands.Patching
                 yield return buf.TrimBuffer(0, bytesRead);
         }
 
-        private uint getHash(byte[] buf)
-        {
-            return BitConverter.ToUInt32(Hash32.ComputeHash(buf), 0);
-        }
-
         private IEnumerable<uint> getHashes(Stream stream)
         {
             using (stream)
                 foreach (var buf in ReadWindow(stream))
-                    yield return getHash(buf);
+                    yield return Hash32.ComputeHash(buf).ToUInt32();
         }
     }
 }
