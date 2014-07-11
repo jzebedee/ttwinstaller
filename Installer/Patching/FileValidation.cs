@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
@@ -13,7 +14,7 @@ namespace TaleOfTwoWastelands.Patching
     {
         const int WINDOW = 0x1000;
 
-        private readonly HashAlgorithm Hash32 = new Murmur32();
+        private readonly HashAlgorithm Hash = Murmur128.Create();
 
         public uint Filesize { get; private set; }
         public IEnumerable<uint> Checksums { get; private set; }
@@ -38,7 +39,7 @@ namespace TaleOfTwoWastelands.Patching
             {
                 if (_inStream != null)
                     _inStream.Dispose();
-                Hash32.Dispose();
+                Hash.Dispose();
             }
         }
         public void Dispose()
@@ -128,11 +129,15 @@ namespace TaleOfTwoWastelands.Patching
                 yield return buf.TrimBuffer(0, bytesRead);
         }
 
+        private bool called;
         private IEnumerable<uint> getHashes(Stream stream)
         {
+            Debug.Assert(!called);
+            called = true;
+
             using (stream)
                 foreach (var buf in ReadWindow(stream))
-                    yield return Hash32.ComputeHash(buf).ToUInt32();
+                    yield return Hash.ComputeHash(buf).ToUInt32();
         }
     }
 }
