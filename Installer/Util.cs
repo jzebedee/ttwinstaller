@@ -25,11 +25,9 @@ namespace TaleOfTwoWastelands
 
         public static string GetMD5(string fileIn)
         {
-            MD5 fileHash = MD5.Create();
+            using (var fileHash = MD5.Create())
             using (var checkFile = File.OpenRead(fileIn))
-            {
                 return BitConverter.ToString(fileHash.ComputeHash(checkFile)).Replace("-", "");
-            }
         }
 
         public static bool ApplyPatch(Dictionary<string, string> CheckSums, string inFile, string patchFile, string outFile)
