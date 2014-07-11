@@ -17,17 +17,26 @@ namespace TaleOfTwoWastelands.Patching
         private readonly HashAlgorithm Hash = Murmur128.Create();
 
         public uint Filesize { get; private set; }
-        public IEnumerable<uint> Checksums { get; private set; }
+        public ulong Checksum { get { return _computeChecksum.Value; } }
 
-        private readonly Stream _inStream;
+        readonly Lazy<ulong> _computeChecksum;
 
-        public FileValidation(Stream stream, uint? size = null)
+        public FileValidation(byte[] data)
         {
-            _inStream = stream;
-            Checksums = getHashes(stream);
-            Filesize = size ?? (uint)stream.Length;
+            _computeChecksum = new Lazy<ulong>(() => Hash.ComputeHash(data).ToUInt64());
+            Filesize = (uint)data.LongLength;
         }
-        private FileValidation() { }
+        public FileValidation(Stream stream)
+        {
+            _computeChecksum = new Lazy<ulong>(() => Hash.ComputeHash(stream).ToUInt64());
+            Filesize = (uint)stream.Length;
+        }
+        public FileValidation(ulong checksum, uint filesize)
+        {
+            _computeChecksum = new Lazy<ulong>(() => checksum);
+            Filesize = filesize;
+        }
+
         ~FileValidation()
         {
             Dispose(false);
@@ -37,8 +46,6 @@ namespace TaleOfTwoWastelands.Patching
         {
             if (disposing)
             {
-                if (_inStream != null)
-                    _inStream.Dispose();
                 Hash.Dispose();
             }
         }
@@ -57,19 +64,7 @@ namespace TaleOfTwoWastelands.Patching
 
         public override string ToString()
         {
-            //if you stringify ones of these in a debugger window, you're going to get
-            //an exception from re-reading the stream after it's finished enumerating
-            //NOTE: memoization makes this not true any more
-
-            //TODO: fix this to return a meaningful checksum
-            if (Checksums != null)
-                return string.Format("({0:x8}, {1} bytes)", Checksums.LastOrDefault(), Filesize);
-            return base.ToString();
-        }
-
-        public string ToLongString()
-        {
-            return "[" + Filesize + Checksums.Aggregate(";", (s, chk) => s + chk.ToString("x8") + ",").TrimEnd(',') + "]";
+            return string.Format("({0:x16}, {1} bytes)", Checksum, Filesize);
         }
 
         public override bool Equals(object obj)
@@ -85,20 +80,15 @@ namespace TaleOfTwoWastelands.Patching
             if (Filesize == 0 && obj.Filesize == 0)
                 return true;
 
-            if (Checksums != null && obj.Checksums != null)
-            {
-                if (Filesize == obj.Filesize)
-                {
-                    return Checksums.SequenceEqual(obj.Checksums);
-                }
-            }
+            if (Filesize == obj.Filesize)
+                return Checksum == obj.Checksum;
 
             return false;
         }
 
         public static FileValidation FromBSAFile(BSAFile file)
         {
-            return new FileValidation(file.GetContentStream(true), file.OriginalSize);
+            return new FileValidation(file.GetContents(true));
         }
 
         public static FileValidation FromFile(string path)
@@ -106,38 +96,9 @@ namespace TaleOfTwoWastelands.Patching
             return new FileValidation(File.OpenRead(path));
         }
 
-        internal static FileValidation FromMap(uint Filesize, uint[] Checksums)
-        {
-            return new FileValidation()
-            {
-                Filesize = Filesize,
-                Checksums = Checksums
-            };
-        }
-
         public static bool IsEmpty(FileValidation fv)
         {
             return fv == null || fv.Filesize == 0;
-        }
-
-        private static IEnumerable<byte[]> ReadWindow(Stream readStream)
-        {
-            int bytesRead;
-            byte[] buf = new byte[WINDOW];
-
-            while ((bytesRead = readStream.Read(buf, 0, WINDOW)) != 0)
-                yield return buf.TrimBuffer(0, bytesRead);
-        }
-
-        private bool called;
-        private IEnumerable<uint> getHashes(Stream stream)
-        {
-            Debug.Assert(!called);
-            called = true;
-
-            using (stream)
-                foreach (var buf in ReadWindow(stream))
-                    yield return Hash.ComputeHash(buf).ToUInt32();
         }
     }
 }

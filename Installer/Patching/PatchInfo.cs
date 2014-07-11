@@ -18,17 +18,13 @@ namespace TaleOfTwoWastelands.Patching
         {
             //reading a FV (metadata) now
             var filesize = reader.ReadUInt32();
-            var checksumCount = reader.ReadInt32();
-            var checksums = new uint[checksumCount];
-            for (int j = 0; j < checksumCount; j++)
-            {
-                checksums[j] = reader.ReadUInt32();
-            }
-            this.Metadata = FileValidation.FromMap(filesize, checksums);
+            var checksum = reader.ReadUInt64();
+            this.Metadata = new FileValidation(checksum, filesize);
 
             //reading data now
             var dataSize = reader.ReadInt32();
-            this.Data = reader.ReadBytes(dataSize);
+            if (dataSize > 0)
+                this.Data = reader.ReadBytes(dataSize);
         }
 
         public void WriteTo(BinaryWriter writer)
@@ -36,18 +32,7 @@ namespace TaleOfTwoWastelands.Patching
             if (Metadata != null)
             {
                 writer.Write(Metadata.Filesize);
-                if (Metadata.Filesize > 0)
-                {
-                    var checksums = Metadata.Checksums.ToArray();
-
-                    writer.Write(checksums.Length);
-                    foreach (var chk in checksums)
-                        writer.Write(chk);
-                }
-                else
-                {
-                    writer.Write(0);
-                }
+                writer.Write(Metadata.Checksum);
             }
             else
             {
