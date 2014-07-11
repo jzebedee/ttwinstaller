@@ -46,6 +46,11 @@ namespace TaleOfTwoWastelands.UI
             txt_TTWLocation.Text = _install.TTWSavePath;
         }
 
+        private void frm_Main_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            _install.Dispose();
+        }
+
         private void UpdateProgressBar(InstallOperation opProg, TextProgressBar bar)
         {
             bar.Maximum = opProg.ItemsTotal;

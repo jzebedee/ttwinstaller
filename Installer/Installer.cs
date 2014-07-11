@@ -16,10 +16,13 @@ using Microsoft;
 
 namespace TaleOfTwoWastelands
 {
-    public class Installer
+    public class Installer : IDisposable
     {
-        public const string MainDir = "Main Files", OptDir = "Optional Files";
-        public const string AssetsDir = "resources";
+        #region Set-once fields
+        public const string
+            MainDir = "Main Files",
+            OptDir = "Optional Files",
+            AssetsDir = "resources";
 
         public const CompressionStrategy FastStrategy = CompressionStrategy.Unsafe | CompressionStrategy.Speed;
         public const CompressionStrategy GoodStrategy = CompressionStrategy.Unsafe | CompressionStrategy.Size;
@@ -65,8 +68,8 @@ namespace TaleOfTwoWastelands
         {
             //example compression options
             //{"Fallout - Sound", new CompressionOptions(FastStrategy)},
-            ////{"Fallout - MenuVoices", new CompressionOptions(FastStrategy)},
-            ////{"Fallout - Voices", new CompressionOptions(FastStrategy)},
+            //{"Fallout - MenuVoices", new CompressionOptions(FastStrategy)},
+            //{"Fallout - Voices", new CompressionOptions(FastStrategy)},
             //{"Anchorage - Sounds", new CompressionOptions(FastStrategy)},
             //{"ThePitt - Sounds", new CompressionOptions(FastStrategy)},
             //{"BrokenSteel - Sounds", new CompressionOptions(FastStrategy)},
@@ -81,12 +84,14 @@ namespace TaleOfTwoWastelands
                 {".ogg", -1},
                 {".wav", -1},
                 {".mp3", -1},
-                {".lip", -1},
+                //{".lip", -1},
             }
         };
 
         static readonly string TTWBase = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "My Games", "TaleOfTwoWastelands");
+        #endregion
 
+        #region Instance private
         readonly private StreamWriter logWriter;
 
         readonly string dirFO3Data, dirFNVData;
@@ -98,11 +103,13 @@ namespace TaleOfTwoWastelands
         private CancellationTokenSource LinkedSource { get; set; }
         private CancellationToken Token { get; set; }
 
+        private BSADiff bsaDiff;
+        #endregion
+
+        #region Instance public properties
         public string Fallout3Path { get; private set; }
         public string FalloutNVPath { get; private set; }
         public string TTWSavePath { get; private set; }
-
-        private BSADiff bsaDiff;
 
         /// <summary>
         /// Provides progress messages tailored for user display
@@ -124,6 +131,7 @@ namespace TaleOfTwoWastelands
         /// Provides progress updates for major operations
         /// </summary>
         public IProgress<InstallOperation> ProgressMajorOperation { get; private set; }
+        #endregion
 
         public Installer(IProgress<string> progressLog, IProgress<InstallOperation> uiMinor, IProgress<InstallOperation> uiMajor, OpenFileDialog openDialog, SaveFileDialog saveDialog)
         {
@@ -162,6 +170,23 @@ namespace TaleOfTwoWastelands
             CheckSums = BuildChecksumDictionary(Path.Combine(AssetsDir, "TTW Data", "TTW Patches", "TTW_Checksums.txt"));
 
             InstallChecks(openDialog, saveDialog);
+        }
+        ~Installer()
+        {
+            Dispose(false);
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                logWriter.Dispose();
+            }
         }
 
         private void LogDisplay(string s)
