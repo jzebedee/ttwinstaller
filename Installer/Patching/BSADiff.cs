@@ -322,7 +322,7 @@ namespace TaleOfTwoWastelands.Patching
             bool perfect = true;
 
             //file exists but is not up to date
-            if (patch.Data != null)
+            if (patch.Data != null && patch.Data.Length > 0)
             {
                 //a patch exists for the file
 
@@ -330,8 +330,7 @@ namespace TaleOfTwoWastelands.Patching
                 //so we have to perform a new allocate-and-copy
                 var inputBytes = bsaFile.GetContents(true);
 
-                using (MemoryStream
-                    output = new MemoryStream())
+                using (var output = new MemoryStream())
                 {
                     unsafe
                     {
