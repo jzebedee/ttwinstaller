@@ -13,12 +13,12 @@ namespace PatchMaker
 {
     class Program
     {
-        const string SOURCE_DIR = "BuildDB";
-        const string BUILD_DIR = "OutDB";
+        const string IN_DIR = "BuildDB";
+        const string OUT_DIR = "OutDB";
 
         static void Main(string[] args)
         {
-            Console.WriteLine("Building {0} folder from {1} folder. Existing files are skipped. OK?", BUILD_DIR, SOURCE_DIR);
+            Console.WriteLine("Building {0} folder from {1} folder. Existing files are skipped. OK?", OUT_DIR, IN_DIR);
             Console.Write("y/n: ");
             var keyInfo = Console.ReadKey();
             switch (keyInfo.Key)
@@ -31,10 +31,10 @@ namespace PatchMaker
                     return;
             }
 
-            Directory.CreateDirectory(BUILD_DIR);
+            Directory.CreateDirectory(OUT_DIR);
 
-            var dirTTWMain = Path.Combine(SOURCE_DIR, Installer.MainDir);
-            var dirTTWOptional = Path.Combine(SOURCE_DIR, Installer.OptDir);
+            var dirTTWMain = Path.Combine(IN_DIR, Installer.MainDir);
+            var dirTTWOptional = Path.Combine(IN_DIR, Installer.OptDir);
 
             var bethKey = Installer.GetBethKey();
 
@@ -43,12 +43,12 @@ namespace PatchMaker
             var dirFO3Data = Path.Combine(Fallout3Path, "Data");
 
             var knownEsmVersions =
-                Directory.EnumerateFiles(Path.Combine(SOURCE_DIR, "Versions"), "*.esm", SearchOption.AllDirectories)
+                Directory.EnumerateFiles(Path.Combine(IN_DIR, "Versions"), "*.esm", SearchOption.AllDirectories)
                 .ToLookup(esm => Path.GetFileName(esm), esm => esm);
 
             foreach (var ESM in Installer.CheckedESMs)
             {
-                var fixPath = Path.Combine(BUILD_DIR, ESM + ".pat");
+                var fixPath = Path.Combine(OUT_DIR, ESM + ".pat");
                 if (!File.Exists(fixPath))
                 {
                     var ttwESM = Path.Combine(dirTTWMain, ESM);
@@ -97,7 +97,7 @@ namespace PatchMaker
                     if (renDict != null)
                     {
                         renameDict = new Dictionary<string, string>(renDict);
-                        var newRenPath = Path.Combine(BUILD_DIR, Path.ChangeExtension(outBsaName, ".ren"));
+                        var newRenPath = Path.Combine(OUT_DIR, Path.ChangeExtension(outBsaName, ".ren"));
                         if (!File.Exists(newRenPath))
                             using (var stream = File.OpenWrite(newRenPath))
                             using (var writer = new BinaryWriter(stream))
@@ -114,7 +114,7 @@ namespace PatchMaker
                 }
                 Debug.Assert(renameDict != null);
 
-                var patPath = Path.Combine(BUILD_DIR, Path.ChangeExtension(outBsaName, ".pat"));
+                var patPath = Path.Combine(OUT_DIR, Path.ChangeExtension(outBsaName, ".pat"));
                 if (File.Exists(patPath))
                     continue;
 

@@ -1,4 +1,18 @@
-﻿using System;
+﻿/// Copyright 2012 Darren Kopp
+///
+/// Licensed under the Apache License, Version 2.0 (the "License");
+/// you may not use this file except in compliance with the License.
+/// You may obtain a copy of the License at
+///
+///    http://www.apache.org/licenses/LICENSE-2.0
+///
+/// Unless required by applicable law or agreed to in writing, software
+/// distributed under the License is distributed on an "AS IS" BASIS,
+/// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+/// See the License for the specific language governing permissions and
+/// limitations under the License.
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -7,7 +21,7 @@ namespace TaleOfTwoWastelands.Patching.Murmur
 {
     internal static class Extensions
     {
-#if NETFX45
+#if NET45
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
         internal static uint ToUInt32(this byte[] data, int start = 0)
@@ -17,10 +31,10 @@ namespace TaleOfTwoWastelands.Patching.Murmur
                     : (uint)(data[start] << 24 | data[start + 1] << 16 | data[start + 2] << 8 | data[start + 3]);
         }
 
-#if NETFX45
+#if NET45
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
-        internal static ulong ToUInt64(this byte[] data, int start)
+        internal static ulong ToUInt64(this byte[] data, int start = 0)
         {
             if (BitConverter.IsLittleEndian)
             {
@@ -40,7 +54,7 @@ namespace TaleOfTwoWastelands.Patching.Murmur
             }
         }
 
-#if NETFX45
+#if NET45
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
         internal static uint RotateLeft(this uint x, byte r)
@@ -48,7 +62,7 @@ namespace TaleOfTwoWastelands.Patching.Murmur
             return (x << r) | (x >> (32 - r));
         }
 
-#if NETFX45
+#if NET45
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
         internal static ulong RotateLeft(this ulong x, byte r)
@@ -56,7 +70,7 @@ namespace TaleOfTwoWastelands.Patching.Murmur
             return (x << r) | (x >> (64 - r));
         }
 
-#if NETFX45
+#if NET45
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
         internal static uint FMix(this uint h)
@@ -67,7 +81,7 @@ namespace TaleOfTwoWastelands.Patching.Murmur
             return h ^ (h >> 16);
         }
 
-#if NETFX45
+#if NET45
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
         internal static ulong FMix(this ulong h)

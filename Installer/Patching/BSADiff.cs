@@ -350,7 +350,7 @@ namespace TaleOfTwoWastelands.Patching
                             bsaFile.UpdateData(output.ToArray(), false);
                         else
                         {
-                            var err = "ERROR: Patching " + bsaFile.Filename + " has failed - " + testChk.ToLongString();
+                            var err = "ERROR: Patching " + bsaFile.Filename + " has failed - " + testChk;
                             if (failFast)
                                 Trace.Fail(err);
                             else
@@ -365,7 +365,7 @@ namespace TaleOfTwoWastelands.Patching
             else
             {
                 //no patch exists for the file
-                var err = "WARNING: File is of an unexpected version: " + bsaFile.Filename + " - " + oldChk.ToLongString();
+                var err = "WARNING: File is of an unexpected version: " + bsaFile.Filename + " - " + oldChk;
 
                 if (failFast)
                     Trace.Fail(err);

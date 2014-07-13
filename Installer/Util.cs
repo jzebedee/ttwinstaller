@@ -35,7 +35,7 @@ namespace TaleOfTwoWastelands
             using (var fileHash = MD5.Create())
             using (stream)
                 return BitConverter.ToString(fileHash.ComputeHash(stream)).Replace("-", "");
-        }
+            }
 
         public static string GetMD5(byte[] buf)
         {
