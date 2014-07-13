@@ -42,19 +42,38 @@ namespace PatchMaker
             var Fallout3Path = fo3Key.GetValue("Installed Path", "").ToString();
             var dirFO3Data = Path.Combine(Fallout3Path, "Data");
 
+            var knownEsmVersions =
+                Directory.EnumerateFiles(Path.Combine(SOURCE_DIR, "Versions"), "*.esm", SearchOption.AllDirectories)
+                .ToLookup(esm => Path.GetFileName(esm), esm => esm);
+
             foreach (var ESM in Installer.CheckedESMs)
             {
                 var fixPath = Path.Combine(BUILD_DIR, ESM + ".pat");
                 if (!File.Exists(fixPath))
                 {
-                    var dataESM = Path.Combine(dirFO3Data, ESM);
                     var ttwESM = Path.Combine(dirTTWMain, ESM);
+                    var ttwBytes = File.ReadAllBytes(ttwESM);
+                    foreach (var dataESM in knownEsmVersions[ESM]) //var dataESM = Path.Combine(dirFO3Data, ESM);
+                    {
+                        var dataBytes = File.ReadAllBytes(dataESM);
+                        byte[] patchBytes;
 
-                    var patch = PatchInfo.FromFile("", dataESM, ttwESM);
+                        using (var msPatch = new MemoryStream())
+                        {
+                            BinaryPatchUtility.Create(dataBytes, ttwBytes, msPatch);
+                            patchBytes = msPatch.ToArray();
+                        }
 
-                    using (var fixStream = File.OpenWrite(fixPath))
-                    using (var writer = new BinaryWriter(fixStream))
-                        patch.WriteTo(writer);
+                        var patch = new PatchInfo
+                        {
+                            Metadata = FileValidation.FromFile(dataESM),
+                            Data = patchBytes
+                        };
+
+                        using (var fixStream = File.OpenWrite(fixPath))
+                        using (var writer = new BinaryWriter(fixStream))
+                            patch.WriteTo(writer);
+                    }
                 }
             }
 

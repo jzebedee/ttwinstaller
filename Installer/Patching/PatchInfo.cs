@@ -14,6 +14,10 @@ namespace TaleOfTwoWastelands.Patching
         public byte[] Data { get; set; }
 
         public PatchInfo() { }
+        /// <summary>
+        /// Deserialize a PatchInfo
+        /// </summary>
+        /// <param name="reader">A reader aligned to a serialized PatchInfo</param>
         public PatchInfo(BinaryReader reader)
         {
             //reading a FV (metadata) now
@@ -66,24 +70,24 @@ namespace TaleOfTwoWastelands.Patching
             }
         }
 
-        /// <summary>
-        /// Used only in PatchMaker
-        /// </summary>
-        public static PatchInfo FromFile(string prefix, string oldFilename, string newFilename)
-        {
-            var oldChksum = Util.GetMD5(oldFilename);
-            var newChksum = Util.GetMD5(newFilename);
-            prefix = !string.IsNullOrEmpty(prefix) ? Path.Combine(BSADiff.PatchDir, prefix) : BSADiff.PatchDir;
+        ///// <summary>
+        ///// Used only in PatchMaker
+        ///// </summary>
+        //public static PatchInfo FromFile(string prefix, string oldFilename, string newFilename)
+        //{
+        //    var oldChksum = Util.GetMD5(oldFilename);
+        //    var newChksum = Util.GetMD5(newFilename);
 
-            var diffPath = Path.Combine(prefix, Path.GetFileName(oldFilename) + "." + oldChksum + "." + newChksum + ".diff");
-            byte[] diffData = GetDiff(diffPath, false);
+        //    prefix = Path.Combine(prefix, "TTW Patches");
+        //    var diffPath = Path.Combine(prefix, Path.GetFileName(oldFilename) + "." + oldChksum + "." + newChksum + ".diff");
+        //    byte[] diffData = GetDiff(diffPath, true);
 
-            return new PatchInfo()
-            {
-                Metadata = FileValidation.FromFile(oldFilename),
-                Data = diffData
-            };
-        }
+        //    return new PatchInfo()
+        //    {
+        //        Metadata = FileValidation.FromFile(oldFilename),
+        //        Data = diffData
+        //    };
+        //}
 
         private static unsafe byte[] GetDiff(string diffPath, bool bz2Convert)
         {
@@ -107,8 +111,7 @@ namespace TaleOfTwoWastelands.Patching
         /// </summary>
         public static PatchInfo FromFileChecksum(string prefix, string filename, string oldChk, string newChk, FileValidation newChkVal)
         {
-            prefix = !string.IsNullOrEmpty(prefix) ? Path.Combine(BSADiff.PatchDir, prefix) : BSADiff.PatchDir;
-
+            prefix = Path.Combine(prefix, "TTW Patches");
             var diffPath = Path.Combine(prefix, filename + "." + oldChk + "." + newChk + ".diff");
             byte[] diffData = GetDiff(diffPath, true);
 

@@ -49,6 +49,8 @@ namespace TaleOfTwoWastelands.Patching
         /// </summary>
         internal static unsafe byte[] ConvertBz2ToLzma(byte* pBz2, long length)
         {
+            SevenZipCompressor.LzmaDictionarySize = 1024 * 1024 * 64; //64MiB, 7z 'Ultra'
+
             Func<long, long, Stream> openPatchStream = (u_offset, u_length) =>
                 new UnmanagedMemoryStream(pBz2 + u_offset, u_length > 0 ? u_length : length - u_offset);
 
@@ -137,6 +139,8 @@ namespace TaleOfTwoWastelands.Patching
         /// <param name="output">A <see cref="Stream"/> to which the patch will be written.</param>
         public static void Create(byte[] oldData, byte[] newData, Stream output)
         {
+            SevenZipCompressor.LzmaDictionarySize = 1024 * 1024 * 64; //64MiB, 7z 'Ultra'
+
             // check arguments
             if (oldData == null)
                 throw new ArgumentNullException("oldData");
@@ -161,8 +165,6 @@ namespace TaleOfTwoWastelands.Patching
                 ??	??	Bzip2ed extra block */
             byte[] header = new byte[HEADER_SIZE];
             WriteInt64(FILE_SIGNATURE, header, 0); // "BSDIFF40"
-            WriteInt64(0, header, 8);
-            WriteInt64(0, header, 16);
             WriteInt64(newData.Length, header, 24);
 
             long startPosition = output.Position;
