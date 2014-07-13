@@ -173,8 +173,8 @@ namespace PatchMaker
                         PatchInfo patchInfo;
                         if (!newChk.Equals(oldChk))
                         {
-                            var antiqueOldChk = GetChecksum(join.oldBsaFile.GetContents(true));
-                            var antiqueNewChk = GetChecksum(join.newBsaFile.GetContents(true));
+                            var antiqueOldChk = Util.GetMD5(join.oldBsaFile.GetContents(true));
+                            var antiqueNewChk = Util.GetMD5(join.newBsaFile.GetContents(true));
 
                             patchInfo = PatchInfo.FromFileChecksum(outBsaName, oldFilename, antiqueOldChk, antiqueNewChk, newChk);
                             Debug.Assert(patchInfo.Data != null);
@@ -199,12 +199,6 @@ namespace PatchMaker
                 return null;
             using (var stream = File.OpenRead(dictPath))
                 return (IDictionary<string, string>)new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter().Deserialize(stream);
-        }
-
-        private static string GetChecksum(byte[] buf)
-        {
-            var fileHash = System.Security.Cryptography.MD5.Create();
-            return BitConverter.ToString(fileHash.ComputeHash(buf)).Replace("-", "");
         }
     }
 }

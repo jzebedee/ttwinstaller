@@ -1,4 +1,5 @@
-﻿using System;
+﻿#define PARALLEL
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -16,6 +17,7 @@ namespace TaleOfTwoWastelands.Patching
 {
     public class BSADiff
     {
+        #region PatchJoin class
         class PatchJoin
         {
             public PatchJoin(BSAFile newFile, BSAFile oldFile, PatchInfo[] patches)
@@ -29,6 +31,7 @@ namespace TaleOfTwoWastelands.Patching
             public BSAFile oldFile;
             public PatchInfo[] patches;
         }
+        #endregion
 
         public const string VOICE_PREFIX = @"sound\voice";
         public static readonly string PatchDir = Path.Combine(Installer.AssetsDir, "TTW Data", "TTW Patches");
@@ -75,11 +78,12 @@ namespace TaleOfTwoWastelands.Patching
                 Op.Step();
             }
 
-            var renameDict = new Dictionary<string, string>();
+            IDictionary<string, string> renameDict;
             try
             {
                 Op.CurrentOperation = "Opening rename database";
 
+                renameDict = new Dictionary<string, string>();
                 var renamePath = Path.Combine(PatchDir, Path.ChangeExtension(outBsaFilename, ".ren"));
                 if (File.Exists(renamePath))
                     using (var stream = File.OpenRead(renamePath))
@@ -156,7 +160,7 @@ namespace TaleOfTwoWastelands.Patching
 #else
                         foreach (var join in joinedPatches)
 #endif
-                            HandleFile(opChk, join)
+ HandleFile(opChk, join)
 #if PARALLEL
 )
 #endif
@@ -223,42 +227,42 @@ namespace TaleOfTwoWastelands.Patching
 
                 foreach (var patchInfo in join.patches)
                 {
-                    var newChk = patchInfo.Metadata;
-                    if (FileValidation.IsEmpty(newChk) && patchInfo.Data.Length == 0)
+                var newChk = patchInfo.Metadata;
+                if (FileValidation.IsEmpty(newChk) && patchInfo.Data.Length == 0)
+                {
+                    opChk.CurrentOperation = "Skipping " + filename;
+
+                    if (join.newFile.Filename.StartsWith(VOICE_PREFIX))
                     {
-                        opChk.CurrentOperation = "Skipping " + filename;
-
-                        if (join.newFile.Filename.StartsWith(VOICE_PREFIX))
-                        {
-                            //LogFile("Skipping voice file " + filepath);
-                            continue;
-                        }
-                        else
-                        {
-                            var msg = "Empty patch for file " + filepath;
-                            if (newChk == null)
-                                Log("ERROR: " + msg);
-                            else
-                                LogFile(msg);
-                            continue;
-                        }
+                        //LogFile("Skipping voice file " + filepath);
+                        continue;
                     }
-
-                    using (var oldChk = FileValidation.FromBSAFile(join.oldFile))
+                    else
                     {
-                        if (!newChk.Equals(oldChk))
-                        {
-                            opChk.CurrentOperation = "Patching " + filename;
-
-                            if (!PatchFile(join.newFile, oldChk, patchInfo))
-                                Log("ERROR: Patching " + join.newFile.Filename + " failed");
-                        }
+                        var msg = "Empty patch for file " + filepath;
+                        if (newChk == null)
+                            Log("ERROR: " + msg);
                         else
-                        {
-                            opChk.CurrentOperation = "Compressing " + filename;
-                            join.newFile.Cache();
-                        }
+                            LogFile(msg);
+                        continue;
                     }
+                }
+
+                using (var oldChk = FileValidation.FromBSAFile(join.oldFile))
+                {
+                    if (!newChk.Equals(oldChk))
+                    {
+                        opChk.CurrentOperation = "Patching " + filename;
+
+                        if (!PatchFile(join.newFile, oldChk, patchInfo))
+                            Log("ERROR: Patching " + join.newFile.Filename + " failed");
+                    }
+                    else
+                    {
+                        opChk.CurrentOperation = "Compressing " + filename;
+                        join.newFile.Cache();
+                    }
+                }
                 }
             }
             finally
@@ -267,7 +271,7 @@ namespace TaleOfTwoWastelands.Patching
             }
         }
 
-        public void RenameFiles(BSAWrapper BSA, Dictionary<string, string> renameDict)
+        public void RenameFiles(BSAWrapper BSA, IDictionary<string, string> renameDict)
         {
             var opPrefix = "Renaming BSA files";
 
@@ -314,7 +318,7 @@ namespace TaleOfTwoWastelands.Patching
 #if PARALLEL
 )
 #endif
-            ;
+;
         }
 
         public bool PatchFile(BSAFile bsaFile, FileValidation oldChk, PatchInfo patch, bool failFast = false)

@@ -23,14 +23,26 @@ namespace TaleOfTwoWastelands
             zip.Close();
         }
 
-        public static string GetMD5(string fileIn)
+        #region GetMD5 overloads
+        public static string GetMD5(string file)
         {
-            MD5 fileHash = MD5.Create();
-            using (var checkFile = File.OpenRead(fileIn))
-            {
-                return BitConverter.ToString(fileHash.ComputeHash(checkFile)).Replace("-", "");
-            }
+            using (var stream = File.OpenRead(file))
+                return GetMD5(stream);
         }
+
+        public static string GetMD5(Stream stream)
+        {
+            using (var fileHash = MD5.Create())
+            using (stream)
+                return BitConverter.ToString(fileHash.ComputeHash(stream)).Replace("-", "");
+        }
+
+        public static string GetMD5(byte[] buf)
+        {
+            using (var fileHash = MD5.Create())
+                return BitConverter.ToString(fileHash.ComputeHash(buf)).Replace("-", "");
+        }
+        #endregion
 
         public static bool ApplyPatch(Dictionary<string, string> CheckSums, string inFile, string patchFile, string outFile)
         {
