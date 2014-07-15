@@ -44,12 +44,19 @@ namespace TaleOfTwoWastelands.Patching
         public const int HEADER_SIZE = 32;
         public const int BUFFER_SIZE = 0x100000;
 
+        private const int DICTSIZE_ULTRA = 1024 * 1024 * 64; //64MiB, 7z 'Ultra'
+
+        private static void SetCompressionLevel()
+        {
+            SevenZipCompressor.LzmaDictionarySize = DICTSIZE_ULTRA;
+        }
+
         /// <summary>
         /// Used only in PatchMaker
         /// </summary>
         internal static unsafe byte[] ConvertBz2ToLzma(byte* pBz2, long length)
         {
-            SevenZipCompressor.LzmaDictionarySize = 1024 * 1024 * 64; //64MiB, 7z 'Ultra'
+            SetCompressionLevel();
 
             Func<long, long, Stream> openPatchStream = (u_offset, u_length) =>
                 new UnmanagedMemoryStream(pBz2 + u_offset, u_length > 0 ? u_length : length - u_offset);
@@ -137,14 +144,14 @@ namespace TaleOfTwoWastelands.Patching
         /// <param name="oldData">The original binary data.</param>
         /// <param name="newData">The new binary data.</param>
         /// <param name="output">A <see cref="Stream"/> to which the patch will be written.</param>
-        public static void Create(byte[] oldData, byte[] newData, Stream output)
+        public static unsafe void Create(byte[] oldBuf, byte[] newBuf, Stream output)
         {
-            SevenZipCompressor.LzmaDictionarySize = 1024 * 1024 * 64; //64MiB, 7z 'Ultra'
+            SetCompressionLevel();
 
             // check arguments
-            if (oldData == null)
+            if (oldBuf == null)
                 throw new ArgumentNullException("oldData");
-            if (newData == null)
+            if (newBuf == null)
                 throw new ArgumentNullException("newData");
             if (output == null)
                 throw new ArgumentNullException("output");
@@ -165,190 +172,194 @@ namespace TaleOfTwoWastelands.Patching
                 ??	??	Bzip2ed extra block */
             byte[] header = new byte[HEADER_SIZE];
             WriteInt64(FILE_SIGNATURE, header, 0); // "BSDIFF40"
-            WriteInt64(newData.Length, header, 24);
+            WriteInt64(newBuf.Length, header, 24);
 
             long startPosition = output.Position;
             output.Write(header, 0, header.Length);
 
-            int[] I = SuffixSort(oldData);
-
-            byte[] db = new byte[newData.Length + 1];
-            byte[] eb = new byte[newData.Length + 1];
-
-            int dblen = 0;
-            int eblen = 0;
-
-            using (WrappingStream wrappingStream = new WrappingStream(output, false))
-            using (var lzmaStream = new LzmaEncodeStream(wrappingStream))
+            fixed (byte* oldData = oldBuf)
+            fixed (byte* newData = newBuf)
             {
-                // compute the differences, writing ctrl as we go
-                int scan = 0;
-                int pos = 0;
-                int len = 0;
-                int lastscan = 0;
-                int lastpos = 0;
-                int lastoffset = 0;
-                while (scan < newData.Length)
+                var bufI = SuffixSort(oldData, oldBuf.Length);
+
+                byte[] db = new byte[newBuf.Length + 1];
+                byte[] eb = new byte[newBuf.Length + 1];
+
+                int dblen = 0;
+                int eblen = 0;
+
+                using (var lzmaStream = new LzmaEncodeStream(output))
                 {
-                    int oldscore = 0;
-
-                    for (int scsc = scan += len; scan < newData.Length; scan++)
+                    // compute the differences, writing ctrl as we go
+                    int scan = 0;
+                    int pos = 0;
+                    int len = 0;
+                    int lastscan = 0;
+                    int lastpos = 0;
+                    int lastoffset = 0;
+                    while (scan < newBuf.Length)
                     {
-                        len = Search(I, oldData, newData, scan, 0, oldData.Length, out pos);
+                        int oldscore = 0;
 
-                        for (; scsc < scan + len; scsc++)
+                        for (int scsc = scan += len; scan < newBuf.Length; scan++)
                         {
-                            if ((scsc + lastoffset < oldData.Length) && (oldData[scsc + lastoffset] == newData[scsc]))
-                                oldscore++;
-                        }
+                            fixed (int* I = bufI)
+                                len = Search(I, oldData, oldBuf.Length, newData, newBuf.Length, scan, 0, oldBuf.Length, out pos);
 
-                        if ((len == oldscore && len != 0) || (len > oldscore + 8))
-                            break;
-
-                        if ((scan + lastoffset < oldData.Length) && (oldData[scan + lastoffset] == newData[scan]))
-                            oldscore--;
-                    }
-
-                    if (len != oldscore || scan == newData.Length)
-                    {
-                        int s = 0;
-                        int sf = 0;
-                        int lenf = 0;
-                        for (int i = 0; (lastscan + i < scan) && (lastpos + i < oldData.Length); )
-                        {
-                            if (oldData[lastpos + i] == newData[lastscan + i])
-                                s++;
-                            i++;
-                            if (s * 2 - i > sf * 2 - lenf)
+                            for (; scsc < scan + len; scsc++)
                             {
-                                sf = s;
-                                lenf = i;
+                                if ((scsc + lastoffset < oldBuf.Length) && (oldData[scsc + lastoffset] == newData[scsc]))
+                                    oldscore++;
                             }
+
+                            if ((len == oldscore && len != 0) || (len > oldscore + 8))
+                                break;
+
+                            if ((scan + lastoffset < oldBuf.Length) && (oldData[scan + lastoffset] == newData[scan]))
+                                oldscore--;
                         }
 
-                        int lenb = 0;
-                        if (scan < newData.Length)
+                        if (len != oldscore || scan == newBuf.Length)
                         {
-                            s = 0;
-                            int sb = 0;
-                            for (int i = 1; (scan >= lastscan + i) && (pos >= i); i++)
+                            int s = 0;
+                            int sf = 0;
+                            int lenf = 0;
+                            for (int i = 0; (lastscan + i < scan) && (lastpos + i < oldBuf.Length); )
                             {
-                                if (oldData[pos - i] == newData[scan - i])
+                                if (oldData[lastpos + i] == newData[lastscan + i])
                                     s++;
-                                if (s * 2 - i > sb * 2 - lenb)
+                                i++;
+                                if (s * 2 - i > sf * 2 - lenf)
                                 {
-                                    sb = s;
-                                    lenb = i;
-                                }
-                            }
-                        }
-
-                        if (lastscan + lenf > scan - lenb)
-                        {
-                            int overlap = (lastscan + lenf) - (scan - lenb);
-                            s = 0;
-                            int ss = 0;
-                            int lens = 0;
-                            for (int i = 0; i < overlap; i++)
-                            {
-                                if (newData[lastscan + lenf - overlap + i] == oldData[lastpos + lenf - overlap + i])
-                                    s++;
-                                if (newData[scan - lenb + i] == oldData[pos - lenb + i])
-                                    s--;
-                                if (s > ss)
-                                {
-                                    ss = s;
-                                    lens = i + 1;
+                                    sf = s;
+                                    lenf = i;
                                 }
                             }
 
-                            lenf += lens - overlap;
-                            lenb -= lens;
+                            int lenb = 0;
+                            if (scan < newBuf.Length)
+                            {
+                                s = 0;
+                                int sb = 0;
+                                for (int i = 1; (scan >= lastscan + i) && (pos >= i); i++)
+                                {
+                                    if (oldData[pos - i] == newData[scan - i])
+                                        s++;
+                                    if (s * 2 - i > sb * 2 - lenb)
+                                    {
+                                        sb = s;
+                                        lenb = i;
+                                    }
+                                }
+                            }
+
+                            if (lastscan + lenf > scan - lenb)
+                            {
+                                int overlap = (lastscan + lenf) - (scan - lenb);
+                                s = 0;
+                                int ss = 0;
+                                int lens = 0;
+                                for (int i = 0; i < overlap; i++)
+                                {
+                                    if (newData[lastscan + lenf - overlap + i] == oldData[lastpos + lenf - overlap + i])
+                                        s++;
+                                    if (newData[scan - lenb + i] == oldData[pos - lenb + i])
+                                        s--;
+                                    if (s > ss)
+                                    {
+                                        ss = s;
+                                        lens = i + 1;
+                                    }
+                                }
+
+                                lenf += lens - overlap;
+                                lenb -= lens;
+                            }
+
+                            for (int i = 0; i < lenf; i++)
+                                db[dblen + i] = (byte)(newData[lastscan + i] - oldData[lastpos + i]);
+                            for (int i = 0; i < (scan - lenb) - (lastscan + lenf); i++)
+                                eb[eblen + i] = newData[lastscan + lenf + i];
+
+                            dblen += lenf;
+                            eblen += (scan - lenb) - (lastscan + lenf);
+
+                            byte[] buf = new byte[8];
+                            WriteInt64(lenf, buf, 0);
+                            lzmaStream.Write(buf, 0, 8);
+
+                            WriteInt64((scan - lenb) - (lastscan + lenf), buf, 0);
+                            lzmaStream.Write(buf, 0, 8);
+
+                            WriteInt64((pos - lenb) - (lastpos + lenf), buf, 0);
+                            lzmaStream.Write(buf, 0, 8);
+
+                            lastscan = scan - lenb;
+                            lastpos = pos - lenb;
+                            lastoffset = pos - scan;
                         }
-
-                        for (int i = 0; i < lenf; i++)
-                            db[dblen + i] = (byte)(newData[lastscan + i] - oldData[lastpos + i]);
-                        for (int i = 0; i < (scan - lenb) - (lastscan + lenf); i++)
-                            eb[eblen + i] = newData[lastscan + lenf + i];
-
-                        dblen += lenf;
-                        eblen += (scan - lenb) - (lastscan + lenf);
-
-                        byte[] buf = new byte[8];
-                        WriteInt64(lenf, buf, 0);
-                        lzmaStream.Write(buf, 0, 8);
-
-                        WriteInt64((scan - lenb) - (lastscan + lenf), buf, 0);
-                        lzmaStream.Write(buf, 0, 8);
-
-                        WriteInt64((pos - lenb) - (lastpos + lenf), buf, 0);
-                        lzmaStream.Write(buf, 0, 8);
-
-                        lastscan = scan - lenb;
-                        lastpos = pos - lenb;
-                        lastoffset = pos - scan;
                     }
                 }
+
+                // compute size of compressed ctrl data
+                long controlEndPosition = output.Position;
+                WriteInt64(controlEndPosition - startPosition - HEADER_SIZE, header, 8);
+
+                // write compressed diff data
+                using (var lzmaStream = new LzmaEncodeStream(output))
+                {
+                    lzmaStream.Write(db, 0, dblen);
+                }
+
+                // compute size of compressed diff data
+                long diffEndPosition = output.Position;
+                WriteInt64(diffEndPosition - controlEndPosition, header, 16);
+
+                // write compressed extra data
+                using (var lzmaStream = new LzmaEncodeStream(output))
+                {
+                    lzmaStream.Write(eb, 0, eblen);
+                }
+
+                // seek to the beginning, write the header, then seek back to end
+                long endPosition = output.Position;
+                output.Position = startPosition;
+                output.Write(header, 0, header.Length);
+                output.Position = endPosition;
             }
-
-            // compute size of compressed ctrl data
-            long controlEndPosition = output.Position;
-            WriteInt64(controlEndPosition - startPosition - HEADER_SIZE, header, 8);
-
-            // write compressed diff data
-            using (WrappingStream wrappingStream = new WrappingStream(output, false))
-            using (var lzmaStream = new LzmaEncodeStream(wrappingStream))
-            {
-                lzmaStream.Write(db, 0, dblen);
-            }
-
-            // compute size of compressed diff data
-            long diffEndPosition = output.Position;
-            WriteInt64(diffEndPosition - controlEndPosition, header, 16);
-
-            // write compressed extra data
-            using (WrappingStream wrappingStream = new WrappingStream(output, false))
-            using (var lzmaStream = new LzmaEncodeStream(wrappingStream))
-            {
-                lzmaStream.Write(eb, 0, eblen);
-            }
-
-            // seek to the beginning, write the header, then seek back to end
-            long endPosition = output.Position;
-            output.Position = startPosition;
-            output.Write(header, 0, header.Length);
-            output.Position = endPosition;
         }
 
 
-        private static int CompareBytes(byte[] left, int leftOffset, byte[] right, int rightOffset)
+        private static unsafe int CompareBytes(byte* left, int leftLength, byte* right, int rightLength)
         {
-            for (int index = 0; index < left.Length - leftOffset && index < right.Length - rightOffset; index++)
+            int diff = 0;
+            for (int i = 0; i < leftLength && i < rightLength; i++)
             {
-                int diff = left[index + leftOffset] - right[index + rightOffset];
+                diff = left[i] - right[i];
                 if (diff != 0)
-                    return diff;
-            }
-            return 0;
-        }
-
-        private static int MatchLength(byte[] oldData, int oldOffset, byte[] newData, int newOffset)
-        {
-            int i;
-            for (i = 0; i < oldData.Length - oldOffset && i < newData.Length - newOffset; i++)
-            {
-                if (oldData[i + oldOffset] != newData[i + newOffset])
                     break;
             }
+            return diff;
+        }
+
+        private static unsafe int MatchLength(byte* oldData, int oldLength, byte* newData, int newLength)
+        {
+            int i;
+            for (i = 0; i < oldLength && i < newLength; i++)
+            {
+                if (oldData[i] != newData[i])
+                    break;
+            }
+
             return i;
         }
 
-        private static int Search(int[] I, byte[] oldData, byte[] newData, int newOffset, int start, int end, out int pos)
+        private static unsafe int Search(int* I, byte* oldData, int oldLength, byte* newData, int newLength, int newOffset, int start, int end, out int pos)
         {
             if (end - start < 2)
             {
-                int startLength = MatchLength(oldData, I[start], newData, newOffset);
-                int endLength = MatchLength(oldData, I[end], newData, newOffset);
+                int startLength = MatchLength((oldData + I[start]), oldLength, (newData + newOffset), newLength);
+                int endLength = MatchLength((oldData + I[end]), oldLength, (newData + newOffset), newLength);
 
                 if (startLength > endLength)
                 {
@@ -364,13 +375,13 @@ namespace TaleOfTwoWastelands.Patching
             else
             {
                 int midPoint = start + (end - start) / 2;
-                return CompareBytes(oldData, I[midPoint], newData, newOffset) < 0 ?
-                    Search(I, oldData, newData, newOffset, midPoint, end, out pos) :
-                    Search(I, oldData, newData, newOffset, start, midPoint, out pos);
+                return CompareBytes((oldData + I[midPoint]), oldLength, (newData + newOffset), newLength) < 0 ?
+                    Search(I, oldData, oldLength, newData, newLength, newOffset, midPoint, end, out pos) :
+                    Search(I, oldData, oldLength, newData, newLength, newOffset, start, midPoint, out pos);
             }
         }
 
-        private static void Split(int[] I, int[] v, int start, int len, int h)
+        private static unsafe void Split(int* I, int* v, int start, int len, int h)
         {
             if (len < 16)
             {
@@ -388,7 +399,7 @@ namespace TaleOfTwoWastelands.Patching
                         }
                         if (v[I[k + i] + h] == x)
                         {
-                            Swap(ref I[k + j], ref I[k + i]);
+                            Swap(&I[k + j], &I[k + i]);
                             j++;
                         }
                     }
@@ -424,12 +435,12 @@ namespace TaleOfTwoWastelands.Patching
                     }
                     else if (v[I[i] + h] == x)
                     {
-                        Swap(ref I[i], ref I[jj + j]);
+                        Swap(&I[i], &I[jj + j]);
                         j++;
                     }
                     else
                     {
-                        Swap(ref I[i], ref I[kk + k]);
+                        Swap(&I[i], &I[kk + k]);
                         k++;
                     }
                 }
@@ -442,7 +453,7 @@ namespace TaleOfTwoWastelands.Patching
                     }
                     else
                     {
-                        Swap(ref I[jj + j], ref I[kk + k]);
+                        Swap(&I[jj + j], &I[kk + k]);
                         k++;
                     }
                 }
@@ -460,70 +471,78 @@ namespace TaleOfTwoWastelands.Patching
             }
         }
 
-        private static int[] SuffixSort(byte[] oldData)
+        private static unsafe int[] SuffixSort(byte* oldData, int size)
         {
-            int[] buckets = new int[256];
+            var buckets = stackalloc int[256];
 
-            foreach (byte oldByte in oldData)
-                buckets[oldByte]++;
+            for (int i = 0; i < size; i++)
+                buckets[oldData[i]]++;
             for (int i = 1; i < 256; i++)
                 buckets[i] += buckets[i - 1];
             for (int i = 255; i > 0; i--)
                 buckets[i] = buckets[i - 1];
             buckets[0] = 0;
 
-            int[] I = new int[oldData.Length + 1];
-            for (int i = 0; i < oldData.Length; i++)
-                I[++buckets[oldData[i]]] = i;
+            int[]
+                bufI = new int[size + 1],
+                bufV = new int[size + 1];
 
-            int[] v = new int[oldData.Length + 1];
-            for (int i = 0; i < oldData.Length; i++)
-                v[i] = buckets[oldData[i]];
-
-            for (int i = 1; i < 256; i++)
+            fixed (int* I = bufI)
             {
-                if (buckets[i] == buckets[i - 1] + 1)
-                    I[buckets[i]] = -1;
-            }
-            I[0] = -1;
+                for (int i = 0; i < size; i++)
+                    I[++buckets[oldData[i]]] = i;
 
-            for (int h = 1; I[0] != -(oldData.Length + 1); h += h)
-            {
-                int len = 0;
-                int i = 0;
-                while (i < oldData.Length + 1)
+                fixed (int* v = bufV)
                 {
-                    if (I[i] < 0)
+                    for (int i = 0; i < size; i++)
+                        v[i] = buckets[oldData[i]];
+
+                    for (int i = 1; i < 256; i++)
                     {
-                        len -= I[i];
-                        i -= I[i];
+                        if (buckets[i] == buckets[i - 1] + 1)
+                            I[buckets[i]] = -1;
                     }
-                    else
+                    I[0] = -1;
+
+                    for (int h = 1; I[0] != -(size + 1); h += h)
                     {
+                        int len = 0;
+                        int i = 0;
+                        while (i < size + 1)
+                        {
+                            if (I[i] < 0)
+                            {
+                                len -= I[i];
+                                i -= I[i];
+                            }
+                            else
+                            {
+                                if (len != 0)
+                                    I[i - len] = -len;
+                                len = v[I[i]] + 1 - i;
+                                Split(I, v, i, len, h);
+                                i += len;
+                                len = 0;
+                            }
+                        }
+
                         if (len != 0)
                             I[i - len] = -len;
-                        len = v[I[i]] + 1 - i;
-                        Split(I, v, i, len, h);
-                        i += len;
-                        len = 0;
                     }
-                }
 
-                if (len != 0)
-                    I[i - len] = -len;
+                    for (int i = 0; i < size + 1; i++)
+                        I[v[i]] = i;
+                }
             }
 
-            for (int i = 0; i < oldData.Length + 1; i++)
-                I[v[i]] = i;
-
-            return I;
+            return bufI;
         }
 
-        private static void Swap(ref int first, ref int second)
+        private static unsafe void Swap(int* first, int* second)
         {
-            int temp = first;
-            first = second;
-            second = temp;
+            int temp = *first;
+            *first = *second;
+            *second = temp;
         }
 
         public static unsafe void WriteInt64(long value, byte[] buf, int offset)
