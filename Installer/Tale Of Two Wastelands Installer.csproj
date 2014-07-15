@@ -88,7 +88,6 @@
     <Compile Include="Patching\PatchDict.cs" />
     <Compile Include="Patching\PatchInfo.cs" />
     <Compile Include="Patching\FileValidation.cs" />
-    <Compile Include="Patching\WrappingStream.cs" />
     <Compile Include="ProgressTypes\InstallOperation.cs" />
     <Compile Include="ProgressTypes\Progress.cs" Condition="!$(TargetFrameworkVersion.Contains('v4.5'))" />
     <Compile Include="UI\frm_Main.cs">

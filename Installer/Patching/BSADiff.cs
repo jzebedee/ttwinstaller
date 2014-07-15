@@ -12,6 +12,7 @@ using System.Diagnostics;
 using BSAsharp;
 using System.IO.MemoryMappedFiles;
 using TaleOfTwoWastelands.ProgressTypes;
+using SevenZip;
 
 namespace TaleOfTwoWastelands.Patching
 {
@@ -83,13 +84,20 @@ namespace TaleOfTwoWastelands.Patching
             {
                 Op.CurrentOperation = "Opening rename database";
 
-                renameDict = new Dictionary<string, string>();
                 var renamePath = Path.Combine(PatchDir, Path.ChangeExtension(outBsaFilename, ".ren"));
                 if (File.Exists(renamePath))
-                    using (var stream = File.OpenRead(renamePath))
-                    using (var reader = new BinaryReader(stream))
-                        while (stream.Position < stream.Length)
+                    using (var fileStream = File.OpenRead(renamePath))
+                    using (var lzmaStream = new LzmaDecodeStream(fileStream))
+                    using (var reader = new BinaryReader(lzmaStream))
+                    {
+                        var numPairs = reader.ReadInt32();
+                        renameDict = new Dictionary<string, string>(numPairs);
+
+                        while (numPairs-- > 0)
                             renameDict.Add(reader.ReadString(), reader.ReadString());
+                    }
+                else
+                    renameDict = new Dictionary<string, string>();
             }
             finally
             {
@@ -227,42 +235,42 @@ namespace TaleOfTwoWastelands.Patching
 
                 foreach (var patchInfo in join.patches)
                 {
-                var newChk = patchInfo.Metadata;
-                if (FileValidation.IsEmpty(newChk) && patchInfo.Data.Length == 0)
-                {
-                    opChk.CurrentOperation = "Skipping " + filename;
+                    var newChk = patchInfo.Metadata;
+                    if (newChk == null && patchInfo.Data.Length == 0)
+                    {
+                        opChk.CurrentOperation = "Skipping " + filename;
 
-                    if (join.newFile.Filename.StartsWith(VOICE_PREFIX))
-                    {
-                        //LogFile("Skipping voice file " + filepath);
-                        continue;
-                    }
-                    else
-                    {
-                        var msg = "Empty patch for file " + filepath;
-                        if (newChk == null)
-                            Log("ERROR: " + msg);
+                        if (join.newFile.Filename.StartsWith(VOICE_PREFIX))
+                        {
+                            //LogFile("Skipping voice file " + filepath);
+                            continue;
+                        }
                         else
-                            LogFile(msg);
-                        continue;
+                        {
+                            var msg = "Empty patch for file " + filepath;
+                            if (newChk == null)
+                                Log("ERROR: " + msg);
+                            else
+                                LogFile(msg);
+                            continue;
+                        }
                     }
-                }
 
-                using (var oldChk = FileValidation.FromBSAFile(join.oldFile))
-                {
-                    if (!newChk.Equals(oldChk))
+                    using (var oldChk = FileValidation.FromBSAFile(join.oldFile))
                     {
-                        opChk.CurrentOperation = "Patching " + filename;
+                        if (!newChk.Equals(oldChk))
+                        {
+                            opChk.CurrentOperation = "Patching " + filename;
 
-                        if (!PatchFile(join.newFile, oldChk, patchInfo))
-                            Log("ERROR: Patching " + join.newFile.Filename + " failed");
+                            if (!PatchFile(join.newFile, oldChk, patchInfo))
+                                Log("ERROR: Patching " + join.newFile.Filename + " failed");
+                        }
+                        else
+                        {
+                            opChk.CurrentOperation = "Compressing " + filename;
+                            join.newFile.Cache();
+                        }
                     }
-                    else
-                    {
-                        opChk.CurrentOperation = "Compressing " + filename;
-                        join.newFile.Cache();
-                    }
-                }
                 }
             }
             finally

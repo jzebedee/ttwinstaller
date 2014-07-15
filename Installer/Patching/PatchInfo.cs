@@ -23,7 +23,10 @@ namespace TaleOfTwoWastelands.Patching
             //reading a FV (metadata) now
             var filesize = reader.ReadUInt32();
             var checksum = reader.ReadUInt64();
-            this.Metadata = new FileValidation(checksum, filesize);
+            if (filesize == 0 && checksum == 0)
+                this.Metadata = null;
+            else
+                this.Metadata = new FileValidation(checksum, filesize);
 
             //reading data now
             var dataSize = reader.ReadInt32();
@@ -55,25 +58,6 @@ namespace TaleOfTwoWastelands.Patching
             }
         }
 
-        ///// <summary>
-        ///// Used only in PatchMaker
-        ///// </summary>
-        //public static PatchInfo FromFile(string prefix, string oldFilename, string newFilename)
-        //{
-        //    var oldChksum = Util.GetMD5(oldFilename);
-        //    var newChksum = Util.GetMD5(newFilename);
-
-        //    prefix = Path.Combine(prefix, "TTW Patches");
-        //    var diffPath = Path.Combine(prefix, Path.GetFileName(oldFilename) + "." + oldChksum + "." + newChksum + ".diff");
-        //    byte[] diffData = GetDiff(diffPath, true);
-
-        //    return new PatchInfo()
-        //    {
-        //        Metadata = FileValidation.FromFile(oldFilename),
-        //        Data = diffData
-        //    };
-        //}
-
         private static unsafe byte[] GetDiff(string diffPath, bool bz2Convert)
         {
             byte[] diffData = null;
@@ -96,7 +80,6 @@ namespace TaleOfTwoWastelands.Patching
         /// </summary>
         public static PatchInfo FromFileChecksum(string prefix, string filename, string oldChk, string newChk, FileValidation newChkVal)
         {
-            prefix = Path.Combine(prefix, "TTW Patches");
             var diffPath = Path.Combine(prefix, filename + "." + oldChk + "." + newChk + ".diff");
             byte[] diffData = GetDiff(diffPath, true);
 

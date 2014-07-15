@@ -9,6 +9,9 @@ using BSAsharp;
 using TaleOfTwoWastelands;
 using TaleOfTwoWastelands.Patching;
 using TaleOfTwoWastelands.ProgressTypes;
+using SevenZip;
+using System.Threading.Tasks;
+using System.Collections.Concurrent;
 namespace PatchMaker
 {
     class Program
@@ -18,6 +21,8 @@ namespace PatchMaker
 
         static void Main(string[] args)
         {
+            //BenchmarkHash.Run();
+
             Console.WriteLine("Building {0} folder from {1} folder. Existing files are skipped. OK?", OUT_DIR, IN_DIR);
             Console.Write("y/n: ");
             var keyInfo = Console.ReadKey();
@@ -46,14 +51,19 @@ namespace PatchMaker
                 Directory.EnumerateFiles(Path.Combine(IN_DIR, "Versions"), "*.esm", SearchOption.AllDirectories)
                 .ToLookup(esm => Path.GetFileName(esm), esm => esm);
 
-            foreach (var ESM in Installer.CheckedESMs)
+            Parallel.ForEach(Installer.CheckedESMs, ESM =>
             {
-                var fixPath = Path.Combine(OUT_DIR, ESM + ".pat");
-                if (!File.Exists(fixPath))
-                {
-                    var ttwESM = Path.Combine(dirTTWMain, ESM);
-                    var ttwBytes = File.ReadAllBytes(ttwESM);
-                    foreach (var dataESM in knownEsmVersions[ESM]) //var dataESM = Path.Combine(dirFO3Data, ESM);
+                var fixPath = Path.Combine(OUT_DIR, Path.ChangeExtension(ESM, ".pat"));
+                if (File.Exists(fixPath))
+                    return;
+
+                var ttwESM = Path.Combine(dirTTWMain, ESM);
+                var ttwBytes = File.ReadAllBytes(ttwESM);
+
+                var altVersions = knownEsmVersions[ESM].ToList();
+
+                var patches =
+                    altVersions.Select(dataESM =>
                     {
                         var dataBytes = File.ReadAllBytes(dataESM);
                         byte[] patchBytes;
@@ -64,18 +74,23 @@ namespace PatchMaker
                             patchBytes = msPatch.ToArray();
                         }
 
-                        var patch = new PatchInfo
+                        return new PatchInfo
                         {
                             Metadata = FileValidation.FromFile(dataESM),
                             Data = patchBytes
                         };
+                    })
+                    .AsParallel()
+                    .ToArray();
 
-                        using (var fixStream = File.OpenWrite(fixPath))
-                        using (var writer = new BinaryWriter(fixStream))
-                            patch.WriteTo(writer);
-                    }
-                }
-            }
+                var patchDict = new PatchDict(altVersions.Count);
+                patchDict.Add(ESM, patches);
+
+                using (var fixStream = File.OpenWrite(fixPath))
+                    patchDict.WriteAll(fixStream);
+            });
+
+            SevenZipCompressor.LzmaDictionarySize = 1024 * 1024 * 64; //64MiB, 7z 'Ultra'
 
             var progressLog = new System.Progress<string>(s => Debug.Write(s));
             var progressUIMinor = new System.Progress<InstallOperation>();
@@ -99,13 +114,17 @@ namespace PatchMaker
                         renameDict = new Dictionary<string, string>(renDict);
                         var newRenPath = Path.Combine(OUT_DIR, Path.ChangeExtension(outBsaName, ".ren"));
                         if (!File.Exists(newRenPath))
-                            using (var stream = File.OpenWrite(newRenPath))
-                            using (var writer = new BinaryWriter(stream))
+                            using (var fileStream = File.OpenWrite(newRenPath))
+                            using (var lzmaStream = new LzmaEncodeStream(fileStream))
+                            using (var writer = new BinaryWriter(lzmaStream))
+                            {
+                                writer.Write(renameDict.Count);
                                 foreach (var kvp in renameDict)
                                 {
                                     writer.Write(kvp.Key);
                                     writer.Write(kvp.Value);
                                 }
+                            }
                     }
                     else
                     {
@@ -117,6 +136,8 @@ namespace PatchMaker
                 var patPath = Path.Combine(OUT_DIR, Path.ChangeExtension(outBsaName, ".pat"));
                 if (File.Exists(patPath))
                     continue;
+
+                var prefix = Path.Combine(IN_DIR, "TTW Patches", outBsaName);
 
                 using (var inBSA = new BSAWrapper(inBSAPath))
                 using (var outBSA = new BSAWrapper(outBSAPath))
@@ -183,19 +204,18 @@ namespace PatchMaker
                             continue;
                         }
 
-                        var oldChkLazy = join.oldChk.Value;
-                        var newChkLazy = join.patch;
-
-                        var oldChk = oldChkLazy;
-                        var newChk = newChkLazy;
+                        var oldChk = join.oldChk.Value;
+                        var newChk = join.patch;
 
                         PatchInfo patchInfo;
-                        if (!newChk.Equals(oldChk))
+                        if (newChk != oldChk)
                         {
-                            var antiqueOldChk = Util.GetMD5(join.oldBsaFile.GetContents(true));
-                            var antiqueNewChk = Util.GetMD5(join.newBsaFile.GetContents(true));
+                            var newBytes = join.newBsaFile.GetContents(true);
 
-                            patchInfo = PatchInfo.FromFileChecksum(outBsaName, oldFilename, antiqueOldChk, antiqueNewChk, newChk);
+                            var antiqueOldChk = Util.GetMD5(join.oldBsaFile.GetContents(true));
+                            var antiqueNewChk = Util.GetMD5(newBytes);
+
+                            patchInfo = PatchInfo.FromFileChecksum(prefix, oldFilename, antiqueOldChk, antiqueNewChk, newChk);
                             Debug.Assert(patchInfo.Data != null);
                         }
                         else
@@ -210,10 +230,20 @@ namespace PatchMaker
             }
         }
 
+        private static IEnumerable<string> FindAlternateVersions(string file)
+        {
+            var justName = Path.GetFileName(file);
+            justName = justName.Substring(0, justName.IndexOf('.', justName.IndexOf('.') + 1));
+
+            var justDir = Path.GetDirectoryName(file);
+
+            return Directory.EnumerateFiles(justDir, justName + "*.diff").Where(other => other != file);
+        }
+
         //Shameless code duplication. So sue me.
         private static IDictionary<string, string> ReadOldDict(string outFilename, string dictName)
         {
-            var dictPath = Path.Combine(BSADiff.PatchDir, outFilename, dictName);
+            var dictPath = Path.Combine(IN_DIR, "TTW Patches", outFilename, dictName);
             if (!File.Exists(dictPath))
                 return null;
             using (var stream = File.OpenRead(dictPath))
