@@ -215,7 +215,19 @@ namespace PatchMaker
                             var antiqueOldChk = Util.GetMD5(join.oldBsaFile.GetContents(true));
                             var antiqueNewChk = Util.GetMD5(newBytes);
 
-                            patchInfo = PatchInfo.FromFileChecksum(prefix, oldFilename, antiqueOldChk, antiqueNewChk, newChk);
+                            var diffPath = Path.Combine(prefix, oldFilename + "." + antiqueOldChk + "." + antiqueNewChk + ".diff");
+                            var usedPath = Path.ChangeExtension(diffPath, ".used");
+                            if (File.Exists(usedPath))
+                                File.Move(usedPath, diffPath); //fixes moronic things
+
+                            var altDiffs = FindAlternateVersions(diffPath).ToList();
+                            foreach (var altDiff in altDiffs)
+                            {
+                                var altDiffBytes = PatchInfo.GetDiff(altDiff, BinaryPatchUtility.SIG_LZDIFF41);
+                                patchDict.AddMd5(oldFilename, antiqueOldChk, altDiffBytes);
+                            }
+
+                            patchInfo = PatchInfo.FromOldChecksum(diffPath, newChk);
                             Debug.Assert(patchInfo.Data != null);
                         }
                         else
@@ -233,11 +245,14 @@ namespace PatchMaker
         private static IEnumerable<string> FindAlternateVersions(string file)
         {
             var justName = Path.GetFileName(file);
-            justName = justName.Substring(0, justName.IndexOf('.', justName.IndexOf('.') + 1));
+            var split = justName.Split('.');
+            split[split.Length - 3] = "*";
+            //combatshotgun.nif.8154C65E957F6A29B36ADA24CFBC1FDE.1389525E123CD0F8CD5BB47EF5FD1901.diff
+            //end[0] = diff, end[1] = newChk, end[2] = oldChk, end[3 ...] = fileName
 
             var justDir = Path.GetDirectoryName(file);
 
-            return Directory.EnumerateFiles(justDir, justName + "*.diff").Where(other => other != file);
+            return Directory.EnumerateFiles(justDir, string.Join(".", split)).Where(other => other != file);
         }
 
         //Shameless code duplication. So sue me.

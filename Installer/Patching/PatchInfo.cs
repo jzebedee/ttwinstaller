@@ -58,31 +58,32 @@ namespace TaleOfTwoWastelands.Patching
             }
         }
 
-        private static unsafe byte[] GetDiff(string diffPath, bool bz2Convert)
+        /// <summary>
+        /// Used only in PatchMaker
+        /// </summary>
+        public static unsafe byte[] GetDiff(string diffPath, long convertSignature = -1, bool moveToUsed = false)
         {
-            byte[] diffData = null;
             if (File.Exists(diffPath))
             {
                 var diffBytes = File.ReadAllBytes(diffPath);
-                if (bz2Convert)
+                if (convertSignature > 0)
                     fixed (byte* pBz2 = diffBytes)
-                        diffData = BinaryPatchUtility.ConvertBz2ToLzma(pBz2, diffBytes.Length);
-                else
-                    diffData = diffBytes;
-                //File.Move(diffPath, Path.ChangeExtension(diffPath, ".used"));
+                        return BinaryPatchUtility.ConvertPatch(pBz2, diffBytes.Length, BinaryPatchUtility.SIG_BSDIFF40, convertSignature);
+
+                if (moveToUsed)
+                    File.Move(diffPath, Path.ChangeExtension(diffPath, ".used"));
+                return diffBytes;
             }
 
-            return diffData;
+            return null;
         }
 
         /// <summary>
         /// Used only in PatchMaker
         /// </summary>
-        public static PatchInfo FromFileChecksum(string prefix, string filename, string oldChk, string newChk, FileValidation newChkVal)
+        public static PatchInfo FromOldChecksum(string diffPath, FileValidation newChkVal)
         {
-            var diffPath = Path.Combine(prefix, filename + "." + oldChk + "." + newChk + ".diff");
-            byte[] diffData = GetDiff(diffPath, true);
-
+            byte[] diffData = GetDiff(diffPath, BinaryPatchUtility.SIG_LZDIFF41);
             return new PatchInfo()
             {
                 Metadata = newChkVal,

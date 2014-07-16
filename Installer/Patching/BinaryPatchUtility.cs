@@ -40,40 +40,68 @@ namespace TaleOfTwoWastelands.Patching
 {
     public static class BinaryPatchUtility
     {
-        public const long FILE_SIGNATURE = 0x3034464649445342L;
+        public const long
+            SIG_BSDIFF40 = 0x3034464649445342,
+            SIG_LZDIFF41 = 0x3134464649445a4c,
+            SIG_NONONONO = 0x4f4e4f4e4f4e4f4e;
         public const int HEADER_SIZE = 32;
         public const int BUFFER_SIZE = 0x100000;
 
-        private const int DICTSIZE_ULTRA = 1024 * 1024 * 64; //64MiB, 7z 'Ultra'
+        private const int LZMA_DICTSIZE_ULTRA = 1024 * 1024 * 64; //64MiB, 7z 'Ultra'
 
         private static void SetCompressionLevel()
         {
-            SevenZipCompressor.LzmaDictionarySize = DICTSIZE_ULTRA;
+            SevenZipCompressor.LzmaDictionarySize = LZMA_DICTSIZE_ULTRA;
+        }
+
+        private static Stream GetEncodingStream(Stream stream, long signature, bool output)
+        {
+            switch (signature)
+            {
+                case SIG_LZDIFF41:
+                    if (output)
+                    {
+                        SetCompressionLevel();
+                        return new LzmaEncodeStream(stream);
+                    }
+                    else
+                        return new LzmaDecodeStream(stream);
+                case SIG_NONONONO:
+                    return stream;
+                case SIG_BSDIFF40:
+                    if (output)
+                        return new BZip2OutputStream(stream);
+                    else
+                        return new BZip2InputStream(stream);
+                default:
+                    throw new ArgumentException("unknown encoding type");
+            }
         }
 
         /// <summary>
         /// Used only in PatchMaker
         /// </summary>
-        internal static unsafe byte[] ConvertBz2ToLzma(byte* pBz2, long length)
+        internal static unsafe byte[] ConvertPatch(byte* pBz2, long length, long inputSig, long outputSig)
         {
-            SetCompressionLevel();
+            if (inputSig == outputSig)
+                throw new ArgumentException("output must be different from input");
 
             Func<long, long, Stream> openPatchStream = (u_offset, u_length) =>
                 new UnmanagedMemoryStream(pBz2 + u_offset, u_length > 0 ? u_length : length - u_offset);
 
             /*
-            File format:
-                0	    8	"BSDIFF40"
-                8	    8	X
-                16	    8	Y
-                24	    8	sizeof(newfile)
-                32      X	bzip2(control block)
-                32+X	Y	bzip2(diff block)
-                32+X+Y	???	bzip2(extra block)
-            with control block a set of triples (x,y,z) meaning "add x bytes
-            from oldfile to x bytes from the diff block; copy y bytes from the
-            extra block; seek forwards in oldfile by z bytes".
-            */
+             File format:
+                 0	    8	"BSDIFF40"
+                 8	    8	X
+                 16	    8	Y
+                 24	    8	sizeof(newfile)
+                 32      X	bzip2(control block)
+                 32+X	Y	bzip2(diff block)
+                 32+X+Y	???	bzip2(extra block)
+             with control block a set of triples (x,y,z) meaning "add x bytes
+             from oldfile to x bytes from the diff block; copy y bytes from the
+             extra block; seek forwards in oldfile by z bytes".
+             */
 
             byte[] header;
             using (var inputStream = openPatchStream(0, BinaryPatchUtility.HEADER_SIZE))
@@ -82,7 +110,7 @@ namespace TaleOfTwoWastelands.Patching
 
             // check for appropriate magic
             long signature = BinaryPatchUtility.ReadInt64(header, 0);
-            if (signature != BinaryPatchUtility.FILE_SIGNATURE)
+            if (signature != inputSig)
                 throw new InvalidOperationException("Corrupt patch.");
 
             // read lengths from header
@@ -92,6 +120,8 @@ namespace TaleOfTwoWastelands.Patching
             if (controlLength < 0 || diffLength < 0 || newSize < 0)
                 throw new InvalidOperationException("Corrupt patch.");
 
+            byte[] outControlBytes, outDiffBytes, outExtraBytes;
+
             using (MemoryStream
                 msControlStream = new MemoryStream(),
                 msDiffStream = new MemoryStream(),
@@ -100,39 +130,39 @@ namespace TaleOfTwoWastelands.Patching
                 using (Stream
                     inControlStream = openPatchStream(BinaryPatchUtility.HEADER_SIZE, controlLength),
                     inDiffStream = openPatchStream(BinaryPatchUtility.HEADER_SIZE + controlLength, diffLength),
-                    inExtraStream = openPatchStream(BinaryPatchUtility.HEADER_SIZE + controlLength + diffLength, -1))
-                using (BZip2InputStream
-                    bz2ControlStream = new BZip2InputStream(inControlStream),
-                    bz2DiffStream = new BZip2InputStream(inDiffStream),
-                    bz2ExtraStream = new BZip2InputStream(inExtraStream))
-                using (LzmaEncodeStream
-                    lzmaControlStream = new LzmaEncodeStream(msControlStream),
-                    lzmaDiffStream = new LzmaEncodeStream(msDiffStream),
-                    lzmaExtraStream = new LzmaEncodeStream(msExtraStream))
+                    inExtraStream = openPatchStream(BinaryPatchUtility.HEADER_SIZE + controlLength + diffLength, -1),
+
+                    bz2ControlStream = GetEncodingStream(inControlStream, inputSig, false),
+                    bz2DiffStream = GetEncodingStream(inDiffStream, inputSig, false),
+                    bz2ExtraStream = GetEncodingStream(inExtraStream, inputSig, false),
+
+                    lzmaControlStream = GetEncodingStream(msControlStream, outputSig, true),
+                    lzmaDiffStream = GetEncodingStream(msDiffStream, outputSig, true),
+                    lzmaExtraStream = GetEncodingStream(msExtraStream, outputSig, true))
                 {
                     bz2ControlStream.CopyTo(lzmaControlStream);
                     bz2DiffStream.CopyTo(lzmaDiffStream);
                     bz2ExtraStream.CopyTo(lzmaExtraStream);
                 }
 
-                var lzmaControlBytes = msControlStream.ToArray();
-                var lzmaDiffBytes = msDiffStream.ToArray();
-                var lzmaExtraBytes = msExtraStream.ToArray();
+                outControlBytes = msControlStream.ToArray();
+                outDiffBytes = msDiffStream.ToArray();
+                outExtraBytes = msExtraStream.ToArray();
+            }
 
-                using (var msOut = new MemoryStream())
-                using (var writer = new BinaryWriter(msOut))
-                {
-                    writer.Write(signature);
-                    writer.Write(lzmaControlBytes.LongLength);
-                    writer.Write(lzmaDiffBytes.LongLength);
-                    //BinaryPatchUtility.WriteInt64(lzmaExtraBytes.LongLength, writer);
-                    writer.Write(newSize);
-                    writer.Write(lzmaControlBytes);
-                    writer.Write(lzmaDiffBytes);
-                    writer.Write(lzmaExtraBytes);
+            using (var msOut = new MemoryStream())
+            using (var writer = new BinaryWriter(msOut))
+            {
+                writer.Write(outputSig);
+                writer.Write(outControlBytes.LongLength);
+                writer.Write(outDiffBytes.LongLength);
+                //BinaryPatchUtility.WriteInt64(lzmaExtraBytes.LongLength, writer);
+                writer.Write(newSize);
+                writer.Write(outControlBytes);
+                writer.Write(outDiffBytes);
+                writer.Write(outExtraBytes);
 
-                    return msOut.ToArray();
-                }
+                return msOut.ToArray();
             }
         }
 
@@ -171,7 +201,7 @@ namespace TaleOfTwoWastelands.Patching
                 ??	??	Bzip2ed diff block
                 ??	??	Bzip2ed extra block */
             byte[] header = new byte[HEADER_SIZE];
-            WriteInt64(FILE_SIGNATURE, header, 0); // "BSDIFF40"
+            WriteInt64(SIG_BSDIFF40, header, 0); // "BSDIFF40"
             WriteInt64(newBuf.Length, header, 24);
 
             long startPosition = output.Position;
@@ -554,7 +584,7 @@ namespace TaleOfTwoWastelands.Patching
 
 #if PATCH
         /// <summary>
-        /// Applies a binary patch (in <a href="http://www.daemonology.net/bsdiff/">bsdiff</a> format) to the data in
+        /// Applies a binary patch a quasi-(in <a href="http://www.daemonology.net/bsdiff/">bsdiff</a> format) to the data in
         /// <paramref name="input"/> and writes the results of patching to <paramref name="output"/>.
         /// </summary>
         /// <param name="input">A <see cref="Stream"/> containing the input data.</param>
@@ -604,7 +634,7 @@ namespace TaleOfTwoWastelands.Patching
 
                 // check for appropriate magic
                 long signature = ReadInt64(header, 0);
-                if (signature != FILE_SIGNATURE)
+                if (signature != SIG_BSDIFF40)
                     throw new InvalidOperationException("Corrupt patch.");
 
                 // read lengths from header
