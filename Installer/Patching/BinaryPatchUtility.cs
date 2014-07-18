@@ -620,7 +620,7 @@ namespace TaleOfTwoWastelands.Patching
             */
 
             // read header
-            long controlLength, diffLength, newSize;
+            long controlLength, diffLength, newSize, signature;
             using (Stream patchStream = openPatchStream(0, HEADER_SIZE))
             {
                 // check patch stream capabilities
@@ -633,9 +633,7 @@ namespace TaleOfTwoWastelands.Patching
                 patchStream.Read(header, 0, HEADER_SIZE);
 
                 // check for appropriate magic
-                long signature = ReadInt64(header, 0);
-                if (signature != SIG_BSDIFF40)
-                    throw new InvalidOperationException("Corrupt patch.");
+                signature = ReadInt64(header, 0);
 
                 // read lengths from header
                 controlLength = ReadInt64(header, 8);
@@ -655,9 +653,9 @@ namespace TaleOfTwoWastelands.Patching
                 compressedExtraStream = openPatchStream(HEADER_SIZE + controlLength + diffLength, -1))
             {
                 // decompress each part (to read it)
-                using (var controlStream = new LzmaDecodeStream(compressedControlStream))
-                using (var diffStream = new LzmaDecodeStream(compressedDiffStream))
-                using (var extraStream = new LzmaDecodeStream(compressedExtraStream))
+                using (var controlStream = GetEncodingStream(compressedControlStream, signature, false))
+                using (var diffStream = GetEncodingStream(compressedDiffStream, signature, false))
+                using (var extraStream = GetEncodingStream(compressedExtraStream, signature, false))
                 {
                     long[] control = new long[3];
                     byte[] buffer = new byte[8];
