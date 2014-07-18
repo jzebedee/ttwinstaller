@@ -68,6 +68,7 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Net" />
+    <Reference Include="System.Numerics" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -81,7 +82,7 @@
     <Compile Include="Patching\BinaryPatchUtility.cs" />
     <Compile Include="BSA.cs" />
     <Compile Include="Patching\BSADiff.cs" />
-    <Compile Include="Patching\Murmur\Extensions.cs" />
+    <Compile Include="Patching\Extensions.cs" />
     <Compile Include="Patching\Murmur\Murmur128.cs" />
     <Compile Include="Patching\Murmur\Murmur128UnmanagedX64.cs" />
     <Compile Include="Patching\Murmur\Murmur128UnmanagedX86.cs" />

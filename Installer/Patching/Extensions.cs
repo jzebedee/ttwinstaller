@@ -15,9 +15,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 
-namespace TaleOfTwoWastelands.Patching.Murmur
+namespace TaleOfTwoWastelands.Patching
 {
     internal static class Extensions
     {
@@ -54,30 +55,14 @@ namespace TaleOfTwoWastelands.Patching.Murmur
             }
         }
 
-        #region from http://stackoverflow.com/a/9995303/102351
-        public static byte[] HexToByteArray(this string hex)
+        private static readonly byte[] Terminator = { 0 };
+        public static BigInteger ToBigInteger(this IEnumerable<byte> data, bool unsigned = true)
         {
-            if (hex.Length % 2 == 1)
-                throw new ArgumentException("The binary key cannot have an odd number of digits");
+            if (unsigned && data.LastOrDefault() != 0)
+                return new BigInteger(data.Concat(Terminator).ToArray());
 
-            byte[] arr = new byte[hex.Length >> 1];
-            for (int i = 0; i < hex.Length >> 1; ++i)
-                arr[i] = (byte)((GetHexVal(hex[i << 1]) << 4) + (GetHexVal(hex[(i << 1) + 1])));
-
-            return arr;
+            return new BigInteger(data.ToArray());
         }
-
-        private static int GetHexVal(char hex)
-        {
-            int val = (int)hex;
-            //For uppercase A-F letters:
-            return val - (val < 58 ? 48 : 55);
-            //For lowercase a-f letters:
-            //return val - (val < 58 ? 48 : 87);
-            //Or the two combined, but a bit slower:
-            //return val - (val < 58 ? 48 : (val < 97 ? 55 : 87));
-        }
-        #endregion
 
 #if NET45
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -1,26 +1,34 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Diagnostics;
 using System.IO;
+using System.Numerics;
 using System.Threading;
-using BSAsharp;
+using System.Threading.Tasks;
 using TaleOfTwoWastelands;
 using TaleOfTwoWastelands.Patching;
-using TaleOfTwoWastelands.ProgressTypes;
 using SevenZip;
-using System.Threading.Tasks;
-using System.Collections.Concurrent;
+using BSAsharp;
+
 namespace PatchMaker
 {
+    using Patch = Tuple<FileValidation, PatchInfo[]>;
+
     class Program
     {
-        const string IN_DIR = "BuildDB";
-        const string OUT_DIR = "OutDB";
+        const string
+            IN_DIR = "BuildDB",
+            OUT_DIR = "OutDB",
+            VOICE_PREFIX = @"sound\voice";
+
+        private static string dirTTWMain, dirTTWOptional, dirFO3Data;
 
         static void Main(string[] args)
         {
+            if (!Debugger.IsAttached)
+                Debugger.Launch();
+
             //BenchmarkHash.Run();
 
             Console.WriteLine("Building {0} folder from {1} folder. Existing files are skipped. OK?", OUT_DIR, IN_DIR);
@@ -31,215 +39,209 @@ namespace PatchMaker
                 case ConsoleKey.Y:
                     Console.WriteLine();
                     break;
-                case ConsoleKey.N:
                 default:
                     return;
             }
 
             Directory.CreateDirectory(OUT_DIR);
 
-            var dirTTWMain = Path.Combine(IN_DIR, Installer.MainDir);
-            var dirTTWOptional = Path.Combine(IN_DIR, Installer.OptDir);
+            dirTTWMain = Path.Combine(IN_DIR, Installer.MainDir);
+            dirTTWOptional = Path.Combine(IN_DIR, Installer.OptDir);
 
             var bethKey = Installer.GetBethKey();
 
             var fo3Key = bethKey.CreateSubKey("Fallout3");
             var Fallout3Path = fo3Key.GetValue("Installed Path", "").ToString();
-            var dirFO3Data = Path.Combine(Fallout3Path, "Data");
+            dirFO3Data = Path.Combine(Fallout3Path, "Data");
+
+            SevenZipCompressor.LzmaDictionarySize = 1024 * 1024 * 64; //64MiB, 7z 'Ultra'
+
+            Parallel.ForEach(Installer.BuildableBSAs, kvpBsa => BuildBsaPatch(kvpBsa.Key, kvpBsa.Value));
 
             var knownEsmVersions =
                 Directory.EnumerateFiles(Path.Combine(IN_DIR, "Versions"), "*.esm", SearchOption.AllDirectories)
                 .ToLookup(esm => Path.GetFileName(esm), esm => esm);
 
-            Parallel.ForEach(Installer.CheckedESMs, ESM =>
+            Parallel.ForEach(Installer.CheckedESMs, ESM => BuildMasterPatch(ESM, knownEsmVersions));
+        }
+
+        private static void BuildBsaPatch(string inBsaName, string outBsaName)
+        {
+            string outBSAFile = Path.ChangeExtension(outBsaName, ".bsa");
+            string outBSAPath = Path.Combine(dirTTWMain, outBSAFile);
+
+            string inBSAFile = Path.ChangeExtension(inBsaName, ".bsa");
+            string inBSAPath = Path.Combine(dirFO3Data, inBSAFile);
+
+            var renameDict = BuildRenameDict(outBsaName);
+            Debug.Assert(renameDict != null);
+
+            var patPath = Path.Combine(OUT_DIR, Path.ChangeExtension(outBsaName, ".pat"));
+            if (File.Exists(patPath))
+                return;
+
+            var prefix = Path.Combine(IN_DIR, "TTW Patches", outBsaName);
+
+            using (var inBSA = new BSAWrapper(inBSAPath))
+            using (var outBSA = new BSAWrapper(outBSAPath))
             {
-                var fixPath = Path.Combine(OUT_DIR, Path.ChangeExtension(ESM, ".pat"));
-                if (File.Exists(fixPath))
-                    return;
+                BSADiff
+                    .CreateRenameQuery(inBSA, renameDict)
+                    .ToList(); // execute query
 
-                var ttwESM = Path.Combine(dirTTWMain, ESM);
-                var ttwBytes = File.ReadAllBytes(ttwESM);
+                var oldFiles = inBSA.SelectMany(folder => folder).ToList();
+                var newFiles = outBSA.SelectMany(folder => folder).ToList();
 
-                var altVersions = knownEsmVersions[ESM].ToList();
+                var newChkDict = FileValidation.FromBSA(outBSA);
 
-                var patches =
-                    altVersions.Select(dataESM =>
-                    {
-                        var dataBytes = File.ReadAllBytes(dataESM);
-                        byte[] patchBytes;
+                var joinedPatches = from patKvp in newChkDict
+                                    join newBsaFile in newFiles on patKvp.Key equals newBsaFile.Filename
+                                    select new
+                                    {
+                                        newBsaFile,
+                                        file = patKvp.Key,
+                                        patch = patKvp.Value,
+                                    };
+                var allJoinedPatches = joinedPatches.ToList();
 
-                        using (var msPatch = new MemoryStream())
-                        {
-                            BinaryPatchUtility.Create(dataBytes, ttwBytes, msPatch);
-                            patchBytes = msPatch.ToArray();
-                        }
-
-                        return new PatchInfo
-                        {
-                            Metadata = FileValidation.FromFile(dataESM),
-                            Data = patchBytes
-                        };
-                    })
-                    .AsParallel()
-                    .ToArray();
-
-                var patchDict = new PatchDict(altVersions.Count);
-                patchDict.Add(ESM, patches);
-
-                using (var fixStream = File.OpenWrite(fixPath))
-                    patchDict.WriteAll(fixStream);
-            });
-
-            SevenZipCompressor.LzmaDictionarySize = 1024 * 1024 * 64; //64MiB, 7z 'Ultra'
-
-            var progressLog = new System.Progress<string>(s => Debug.Write(s));
-            var progressUIMinor = new System.Progress<InstallOperation>();
-            var token = new CancellationTokenSource().Token;
-            foreach (var kvpBsa in Installer.BuildableBSAs)
-            {
-                var inBsaName = kvpBsa.Key;
-                var outBsaName = kvpBsa.Value;
-
-                string outBSAFile = Path.ChangeExtension(outBsaName, ".bsa");
-                string outBSAPath = Path.Combine(dirTTWMain, outBSAFile);
-
-                string inBSAFile = Path.ChangeExtension(inBsaName, ".bsa");
-                string inBSAPath = Path.Combine(dirFO3Data, inBSAFile);
-
-                IDictionary<string, string> renameDict = null;
-                { //comment this out if you don't need it, but set renameDict
-                    var renDict = ReadOldDict(outBsaName, "RenameFiles.dict");
-                    if (renDict != null)
-                    {
-                        renameDict = new Dictionary<string, string>(renDict);
-                        var newRenPath = Path.Combine(OUT_DIR, Path.ChangeExtension(outBsaName, ".ren"));
-                        if (!File.Exists(newRenPath))
-                            using (var fileStream = File.OpenWrite(newRenPath))
-                            using (var lzmaStream = new LzmaEncodeStream(fileStream))
-                            using (var writer = new BinaryWriter(lzmaStream))
-                            {
-                                writer.Write(renameDict.Count);
-                                foreach (var kvp in renameDict)
-                                {
-                                    writer.Write(kvp.Key);
-                                    writer.Write(kvp.Value);
-                                }
-                            }
-                    }
-                    else
-                    {
-                        renameDict = new Dictionary<string, string>();
-                    }
-                }
-                Debug.Assert(renameDict != null);
-
-                var patPath = Path.Combine(OUT_DIR, Path.ChangeExtension(outBsaName, ".pat"));
-                if (File.Exists(patPath))
-                    continue;
-
-                var prefix = Path.Combine(IN_DIR, "TTW Patches", outBsaName);
-
-                using (var inBSA = new BSAWrapper(inBSAPath))
-                using (var outBSA = new BSAWrapper(outBSAPath))
+                var patchDict = new PatchDict(allJoinedPatches.Count);
+                foreach (var join in allJoinedPatches)
                 {
+                    //var oldChkDict = FileValidation.FromBSA(inBSA);
+                    //                 join oldKvp in oldChkDict on patKvp.Key equals oldKvp.Key into foundOld
+                    //                  oldChk = foundOld.SingleOrDefault()
+                    var oldBsaFile = oldFiles.SingleOrDefault(file => file.Filename == join.file);
+                    Debug.Assert(oldBsaFile != null, "File not found: " + join.file);
+
+                    var oldChk = FileValidation.FromBSAFile(oldBsaFile);
+                    var newChk = join.patch;
+
+                    var oldFilename = oldBsaFile.Filename;
+                    if (oldFilename.StartsWith(VOICE_PREFIX))
                     {
-                        var renameGroup = from folder in inBSA
-                                          from file in folder
-                                          join kvp in renameDict on file.Filename equals kvp.Value
-                                          let a = new { folder, file, kvp }
-                                          select a;
-
-                        var renameCopies = from g in renameGroup
-                                           let newFilename = g.kvp.Key
-                                           let newDirectory = Path.GetDirectoryName(newFilename)
-                                           let a = new { g.folder, g.file, newFilename }
-                                           group a by newDirectory into outs
-                                           select outs;
-
-                        var newBsaFolders = from g in renameCopies
-                                            let folderAdded = inBSA.Add(new BSAFolder(g.Key))
-                                            select g;
-                        newBsaFolders.ToList();
-
-                        var renameFixes = from g in newBsaFolders
-                                          from a in g
-                                          join newFolder in inBSA on g.Key equals newFolder.Path
-                                          let newFile = a.file.DeepCopy(g.Key, Path.GetFileName(a.newFilename))
-                                          let addedFile = newFolder.Add(newFile)
-                                          let cleanedDict = renameDict.Remove(a.newFilename)
-                                          select new { a.folder, a.file, newFolder, newFile, a.newFilename };
-                        renameFixes.ToList(); // execute query
+                        patchDict.Add(join.file, new Patch(/*newChk*/null, null));
+                        continue;
                     }
 
-                    var oldFiles = inBSA.SelectMany(folder => folder).ToList();
-                    var newFiles = outBSA.SelectMany(folder => folder).ToList();
-
-                    var oldChkDict = FileValidation.FromBSA(inBSA);
-                    var newChkDict = FileValidation.FromBSA(outBSA);
-
-                    var joinedPatches = from patKvp in newChkDict
-                                        join oldKvp in oldChkDict on patKvp.Key equals oldKvp.Key into foundOld
-                                        join oldBsaFile in oldFiles on patKvp.Key equals oldBsaFile.Filename
-                                        join newBsaFile in newFiles on patKvp.Key equals newBsaFile.Filename
-                                        select new
-                                        {
-                                            oldBsaFile,
-                                            newBsaFile,
-                                            file = patKvp.Key,
-                                            patch = patKvp.Value,
-                                            oldChk = foundOld.SingleOrDefault()
-                                        };
-                    var allJoinedPatches = joinedPatches.ToList();
-
-                    var patchDict = new PatchDict(allJoinedPatches.Count);
-                    foreach (var join in allJoinedPatches)
+                    var patches = new List<PatchInfo>();
+                    if (newChk != oldChk)
                     {
-                        if (string.IsNullOrEmpty(join.oldChk.Key))
-                            Debug.Fail("File not found: " + join.file);
+                        var md5OldChk = Util.GetMD5(oldBsaFile.GetContents(true));
+                        var md5NewChk = Util.GetMD5(join.newBsaFile.GetContents(true));
 
-                        var oldFilename = join.oldBsaFile.Filename;
-                        if (oldFilename.StartsWith(BSADiff.VOICE_PREFIX))
+                        var diffPath = Path.Combine(prefix, oldFilename + "." + ToWrongFormat(md5OldChk) + "." + ToWrongFormat(md5NewChk) + ".diff");
+                        var usedPath = Path.ChangeExtension(diffPath, ".used");
+                        if (File.Exists(usedPath))
+                            File.Move(usedPath, diffPath); //fixes moronic things
+
+                        var altDiffs = FindAlternateVersions(diffPath).ToList();
+                        foreach (var altDiff in altDiffs)
                         {
-                            patchDict.Add(join.file, new PatchInfo());
-                            continue;
-                        }
-
-                        var oldChk = join.oldChk.Value;
-                        var newChk = join.patch;
-
-                        PatchInfo patchInfo;
-                        if (newChk != oldChk)
-                        {
-                            var newBytes = join.newBsaFile.GetContents(true);
-
-                            var antiqueOldChk = Util.GetMD5(join.oldBsaFile.GetContents(true));
-                            var antiqueNewChk = Util.GetMD5(newBytes);
-
-                            var diffPath = Path.Combine(prefix, oldFilename + "." + antiqueOldChk + "." + antiqueNewChk + ".diff");
-                            var usedPath = Path.ChangeExtension(diffPath, ".used");
-                            if (File.Exists(usedPath))
-                                File.Move(usedPath, diffPath); //fixes moronic things
-
-                            var altDiffs = FindAlternateVersions(diffPath).ToList();
-                            foreach (var altDiff in altDiffs)
+                            var altDiffBytes = PatchInfo.GetDiff(altDiff, BinaryPatchUtility.SIG_LZDIFF41);
+                            patches.Add(new PatchInfo
                             {
-                                var altDiffBytes = PatchInfo.GetDiff(altDiff, BinaryPatchUtility.SIG_LZDIFF41);
-                                patchDict.AddMd5(oldFilename, antiqueOldChk, altDiffBytes);
-                            }
-
-                            patchInfo = PatchInfo.FromOldChecksum(diffPath, newChk);
-                            Debug.Assert(patchInfo.Data != null);
+                                Metadata = FileValidation.FromMd5(md5OldChk),
+                                Data = altDiffBytes
+                            });
                         }
-                        else
-                            //without this, we will generate sparse (patch-only) fixups
-                            patchInfo = new PatchInfo { Metadata = newChk };
-                        patchDict.Add(join.file, patchInfo);
+
+                        var patchInfo = PatchInfo.FromOldChecksum(diffPath, oldChk);
+                        Debug.Assert(patchInfo.Data != null);
+
+                        patches.Add(patchInfo);
                     }
 
-                    using (var stream = File.OpenWrite(patPath))
-                        patchDict.WriteAll(stream);
+                    patchDict.Add(join.file, new Patch(newChk, patches.ToArray()));
                 }
+
+                using (var stream = File.OpenWrite(patPath))
+                    patchDict.WriteAll(stream);
             }
+        }
+
+        //antique strs are in wrong endianness, so we can't use MakeMD5String
+        private static readonly byte[] Terminator = { 0 };
+        public static string ToWrongFormat(BigInteger hash)
+        {
+            Debug.Assert(hash != BigInteger.Zero);
+
+            var bytes = hash.ToByteArray();
+            if (bytes.Length == 17 && bytes.Last() == 0)
+            {
+                bytes = bytes.Take(16).ToArray();
+            }
+            else if (bytes.Length < 16)
+            {
+                bytes = bytes.Concat(Terminator).ToArray();
+            }
+
+            return BitConverter.ToString(bytes).Replace("-", "");
+        }
+
+        private static IDictionary<string, string> BuildRenameDict(string bsaName)
+        {
+            var renDict = ReadOldDict(bsaName, "RenameFiles.dict");
+            if (renDict != null)
+            {
+                var renameDict = new Dictionary<string, string>(renDict);
+                var newRenPath = Path.Combine(OUT_DIR, Path.ChangeExtension(bsaName, ".ren"));
+                if (!File.Exists(newRenPath))
+                    using (var fileStream = File.OpenWrite(newRenPath))
+                    using (var lzmaStream = new LzmaEncodeStream(fileStream))
+                    using (var writer = new BinaryWriter(lzmaStream))
+                    {
+                        writer.Write(renameDict.Count);
+                        foreach (var kvp in renameDict)
+                        {
+                            writer.Write(kvp.Key);
+                            writer.Write(kvp.Value);
+                        }
+                    }
+
+                return renameDict;
+            }
+
+            return new Dictionary<string, string>();
+        }
+
+        private static void BuildMasterPatch(string ESM, ILookup<string, string> knownEsmVersions)
+        {
+            var fixPath = Path.Combine(OUT_DIR, Path.ChangeExtension(ESM, ".pat"));
+            if (File.Exists(fixPath))
+                return;
+
+            var ttwESM = Path.Combine(dirTTWMain, ESM);
+            var ttwBytes = File.ReadAllBytes(ttwESM);
+            var ttwChk = new FileValidation(ttwBytes);
+
+            var altVersions = knownEsmVersions[ESM].ToList();
+
+            var patches =
+                altVersions.Select(dataESM =>
+                {
+                    var dataBytes = File.ReadAllBytes(dataESM);
+                    byte[] patchBytes;
+
+                    using (var msPatch = new MemoryStream())
+                    {
+                        BinaryPatchUtility.Create(dataBytes, ttwBytes, msPatch);
+                        patchBytes = msPatch.ToArray();
+                    }
+
+                    return new PatchInfo
+                    {
+                        Metadata = FileValidation.FromFile(dataESM),
+                        Data = patchBytes
+                    };
+                })
+                .AsParallel()
+                .ToArray();
+
+            var patchDict = new PatchDict(altVersions.Count);
+            patchDict.Add(ESM, new Patch(ttwChk, patches));
+
+            using (var fixStream = File.OpenWrite(fixPath))
+                patchDict.WriteAll(fixStream);
         }
 
         private static IEnumerable<string> FindAlternateVersions(string file)

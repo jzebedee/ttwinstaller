@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using ICSharpCode.SharpZipLib.BZip2;
 using SevenZip;
+using TaleOfTwoWastelands.Patching.Murmur;
 
 namespace TaleOfTwoWastelands.Patching
 {
@@ -21,40 +24,28 @@ namespace TaleOfTwoWastelands.Patching
         public PatchInfo(BinaryReader reader)
         {
             //reading a FV (metadata) now
-            var filesize = reader.ReadUInt32();
-            var checksum = reader.ReadUInt64();
-            if (filesize == 0 && checksum == 0)
-                this.Metadata = null;
-            else
-                this.Metadata = new FileValidation(checksum, filesize);
+            this.Metadata = FileValidation.ReadFrom(reader);
 
             //reading data now
-            var dataSize = reader.ReadInt32();
+            var dataSize = reader.ReadUInt32();
+            Debug.Assert((int)dataSize == dataSize);
             if (dataSize > 0)
-                this.Data = reader.ReadBytes(dataSize);
+                this.Data = reader.ReadBytes((int)dataSize);
         }
 
         public void WriteTo(BinaryWriter writer)
         {
-            if (Metadata != null)
-            {
-                writer.Write(Metadata.Filesize);
-                writer.Write(Metadata.Checksum);
-            }
-            else
-            {
-                writer.Write(0);
-                writer.Write(0);
-            }
+            FileValidation.WriteTo(writer, Metadata);
 
             if (Data != null)
             {
-                writer.Write(Data.Length);
-                writer.Write(Data);
+                writer.Write((uint)Data.LongLength);
+                if (Data.Length > 0)
+                    writer.Write(Data);
             }
             else
             {
-                writer.Write(0);
+                writer.Write(0U);
             }
         }
 
@@ -65,14 +56,20 @@ namespace TaleOfTwoWastelands.Patching
         {
             if (File.Exists(diffPath))
             {
-                var diffBytes = File.ReadAllBytes(diffPath);
-                if (convertSignature > 0)
-                    fixed (byte* pBz2 = diffBytes)
-                        return BinaryPatchUtility.ConvertPatch(pBz2, diffBytes.Length, BinaryPatchUtility.SIG_BSDIFF40, convertSignature);
+                try
+                {
+                    var diffBytes = File.ReadAllBytes(diffPath);
+                    if (convertSignature > 0)
+                        fixed (byte* pBz2 = diffBytes)
+                            return BinaryPatchUtility.ConvertPatch(pBz2, diffBytes.Length, BinaryPatchUtility.SIG_BSDIFF40, convertSignature);
 
-                if (moveToUsed)
-                    File.Move(diffPath, Path.ChangeExtension(diffPath, ".used"));
-                return diffBytes;
+                    return diffBytes;
+                }
+                finally
+                {
+                    if (moveToUsed)
+                        File.Move(diffPath, Path.ChangeExtension(diffPath, ".used"));
+                }
             }
 
             return null;
@@ -81,12 +78,12 @@ namespace TaleOfTwoWastelands.Patching
         /// <summary>
         /// Used only in PatchMaker
         /// </summary>
-        public static PatchInfo FromOldChecksum(string diffPath, FileValidation newChkVal)
+        public static PatchInfo FromOldChecksum(string diffPath, FileValidation oldChk)
         {
             byte[] diffData = GetDiff(diffPath, BinaryPatchUtility.SIG_LZDIFF41);
             return new PatchInfo()
             {
-                Metadata = newChkVal,
+                Metadata = oldChk,
                 Data = diffData
             };
         }

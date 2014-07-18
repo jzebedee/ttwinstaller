@@ -2,9 +2,12 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using TaleOfTwoWastelands.Patching;
+using TaleOfTwoWastelands.Patching.Murmur;
 
 namespace TaleOfTwoWastelands
 {
@@ -24,40 +27,45 @@ namespace TaleOfTwoWastelands
         }
 
         #region GetMD5 overloads
-        public static string GetMD5(string file)
+        public static BigInteger GetMD5(string file)
         {
             using (var stream = File.OpenRead(file))
                 return GetMD5(stream);
         }
 
-        public static string GetMD5(Stream stream)
+        public static BigInteger GetMD5(Stream stream)
         {
             using (var fileHash = MD5.Create())
             using (stream)
-                return BitConverter.ToString(fileHash.ComputeHash(stream)).Replace("-", "");
-            }
+                return fileHash.ComputeHash(stream).ToBigInteger();
+        }
 
-        public static string GetMD5(byte[] buf)
+        public static BigInteger GetMD5(byte[] buf)
         {
             using (var fileHash = MD5.Create())
-                return BitConverter.ToString(fileHash.ComputeHash(buf)).Replace("-", "");
+                return fileHash.ComputeHash(buf).ToBigInteger();
+        }
+
+        public static string MakeMD5String(BigInteger md5)
+        {
+            return md5.ToString("x32");
+        }
+
+        public static string GetMD5String(string file)
+        {
+            return MakeMD5String(GetMD5(file));
+        }
+
+        public static string GetMD5String(Stream stream)
+        {
+            return MakeMD5String(GetMD5(stream));
+        }
+
+        public static string GetMD5String(byte[] buf)
+        {
+            return MakeMD5String(GetMD5(buf));
         }
         #endregion
-
-        public static bool ApplyPatch(Dictionary<string, string> CheckSums, string inFile, string patchFile, string outFile)
-        {
-            System.Diagnostics.Process xDiff = new System.Diagnostics.Process();
-
-            xDiff.StartInfo.FileName = Path.Combine(Installer.AssetsDir, "xdelta3_x32.exe");
-            xDiff.StartInfo.Arguments = " -d -s \"" + inFile + "\" \"" + patchFile + "\" \"" + outFile;
-            xDiff.Start();
-            xDiff.WaitForExit();
-
-            string hash;
-            CheckSums.TryGetValue(Path.GetFileName(inFile), out hash);
-
-            return GetMD5(outFile) == hash;
-        }
 
         public static void CopyFolder(string inFolder, string destFolder, Action<string> failHandler)
         {
