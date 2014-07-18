@@ -95,7 +95,6 @@ namespace TaleOfTwoWastelands
         readonly private StreamWriter logWriter;
 
         readonly string dirFO3Data, dirFNVData;
-        readonly Dictionary<string, string> CheckSums;
 
         private string dirTTWMain { get { return Path.Combine(TTWSavePath, MainDir); } }
         private string dirTTWOptional { get { return Path.Combine(TTWSavePath, OptDir); } }
@@ -166,8 +165,6 @@ namespace TaleOfTwoWastelands
 
             //create or retrieve TTW path
             TTWSavePath = GetPathFromKey("TaleOfTwoWastelands");
-
-            CheckSums = BuildChecksumDictionary(Path.Combine(AssetsDir, "TTW Data", "TTW Patches", "TTW_Checksums.txt"));
 
             InstallChecks(openDialog, saveDialog);
         }
@@ -505,7 +502,7 @@ namespace TaleOfTwoWastelands
                     .Where(folder => VoicePaths.ContainsKey(folder.Path))
                     .Select(folder => new BSAFolder(VoicePaths[folder.Path], folder));
 
-                Trace.Assert(includedFolders.All(folder => outBsa.Add(folder)));
+                Debug.Assert(includedFolders.All(folder => outBsa.Add(folder)));
                 outBsa.Save(outBsaPath);
             }
         }
@@ -517,8 +514,10 @@ namespace TaleOfTwoWastelands
                 {
                     opProg.CurrentOperation = "Patching " + ESM;
 
-                    if (Token.IsCancellationRequested || !PatchFile(ESM))
-                        return false;
+                    //TODO: fix
+                    return true;
+                    //if (Token.IsCancellationRequested || !PatchFile(ESM))
+                    return false;
                 }
                 finally
                 {
@@ -545,28 +544,30 @@ namespace TaleOfTwoWastelands
             LogDual("Copying " + name + "...");
             foreach (var line in File.ReadLines(path))
             {
-                var linePath = Path.Combine(dirTTWMain, line);
+                var ttwLinePath = Path.Combine(dirTTWMain, line);
                 var foLinePath = Path.Combine(dirFO3Data, line);
 
-                var newDirectory = Path.GetDirectoryName(linePath);
-
-                if (Directory.Exists(newDirectory) && !asked)
-                {
-                    asked = true;
-                    skipExisting = ShowSkipDialog(name);
-                }
-
+                var newDirectory = Path.GetDirectoryName(ttwLinePath);
                 Directory.CreateDirectory(newDirectory);
+
                 if (File.Exists(foLinePath))
                 {
-                    if (File.Exists(linePath) && skipExisting)
-                        continue;
+                    if (File.Exists(ttwLinePath) && !asked)
+                    {
+                        if (skipExisting)
+                            continue;
+                        else
+                        {
+                            asked = true;
+                            skipExisting = ShowSkipDialog(name);
+                        }
+                    }
 
                     try
                     {
-                        File.Copy(foLinePath, linePath, true);
+                        File.Copy(foLinePath, ttwLinePath, true);
                     }
-                    catch (System.UnauthorizedAccessException error)
+                    catch (UnauthorizedAccessException error)
                     {
                         LogFile("ERROR: " + line + " did not copy successfully due to: Unauthorized Access Exception " + error.Source + ".");
                     }
@@ -577,104 +578,104 @@ namespace TaleOfTwoWastelands
             LogDual("Done.");
         }
 
-        private bool PatchFile(string filePatch, bool bSearchFO3 = true)
-        {
-            string newChecksum, curChecksum;
-            LogDual("Patching " + filePatch + "...");
+        //private bool PatchFile(string filePatch, bool bSearchFO3 = true)
+        //{
+        //    string newChecksum, curChecksum;
+        //    LogDual("Patching " + filePatch + "...");
 
-            var patchPath = Path.Combine(dirTTWMain, filePatch);
-            var patchPathNew = Path.Combine(dirTTWMain, Path.ChangeExtension(filePatch, ".new"));
+        //    var patchPath = Path.Combine(dirTTWMain, filePatch);
+        //    var patchPathNew = Path.Combine(dirTTWMain, Path.ChangeExtension(filePatch, ".new"));
 
-            if (File.Exists(patchPath))
-            {
-                CheckSums.TryGetValue(filePatch, out newChecksum);
-                curChecksum = Util.GetMD5(Path.Combine(dirTTWMain, filePatch));
+        //    if (File.Exists(patchPath))
+        //    {
+        //        CheckSums.TryGetValue(filePatch, out newChecksum);
+        //        curChecksum = Util.GetMD5(Path.Combine(dirTTWMain, filePatch));
 
-                var diffPath = Path.Combine(AssetsDir, "TTW Data", "TTW Patches", filePatch + "." + curChecksum + "." + newChecksum + ".diff");
+        //        var diffPath = Path.Combine(AssetsDir, "TTW Data", "TTW Patches", filePatch + "." + curChecksum + "." + newChecksum + ".diff");
 
-                if (curChecksum == newChecksum)
-                {
-                    LogDisplay(filePatch + " is up to date.");
-                    LogFile(patchPath + " is already up to date.");
-                    return true;
-                }
-                else if (File.Exists(diffPath))
-                {
-                    LogFile("\tApplying patch " + diffPath);
-                    if (Util.ApplyPatch(CheckSums, patchPath, diffPath, patchPathNew))
-                    {
-                        File.Replace(patchPathNew, patchPath, null);
-                        LogDual("Patch successful.");
-                        return true;
-                    }
-                    else
-                        LogFile("Patch failed.");
-                }
-                else
-                {
-                    LogFile("No patch exists for " + patchPath + ", deleting.");
-                    File.Delete(patchPath);
-                }
-            }
-            else
-                LogFile("\t" + filePatch + " not found in " + dirTTWMain);
+        //        if (curChecksum == newChecksum)
+        //        {
+        //            LogDisplay(filePatch + " is up to date.");
+        //            LogFile(patchPath + " is already up to date.");
+        //            return true;
+        //        }
+        //        else if (File.Exists(diffPath))
+        //        {
+        //            LogFile("\tApplying patch " + diffPath);
+        //            if (Util.ApplyPatch(CheckSums, patchPath, diffPath, patchPathNew))
+        //            {
+        //                File.Replace(patchPathNew, patchPath, null);
+        //                LogDual("Patch successful.");
+        //                return true;
+        //            }
+        //            else
+        //                LogFile("Patch failed.");
+        //        }
+        //        else
+        //        {
+        //            LogFile("No patch exists for " + patchPath + ", deleting.");
+        //            File.Delete(patchPath);
+        //        }
+        //    }
+        //    else
+        //        LogFile("\t" + filePatch + " not found in " + dirTTWMain);
 
-            var fo3PatchPath = Path.Combine(dirFO3Data, filePatch);
-            if (File.Exists(fo3PatchPath) && bSearchFO3)
-            {
-                LogFile("\tChecking " + Fallout3Path);
+        //    var fo3PatchPath = Path.Combine(dirFO3Data, filePatch);
+        //    if (File.Exists(fo3PatchPath) && bSearchFO3)
+        //    {
+        //        LogFile("\tChecking " + Fallout3Path);
 
-                CheckSums.TryGetValue(filePatch, out newChecksum);
-                curChecksum = Util.GetMD5(fo3PatchPath);
+        //        CheckSums.TryGetValue(filePatch, out newChecksum);
+        //        curChecksum = Util.GetMD5(fo3PatchPath);
 
-                var diffPath = Path.Combine(AssetsDir, "TTW Data", "TTW Patches", filePatch + "." + curChecksum + "." + newChecksum + ".diff");
+        //        var diffPath = Path.Combine(AssetsDir, "TTW Data", "TTW Patches", filePatch + "." + curChecksum + "." + newChecksum + ".diff");
 
-                if (curChecksum == newChecksum)
-                {
-                    LogDisplay(filePatch + " is up to date.");
-                    LogFile(fo3PatchPath + " is already up to date. Moving to " + dirTTWMain);
-                    File.Copy(fo3PatchPath, patchPath);
-                    return true;
-                }
-                else if (File.Exists(diffPath))
-                {
-                    LogFile("\tApplying patch " + diffPath);
-                    if (Util.ApplyPatch(CheckSums, fo3PatchPath, diffPath, patchPath))
-                    {
-                        LogDual("Patch successful.");
-                        return true;
-                    }
-                    else
-                    {
-                        LogFile("Patch failed.");
-                        LogDisplay("Patch failed for an unknown reason, try to install again. If this problem persists, please report it.");
-                        return false;
-                    }
-                }
-                else
-                {
-                    LogFile("No patch for this version of " + fo3PatchPath + " Exists. Install aborted.");
-                    LogDisplay("Your version of " + filePatch + " cannot be patched.\n" +
-                        "\tCurrently Tale of Two Wastelands only works on legal, fully patched versions of Fallout3.\n" +
-                        "Install aborted.");
-                    return false;
-                }
-            }
-            else if (bSearchFO3)
-            {
-                LogFile(filePatch + " could not be found. Install aborted.");
-                LogDisplay("The installer could not find " + filePatch + " in " + dirTTWMain + " or " + dirFO3Data +
-                    "\t Make sure you have selected the proper paths.\n" +
-                    "\nInstall aborted.");
-                return false;
-            }
-            else
-            {
-                LogFile(patchPath + " cannot be patched. Install aborted.");
-                LogDisplay("Your version of " + filePatch + " cannot be patched. This is abnormal.");
-                return false;
-            }
-        }
+        //        if (curChecksum == newChecksum)
+        //        {
+        //            LogDisplay(filePatch + " is up to date.");
+        //            LogFile(fo3PatchPath + " is already up to date. Moving to " + dirTTWMain);
+        //            File.Copy(fo3PatchPath, patchPath);
+        //            return true;
+        //        }
+        //        else if (File.Exists(diffPath))
+        //        {
+        //            LogFile("\tApplying patch " + diffPath);
+        //            if (Util.ApplyPatch(CheckSums, fo3PatchPath, diffPath, patchPath))
+        //            {
+        //                LogDual("Patch successful.");
+        //                return true;
+        //            }
+        //            else
+        //            {
+        //                LogFile("Patch failed.");
+        //                LogDisplay("Patch failed for an unknown reason, try to install again. If this problem persists, please report it.");
+        //                return false;
+        //            }
+        //        }
+        //        else
+        //        {
+        //            LogFile("No patch for this version of " + fo3PatchPath + " Exists. Install aborted.");
+        //            LogDisplay("Your version of " + filePatch + " cannot be patched.\n" +
+        //                "\tCurrently Tale of Two Wastelands only works on legal, fully patched versions of Fallout3.\n" +
+        //                "Install aborted.");
+        //            return false;
+        //        }
+        //    }
+        //    else if (bSearchFO3)
+        //    {
+        //        LogFile(filePatch + " could not be found. Install aborted.");
+        //        LogDisplay("The installer could not find " + filePatch + " in " + dirTTWMain + " or " + dirFO3Data +
+        //            "\t Make sure you have selected the proper paths.\n" +
+        //            "\nInstall aborted.");
+        //        return false;
+        //    }
+        //    else
+        //    {
+        //        LogFile(patchPath + " cannot be patched. Install aborted.");
+        //        LogDisplay("Your version of " + filePatch + " cannot be patched. This is abnormal.");
+        //        return false;
+        //    }
+        //}
 
         private DialogResult BuildBSA(CompressionOptions bsaOptions, string inBSA, string outBSA)
         {
@@ -807,28 +808,6 @@ namespace TaleOfTwoWastelands
             while (dlgResult != DialogResult.OK);
 
             return null;
-        }
-
-        private Dictionary<string, string> BuildChecksumDictionary(string listFile)
-        {
-            var dictList = new Dictionary<string, string>();
-            LogFile("Building checksum dictionary using " + listFile);
-
-            foreach (var line in File.ReadLines(listFile))
-            {
-                var s = line.Split(',');
-                if (s.Length > 2)
-                {
-                    LogFile("Invalid checksum data found: \n\r" + s);
-                    continue;
-                }
-
-                LogFile("\t" + s[0] + " = " + s[1]);
-                dictList.Add(s[0], s[1]);
-            }
-
-            LogFile("Done.");
-            return dictList;
         }
 
         private bool CheckFiles()
