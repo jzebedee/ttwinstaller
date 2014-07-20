@@ -13,6 +13,7 @@ using BSAsharp;
 using TaleOfTwoWastelands.ProgressTypes;
 using TaleOfTwoWastelands.Patching;
 using Microsoft;
+using SevenZip;
 
 namespace TaleOfTwoWastelands
 {
@@ -22,7 +23,9 @@ namespace TaleOfTwoWastelands
         public const string
             MainDir = "Main Files",
             OptDir = "Optional Files",
-            AssetsDir = "resources";
+            AssetsDir = "resources",
+            MainFOMOD = "TaleOfTwoWastelands_Main.fomod",
+            OptFOMOD = "TaleOfTwoWastelands_Options.fomod";
 
         public const CompressionStrategy FastStrategy = CompressionStrategy.Unsafe | CompressionStrategy.Speed;
         public const CompressionStrategy GoodStrategy = CompressionStrategy.Unsafe | CompressionStrategy.Size;
@@ -282,7 +285,7 @@ namespace TaleOfTwoWastelands
                     opProg.CurrentOperation = curOp;
 
                     LogFile(curOp);
-                    Util.CopyFolder(Path.Combine(AssetsDir, "TTW Data", "TTW Files"), TTWSavePath, (s) => LogFile(s));
+                    Util.CopyFolder(Path.Combine(AssetsDir, "TTW Data", "TTW Files"), TTWSavePath, ProgressFile);
                 }
                 finally
                 {
@@ -530,11 +533,34 @@ namespace TaleOfTwoWastelands
         private void BuildFOMODs()
         {
             LogFile("Building FOMODs.");
-            LogDisplay("Building FOMODs...\n\tThis can take some time.");
-            Util.BuildFOMOD(dirTTWMain, Path.Combine(TTWSavePath, "TaleOfTwoWastelands_Main.fomod"));
-            Util.BuildFOMOD(dirTTWOptional, Path.Combine(TTWSavePath, "TaleOfTwoWastelands_Options.fomod"));
-            LogFile("Done.");
-            LogDisplay("FOMODs built.");
+            LogDisplay("Building FOMODs...");
+            LogDisplay("This can take some time.");
+            BuildFOMOD(dirTTWMain, Path.Combine(TTWSavePath, MainFOMOD));
+            BuildFOMOD(dirTTWOptional, Path.Combine(TTWSavePath, OptFOMOD));
+            LogFile("\tDone.");
+            LogDisplay("\tFOMODs built.");
+        }
+
+        private void BuildFOMOD(string path, string fomod)
+        {
+            var opFomod = new InstallOperation(ProgressMinorOperation, Token);
+
+            var compressor = new SevenZipCompressor()
+            {
+                ArchiveFormat = OutArchiveFormat.SevenZip,
+                CompressionLevel = CompressionLevel.Ultra,
+                CompressionMethod = CompressionMethod.Lzma2,
+                CompressionMode = CompressionMode.Create,
+            };
+            compressor.CustomParameters.Add("mt", "on"); //enable multithreading
+
+            compressor.FilesFound += (sender, e) => opFomod.ItemsTotal = e.Value;
+            compressor.Compressing += (sender, e) => e.Cancel = Token.IsCancellationRequested;
+            compressor.CompressionFinished += (sender, e) => opFomod.Finish();
+            compressor.FileCompressionStarted += (sender, e) => opFomod.CurrentOperation = "Compressing " + e.FileName;
+            compressor.FileCompressionFinished += (sender, e) => opFomod.Step();
+
+            compressor.CompressDirectory(path, fomod, true);
         }
 
         private void FalloutLineCopy(string name, string path)
@@ -725,6 +751,8 @@ namespace TaleOfTwoWastelands
 
         private void InstallChecks(FileDialog open, FileDialog save)
         {
+            SevenZipCompressor.SetLibraryPath(Path.Combine(AssetsDir, "7Zip", "7z" + (Environment.Is64BitProcess ? "64.dll" : ".dll")));
+
             LogFile("Looking for Fallout3.exe");
             if (File.Exists(Path.Combine(Fallout3Path, "Fallout3.exe")))
             {

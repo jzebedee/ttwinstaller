@@ -49,6 +49,7 @@ namespace TaleOfTwoWastelands.UI
 
         private void frm_Main_FormClosed(object sender, FormClosedEventArgs e)
         {
+            _install_cts.Dispose();
             _install.Dispose();
         }
 
@@ -87,6 +88,7 @@ namespace TaleOfTwoWastelands.UI
             Action reset_install_btn = () =>
             {
                 btn_Install.Text = "Install";
+                btn_Install.Enabled = true;
                 _install_cts.Dispose();
             };
 
@@ -108,8 +110,9 @@ namespace TaleOfTwoWastelands.UI
             }
             else
             {
+                btn_Install.Text = "Canceling...";
+                btn_Install.Enabled = false;
                 _install_cts.Cancel();
-                _install_task.Wait();
             }
         }
 

@@ -1,31 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Numerics;
 using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
 using TaleOfTwoWastelands.Patching;
 using TaleOfTwoWastelands.Patching.Murmur;
+using TaleOfTwoWastelands.ProgressTypes;
 
 namespace TaleOfTwoWastelands
 {
     public static class Util
     {
-        public static void BuildFOMOD(string inDir, string outFile)
-        {
-            System.Diagnostics.Process zip = new System.Diagnostics.Process();
-
-            zip.StartInfo.FileName = "\"" + Path.Combine(Installer.AssetsDir, "7Zip", "7za.exe") + "\"";
-            zip.StartInfo.Arguments = " a -mx0 -tzip \"" + outFile + "\" \"" + inDir + "\"";
-            zip.StartInfo.UseShellExecute = false;
-            zip.StartInfo.RedirectStandardOutput = true;
-            zip.Start();
-            string log = zip.StandardOutput.ReadToEnd();
-            zip.Close();
-        }
-
         #region GetMD5 overloads
         public static BigInteger GetMD5(string file)
         {
@@ -67,7 +52,7 @@ namespace TaleOfTwoWastelands
         }
         #endregion
 
-        public static void CopyFolder(string inFolder, string destFolder, Action<string> failHandler)
+        public static void CopyFolder(string inFolder, string destFolder, IProgress<string> log)
         {
             Directory.CreateDirectory(destFolder);
 
@@ -86,7 +71,7 @@ namespace TaleOfTwoWastelands
                 }
                 catch (UnauthorizedAccessException error)
                 {
-                    failHandler("ERROR: " + file.Replace(inFolder, "") + " did not copy successfully due to: Unauthorized Access Exception " + error.Source + ".");
+                    log.Report("ERROR: " + file.Replace(inFolder, "") + " did not copy successfully due to: Unauthorized Access Exception " + error.Source + ".");
                 }
             }
         }
