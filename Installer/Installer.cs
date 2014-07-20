@@ -569,13 +569,13 @@ namespace TaleOfTwoWastelands
                     }
                     catch (UnauthorizedAccessException error)
                     {
-                        LogFile("ERROR: " + line + " did not copy successfully due to: Unauthorized Access Exception " + error.Source + ".");
+                        LogFile("\tERROR: " + line + " did not copy successfully due to: Unauthorized Access Exception " + error.Source + ".");
                     }
                 }
                 else
-                    LogFile("File Not Found:\t" + foLinePath);
+                    LogFile("\tFile not found:\t" + foLinePath);
             }
-            LogDual("Done.");
+            LogDual("\tDone.");
         }
 
         private static bool CheckExisting(string path, FileValidation newChk)
