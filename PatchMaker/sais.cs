@@ -26,121 +26,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Runtime.CompilerServices;
 
 namespace PatchMaker
 {
-    internal interface BaseArray
-    {
-        int this[int i]
-        {
-            set;
-            get;
-        }
-    }
-
-    internal class ByteArray : BaseArray
-    {
-        private byte[] m_array;
-        private int m_pos;
-        public ByteArray(byte[] array, int pos)
-        {
-            m_pos = pos;
-            m_array = array;
-        }
-        ~ByteArray()
-        {
-            m_array = null;
-        }
-        public int this[int i]
-        {
-            set
-            {
-                m_array[i + m_pos] = (byte)value;
-            }
-            get
-            {
-                return (int)m_array[i + m_pos];
-            }
-        }
-    }
-
-    internal class CharArray : BaseArray
-    {
-        private char[] m_array;
-        private int m_pos;
-        public CharArray(char[] array, int pos)
-        {
-            m_pos = pos;
-            m_array = array;
-        }
-        ~CharArray()
-        {
-            m_array = null;
-        }
-        public int this[int i]
-        {
-            set
-            {
-                m_array[i + m_pos] = (char)value;
-            }
-            get
-            {
-                return (int)m_array[i + m_pos];
-            }
-        }
-    }
-
-    internal class IntArray : BaseArray
-    {
-        private int[] m_array;
-        private int m_pos;
-        public IntArray(int[] array, int pos)
-        {
-            m_pos = pos;
-            m_array = array;
-        }
-        ~IntArray()
-        {
-            m_array = null;
-        }
-        public int this[int i]
-        {
-            set
-            {
-                m_array[i + m_pos] = value;
-            }
-            get
-            {
-                return m_array[i + m_pos];
-            }
-        }
-    }
-
-    internal class StringArray : BaseArray
-    {
-        private string m_array;
-        private int m_pos;
-        public StringArray(string array, int pos)
-        {
-            m_pos = pos;
-            m_array = array;
-        }
-        ~StringArray()
-        {
-            m_array = null;
-        }
-        public int this[int i]
-        {
-            set { }
-            get
-            {
-                return (int)m_array[i + m_pos];
-            }
-        }
-    }
-
     /// <summary>
     /// An implementation of the induced sorting based suffix array construction algorithm.
     /// </summary>
@@ -148,7 +37,8 @@ namespace PatchMaker
     {
         private const int MINBUCKETSIZE = 256;
 
-        private static void getCounts(BaseArray T, BaseArray C, int n, int k)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void getCounts(IList<int> T, IList<int> C, int n, int k)
         {
             int i;
             for (i = 0; i < k; ++i)
@@ -161,7 +51,8 @@ namespace PatchMaker
             }
         }
 
-        private static void getBuckets(BaseArray C, BaseArray B, int k, bool end)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void getBuckets(IList<int> C, IList<int> B, int k, bool end)
         {
             int i, sum = 0;
             if (end != false)
@@ -183,7 +74,7 @@ namespace PatchMaker
         }
 
         /* sort all type LMS suffixes */
-        private static void LMSsort(BaseArray T, int[] SA, BaseArray C, BaseArray B, int n, int k)
+        private static void LMSsort(IList<int> T, int[] SA, IList<int> C, IList<int> B, int n, int k)
         {
             int b, i, j;
             int c0, c1;
@@ -235,7 +126,7 @@ namespace PatchMaker
             }
         }
 
-        private static int LMSpostproc(BaseArray T, int[] SA, int n, int m)
+        private static int LMSpostproc(IList<int> T, int[] SA, int n, int m)
         {
             int i, j, p, q, plen, qlen, name;
             int c0, c1;
@@ -317,7 +208,7 @@ namespace PatchMaker
         }
 
         /* compute SA and BWT */
-        private static void induceSA(BaseArray T, int[] SA, BaseArray C, BaseArray B, int n, int k)
+        private static void induceSA(IList<int> T, int[] SA, IList<int> C, IList<int> B, int n, int k)
         {
             int b, i, j;
             int c0, c1;
@@ -367,7 +258,8 @@ namespace PatchMaker
                 }
             }
         }
-        private static int computeBWT(BaseArray T, int[] SA, BaseArray C, BaseArray B, int n, int k)
+
+        private static int computeBWT(IList<int> T, int[] SA, IList<int> C, IList<int> B, int n, int k)
         {
             int b, i, j, pidx = -1;
             int c0, c1;
@@ -429,38 +321,39 @@ namespace PatchMaker
 
         /* find the suffix array SA of T[0..n-1] in {0..k-1}^n
            use a working space (excluding T and SA) of at most 2n+O(1) for a constant alphabet */
-        private static int sais_main(BaseArray T, int[] SA, int fs, int n, int k, bool isbwt)
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int sais_main(IList<int> T, int[] SA, int fs, int n, int k, bool isbwt)
         {
-            BaseArray C, B, RA;
+            IList<int> C, B, RA;
             int i, j, b, m, p, q, name, pidx = 0, newfs;
             int c0, c1;
             uint flags = 0;
 
             if (k <= MINBUCKETSIZE)
             {
-                C = new IntArray(new int[k], 0);
+                C = new int[k];
                 if (k <= fs)
                 {
-                    B = new IntArray(SA, n + fs - k);
+                    B = new ArraySegment<int>(SA, n + fs - k, SA.Length - (n + fs - k));
                     flags = 1;
                 }
                 else
                 {
-                    B = new IntArray(new int[k], 0);
+                    B = new int[k];
                     flags = 3;
                 }
             }
             else if (k <= fs)
             {
-                C = new IntArray(SA, n + fs - k);
+                C = new ArraySegment<int>(SA, n + fs - k, SA.Length - (n + fs - k));
                 if (k <= (fs - k))
                 {
-                    B = new IntArray(SA, n + fs - k * 2);
+                    B = new ArraySegment<int>(SA, n + fs - k * 2, SA.Length - (n + fs - k * 2));
                     flags = 0;
                 }
                 else if (k <= (MINBUCKETSIZE * 4))
                 {
-                    B = new IntArray(new int[k], 0);
+                    B = new int[k];
                     flags = 2;
                 }
                 else
@@ -471,7 +364,7 @@ namespace PatchMaker
             }
             else
             {
-                C = B = new IntArray(new int[k], 0);
+                C = B = new int[k];
                 flags = 4 | 8;
             }
 
@@ -560,7 +453,7 @@ namespace PatchMaker
                         SA[j--] = SA[i] - 1;
                     }
                 }
-                RA = new IntArray(SA, m + newfs);
+                RA = new ArraySegment<int>(SA, m + newfs, SA.Length - (m + newfs));
                 sais_main(RA, SA, newfs, m, name, false);
                 RA = null;
 
@@ -593,11 +486,11 @@ namespace PatchMaker
                 }
                 if ((flags & 4) != 0)
                 {
-                    C = B = new IntArray(new int[k], 0);
+                    C = B = new int[k];
                 }
                 if ((flags & 2) != 0)
                 {
-                    B = new IntArray(new int[k], 0);
+                    B = new int[k];
                 }
             }
 
@@ -672,196 +565,7 @@ namespace PatchMaker
                 }
                 return 0;
             }
-            return sais_main(new ByteArray(T, 0), SA, 0, n, 256, false);
-        }
-
-        /* char */
-        /// <summary>
-        /// Constructs the suffix array of a given string in linear time.
-        /// </summary>
-        /// <param name="T">input string</param>
-        /// <param name="SA">output suffix array</param>
-        /// <param name="n">length of the given string</param>
-        /// <returns>0 if no error occurred, -1 or -2 otherwise</returns>
-        public static int sufsort(char[] T, int[] SA, int n)
-        {
-            if ((T == null) || (SA == null) || (T.Length < n) || (SA.Length < n))
-            {
-                return -1;
-            }
-            if (n <= 1)
-            {
-                if (n == 1)
-                {
-                    SA[0] = 0;
-                }
-                return 0;
-            }
-            return sais_main(new CharArray(T, 0), SA, 0, n, 65536, false);
-        }
-
-        /* int */
-        /// <summary>
-        /// Constructs the suffix array of a given string in linear time.
-        /// </summary>
-        /// <param name="T">input string</param>
-        /// <param name="SA">output suffix array</param>
-        /// <param name="n">length of the given string</param>
-        /// <param name="k">alphabet size</param>
-        /// <returns>0 if no error occurred, -1 or -2 otherwise</returns>
-        public static int sufsort(int[] T, int[] SA, int n, int k)
-        {
-            if ((T == null) || (SA == null) || (T.Length < n) || (SA.Length < n) || (k <= 0))
-            {
-                return -1;
-            }
-            if (n <= 1)
-            {
-                if (n == 1)
-                {
-                    SA[0] = 0;
-                }
-                return 0;
-            }
-            return sais_main(new IntArray(T, 0), SA, 0, n, k, false);
-        }
-
-        /* string */
-        /// <summary>
-        /// Constructs the suffix array of a given string in linear time.
-        /// </summary>
-        /// <param name="T">input string</param>
-        /// <param name="SA">output suffix array</param>
-        /// <param name="n">length of the given string</param>
-        /// <returns>0 if no error occurred, -1 or -2 otherwise</returns>
-        public static int sufsort(string T, int[] SA, int n)
-        {
-            if ((T == null) || (SA == null) || (T.Length < n) || (SA.Length < n))
-            {
-                return -1;
-            }
-            if (n <= 1)
-            {
-                if (n == 1)
-                {
-                    SA[0] = 0;
-                }
-                return 0;
-            }
-            return sais_main(new StringArray(T, 0), SA, 0, n, 65536, false);
-        }
-
-        /*- Burrows-Wheeler Transform -*/
-        /* byte */
-        /// <summary>
-        /// Constructs the burrows-wheeler transformed string of a given string in linear time.
-        /// </summary>
-        /// <param name="T">input string</param>
-        /// <param name="U">output string</param>
-        /// <param name="A">temporary array</param>
-        /// <param name="n">length of the given string</param>
-        /// <returns>primary index if no error occurred, -1 or -2 otherwise</returns>
-        public static int bwt(byte[] T, byte[] U, int[] A, int n)
-        {
-            int i, pidx;
-            if ((T == null) || (U == null) || (A == null) || (T.Length < n) || (U.Length < n) || (A.Length < n))
-            {
-                return -1;
-            }
-            if (n <= 1)
-            {
-                if (n == 1)
-                {
-                    U[0] = T[0];
-                }
-                return n;
-            }
-            pidx = sais_main(new ByteArray(T, 0), A, 0, n, 256, true);
-            U[0] = T[n - 1];
-            for (i = 0; i < pidx; ++i)
-            {
-                U[i + 1] = (byte)A[i];
-            }
-            for (i += 1; i < n; ++i)
-            {
-                U[i] = (byte)A[i];
-            }
-            return pidx + 1;
-        }
-
-        /* char */
-        /// <summary>
-        /// Constructs the burrows-wheeler transformed string of a given string in linear time.
-        /// </summary>
-        /// <param name="T">input string</param>
-        /// <param name="U">output string</param>
-        /// <param name="A">temporary array</param>
-        /// <param name="n">length of the given string</param>
-        /// <returns>primary index if no error occurred, -1 or -2 otherwise</returns>
-        public static int bwt(char[] T, char[] U, int[] A, int n)
-        {
-            int i, pidx;
-            if ((T == null) || (U == null) || (A == null) || (T.Length < n) || (U.Length < n) || (A.Length < n))
-            {
-                return -1;
-            }
-            if (n <= 1)
-            {
-                if (n == 1)
-                {
-                    U[0] = T[0];
-                }
-                return n;
-            }
-            pidx = sais_main(new CharArray(T, 0), A, 0, n, 65536, true);
-            U[0] = T[n - 1];
-            for (i = 0; i < pidx; ++i)
-            {
-                U[i + 1] = (char)A[i];
-            }
-            for (i += 1; i < n; ++i)
-            {
-                U[i] = (char)A[i];
-            }
-            return pidx + 1;
-        }
-
-        /* int */
-        /// <summary>
-        /// Constructs the burrows-wheeler transformed string of a given string in linear time.
-        /// </summary>
-        /// <param name="T">input string</param>
-        /// <param name="U">output string</param>
-        /// <param name="A">temporary array</param>
-        /// <param name="n">length of the given string</param>
-        /// <param name="k">alphabet size</param>
-        /// <returns>primary index if no error occurred, -1 or -2 otherwise</returns>
-        public static int bwt(int[] T, int[] U, int[] A, int n, int k)
-        {
-            int i, pidx;
-            if ((T == null) || (U == null) || (A == null) || (T.Length < n) || (U.Length < n) || (A.Length < n) || (k <= 0))
-            {
-                return -1;
-            }
-            if (n <= 1)
-            {
-                if (n == 1)
-                {
-                    U[0] = T[0];
-                }
-                return n;
-            }
-            pidx = sais_main(new IntArray(T, 0), A, 0, n, k, true);
-            U[0] = T[n - 1];
-            for (i = 0; i < pidx; ++i)
-            {
-                U[i + 1] = A[i];
-            }
-            for (i += 1; i < n; ++i)
-            {
-                U[i] = A[i];
-            }
-            return pidx + 1;
+            return sais_main(Array.ConvertAll<byte, int>(T, b => (int)b), SA, 0, n, 256, false);
         }
     }
 }

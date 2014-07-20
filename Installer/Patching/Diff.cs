@@ -44,7 +44,7 @@ namespace TaleOfTwoWastelands.Patching
             SIG_LZDIFF41 = 0x3134464649445a4c,
             SIG_NONONONO = 0x4f4e4f4e4f4e4f4e;
         public const int HEADER_SIZE = 32;
-        public const int BUFFER_SIZE = 0x100000;
+        public const int BUFFER_SIZE = 1024 * 1024 * 8; //8MiB
 
         private const int LZMA_DICTSIZE_ULTRA = 1024 * 1024 * 64; //64MiB, 7z 'Ultra'
 
@@ -164,8 +164,6 @@ namespace TaleOfTwoWastelands.Patching
                     {
                         controlStream.Read(buffer, 0, 8);
                         control[i] = ReadInt64(buffer, 0);
-
-                        Debug.Assert((int)control[i] == control[i]);
                     }
 
                     // sanity-check
@@ -192,14 +190,14 @@ namespace TaleOfTwoWastelands.Patching
                         newPosition += actualBytesToCopy;
                         oldPosition += actualBytesToCopy;
                         bytesToCopy -= actualBytesToCopy;
-
-                        if (bytesToCopy > 0)
-                            Debug.Assert(actualBytesToCopy == availableInputBytes);
                     }
 
                     // sanity-check
                     if (newPosition + control[1] > newSize)
-                        throw new InvalidOperationException("Corrupt patch.");
+                        if (newPosition == newSize)
+                            return;
+                        else
+                            throw new InvalidOperationException("Corrupt patch.");
 
                     // read extra string
                     bytesToCopy = (int)control[1];
