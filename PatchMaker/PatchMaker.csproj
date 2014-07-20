@@ -34,6 +34,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="BSAsharp">
@@ -58,8 +59,10 @@
   <ItemGroup>
     <Compile Include="BenchmarkHash.cs" />
     <Compile Include="DiffTesting.cs" />
+    <Compile Include="MakeDiff.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="sais.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

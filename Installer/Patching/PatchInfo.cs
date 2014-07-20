@@ -68,44 +68,5 @@ namespace TaleOfTwoWastelands.Patching
                 return targetChk == outputChk;
             }
         }
-
-        /// <summary>
-        /// Used only in PatchMaker
-        /// </summary>
-        public static unsafe byte[] GetDiff(string diffPath, long convertSignature = -1, bool moveToUsed = false)
-        {
-            if (File.Exists(diffPath))
-            {
-                try
-                {
-                    var diffBytes = File.ReadAllBytes(diffPath);
-                    if (convertSignature > 0)
-                        fixed (byte* pBz2 = diffBytes)
-                            return Diff.ConvertPatch(pBz2, diffBytes.Length, Diff.SIG_BSDIFF40, convertSignature);
-
-                    return diffBytes;
-                }
-                finally
-                {
-                    if (moveToUsed)
-                        File.Move(diffPath, Path.ChangeExtension(diffPath, ".used"));
-                }
-            }
-
-            return null;
-        }
-
-        /// <summary>
-        /// Used only in PatchMaker
-        /// </summary>
-        public static PatchInfo FromOldChecksum(string diffPath, FileValidation oldChk)
-        {
-            byte[] diffData = GetDiff(diffPath, Diff.SIG_LZDIFF41);
-            return new PatchInfo()
-            {
-                Metadata = oldChk,
-                Data = diffData
-            };
-        }
     }
 }

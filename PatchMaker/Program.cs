@@ -138,7 +138,7 @@ namespace PatchMaker
                     {
                         foreach (var altDiff in altDiffs)
                         {
-                            var altDiffBytes = PatchInfo.GetDiff(altDiff.Item1, Diff.SIG_LZDIFF41);
+                            var altDiffBytes = GetDiff(altDiff.Item1, Diff.SIG_LZDIFF41);
                             patches.Add(new PatchInfo
                             {
                                 Metadata = FileValidation.FromMd5(altDiff.Item2),
@@ -149,7 +149,7 @@ namespace PatchMaker
 
                     if (newChk != oldChk)
                     {
-                        var patchInfo = PatchInfo.FromOldChecksum(diffPath, oldChk);
+                        var patchInfo = FromOldChecksum(diffPath, oldChk);
                         Debug.Assert(patchInfo.Data != null);
 
                         patches.Add(patchInfo);
@@ -216,6 +216,39 @@ namespace PatchMaker
             return new Dictionary<string, string>();
         }
 
+        static unsafe byte[] GetDiff(string diffPath, long convertSignature = -1, bool moveToUsed = false)
+        {
+            if (File.Exists(diffPath))
+            {
+                try
+                {
+                    var diffBytes = File.ReadAllBytes(diffPath);
+                    if (convertSignature > 0)
+                        fixed (byte* pBz2 = diffBytes)
+                            return MakeDiff.ConvertPatch(pBz2, diffBytes.Length, Diff.SIG_BSDIFF40, convertSignature);
+
+                    return diffBytes;
+                }
+                finally
+                {
+                    if (moveToUsed)
+                        File.Move(diffPath, Path.ChangeExtension(diffPath, ".used"));
+                }
+            }
+
+            return null;
+        }
+
+        static PatchInfo FromOldChecksum(string diffPath, FileValidation oldChk)
+        {
+            byte[] diffData = GetDiff(diffPath, Diff.SIG_LZDIFF41);
+            return new PatchInfo()
+            {
+                Metadata = oldChk,
+                Data = diffData
+            };
+        }
+
         private static void BuildMasterPatch(string ESM, ILookup<string, string> knownEsmVersions)
         {
             var fixPath = Path.Combine(OUT_DIR, Path.ChangeExtension(ESM, ".pat"));
@@ -236,7 +269,7 @@ namespace PatchMaker
 
                     using (var msPatch = new MemoryStream())
                     {
-                        Diff.Create(dataBytes, ttwBytes, Diff.SIG_LZDIFF41, msPatch);
+                        MakeDiff.Create(dataBytes, ttwBytes, Diff.SIG_LZDIFF41, msPatch);
                         patchBytes = msPatch.ToArray();
                     }
 
