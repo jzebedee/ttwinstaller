@@ -57,7 +57,7 @@ namespace TaleOfTwoWastelands.Patching
                 {
                     fixed (byte* pInput = inputBytes)
                     fixed (byte* pPatch = Data)
-                        Diff.Apply(pInput, inputBytes.Length, pPatch, Data.Length, output);
+                        Diff.Apply(pInput, inputBytes.LongLength, pPatch, Data.LongLength, output);
                 }
 
                 outputBytes = output.ToArray();
