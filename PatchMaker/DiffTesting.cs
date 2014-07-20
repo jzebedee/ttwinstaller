@@ -24,7 +24,7 @@ namespace PatchMaker
             //create
             {
                 var ms = new MemoryStream();
-                Diff.Create(OldBytes, NewBytes, Diff.SIG_LZDIFF41, ms);
+                MakeDiff.Create(OldBytes, NewBytes, Diff.SIG_LZDIFF41, ms);
                 File.WriteAllBytes(Out, ms.ToArray());
             }
 
