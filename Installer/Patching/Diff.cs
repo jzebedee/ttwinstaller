@@ -226,8 +226,8 @@ namespace TaleOfTwoWastelands.Patching
                 var bufI = new int[oldBuf.Length];
                 SAIS.sufsort(oldBuf, bufI, oldBuf.Length);
 
-                byte[] db = new byte[newBuf.Length + 1];
-                byte[] eb = new byte[newBuf.Length + 1];
+                byte[] db = new byte[newBuf.Length];
+                byte[] eb = new byte[newBuf.Length];
 
                 int dblen = 0;
                 int eblen = 0;
@@ -523,63 +523,66 @@ namespace TaleOfTwoWastelands.Patching
 
                 int oldPosition = 0;
                 int newPosition = 0;
-                fixed (byte* pN = newData)
-                    while (newPosition < newSize)
+                while (newPosition < newSize)
+                {
+                    // read control data
+                    for (int i = 0; i < 3; i++)
                     {
-                        // read control data
-                        for (int i = 0; i < 3; i++)
-                        {
-                            controlStream.Read(buffer, 0, 8);
-                            control[i] = ReadInt64(buffer, 0);
+                        controlStream.Read(buffer, 0, 8);
+                        control[i] = ReadInt64(buffer, 0);
 
-                            Debug.Assert((int)control[i] == control[i]);
-                        }
+                        Debug.Assert((int)control[i] == control[i]);
+                    }
 
-                        // sanity-check
-                        if (newPosition + control[0] > newSize)
-                            throw new InvalidOperationException("Corrupt patch.");
+                    // sanity-check
+                    if (newPosition + control[0] > newSize)
+                        throw new InvalidOperationException("Corrupt patch.");
 
-                        int bytesToCopy = (int)control[0];
-                        while (bytesToCopy > 0)
-                        {
-                            int actualBytesToCopy = Math.Min(bytesToCopy, BUFFER_SIZE);
+                    int bytesToCopy = (int)control[0];
+                    while (bytesToCopy > 0)
+                    {
+                        int actualBytesToCopy = Math.Min(bytesToCopy, BUFFER_SIZE);
 
-                            // read diff string
-                            diffStream.Read(newData, 0, actualBytesToCopy);
+                        // read diff string
+                        diffStream.Read(newData, 0, actualBytesToCopy);
 
-                            // add old data to diff string
-                            int availableInputBytes = Math.Min(actualBytesToCopy, (int)(length - oldPosition));
-                            for (int i = 0; i < availableInputBytes; i++)
+                        // add old data to diff string
+                        int availableInputBytes = Math.Min(actualBytesToCopy, (int)(length - oldPosition));
+                        for (int i = 0; i < availableInputBytes; i++)
+                            fixed (byte* pN = newData)
                                 pN[i] += pInput[oldPosition + i];
 
-                            output.Write(newData, 0, actualBytesToCopy);
+                        output.Write(newData, 0, actualBytesToCopy);
 
-                            // adjust counters
-                            newPosition += actualBytesToCopy;
-                            oldPosition += actualBytesToCopy;
-                            bytesToCopy -= actualBytesToCopy;
-                        }
+                        // adjust counters
+                        newPosition += actualBytesToCopy;
+                        oldPosition += actualBytesToCopy;
+                        bytesToCopy -= actualBytesToCopy;
 
-                        // sanity-check
-                        if (newPosition + control[1] > newSize)
-                            throw new InvalidOperationException("Corrupt patch.");
-
-                        // read extra string
-                        bytesToCopy = (int)control[1];
-                        while (bytesToCopy > 0)
-                        {
-                            int actualBytesToCopy = Math.Min(bytesToCopy, BUFFER_SIZE);
-
-                            extraStream.Read(newData, 0, actualBytesToCopy);
-                            output.Write(newData, 0, actualBytesToCopy);
-
-                            newPosition += actualBytesToCopy;
-                            bytesToCopy -= actualBytesToCopy;
-                        }
-
-                        // adjust position
-                        oldPosition = (int)(oldPosition + control[2]);
+                        if (bytesToCopy > 0)
+                            Debug.Assert(actualBytesToCopy == availableInputBytes);
                     }
+
+                    // sanity-check
+                    if (newPosition + control[1] > newSize)
+                        throw new InvalidOperationException("Corrupt patch.");
+
+                    // read extra string
+                    bytesToCopy = (int)control[1];
+                    while (bytesToCopy > 0)
+                    {
+                        int actualBytesToCopy = Math.Min(bytesToCopy, BUFFER_SIZE);
+
+                        extraStream.Read(newData, 0, actualBytesToCopy);
+                        output.Write(newData, 0, actualBytesToCopy);
+
+                        newPosition += actualBytesToCopy;
+                        bytesToCopy -= actualBytesToCopy;
+                    }
+
+                    // adjust position
+                    oldPosition = (int)(oldPosition + control[2]);
+                }
             }
         }
 #endif
