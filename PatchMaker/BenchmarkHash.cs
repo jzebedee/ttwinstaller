@@ -11,20 +11,35 @@ namespace PatchMaker
     {
         internal static void Run()
         {
-            List<long> timeAdler = new List<long>(0x10000);
-            List<long> timeMurmur = new List<long>(0x10000);
+            const int iterations = 0x20000;
+            const int test_size = 0x10000;
 
-            byte[] randBytes = new byte[0x1000];
+            List<long> timeMurmur = new List<long>(iterations);
+            List<long> timeAdler = new List<long>(iterations);
+            List<long> timeMd5 = new List<long>(iterations);
+
+            byte[] randBytes = new byte[test_size];
             var rnd = new Random();
 
-            var watchAdler = new Stopwatch();
             var watchMurmur = new Stopwatch();
+            var watchAdler = new Stopwatch();
+            var watchMd5 = new Stopwatch();
 
             bool dry = true;
         DoRun:
-            for (int i = 0; i < 0x10000; i++)
+            for (int i = 0; i < iterations; i++)
             {
                 rnd.NextBytes(randBytes);
+
+                {
+                    var murmur = TaleOfTwoWastelands.Patching.Murmur.Murmur128.CreateMurmur();
+                    watchMurmur.Restart();
+                    murmur.ComputeHash(randBytes);
+                    watchMurmur.Stop();
+
+                    if (!dry)
+                        timeMurmur.Add(watchMurmur.ElapsedTicks);
+                }
 
                 {
                     var adler = new ICSharpCode.SharpZipLib.Checksums.Adler32();
@@ -37,13 +52,13 @@ namespace PatchMaker
                 }
 
                 {
-                    var murmur = TaleOfTwoWastelands.Patching.Murmur.Murmur128.CreateMurmur();
-                    watchMurmur.Restart();
-                    murmur.ComputeHash(randBytes);
-                    watchMurmur.Stop();
+                    var md5 = System.Security.Cryptography.MD5.Create();
+                    watchMd5.Restart();
+                    md5.ComputeHash(randBytes);
+                    watchMd5.Stop();
 
                     if (!dry)
-                        timeMurmur.Add(watchMurmur.ElapsedTicks);
+                        timeMd5.Add(watchMd5.ElapsedTicks);
                 }
 
                 if (i == 0x1000 && dry)
@@ -53,11 +68,13 @@ namespace PatchMaker
                 }
             }
 
-            var avgAdler = TimeSpan.FromTicks(Convert.ToInt64(timeAdler.Average()));
             var avgMurmur = TimeSpan.FromTicks(Convert.ToInt64(timeMurmur.Average()));
+            var avgAdler = TimeSpan.FromTicks(Convert.ToInt64(timeAdler.Average()));
+            var avgMd5 = TimeSpan.FromTicks(Convert.ToInt64(timeMd5.Average()));
 
-            Console.WriteLine("Average adler:\t" + avgAdler);
             Console.WriteLine("Average murmur:\t" + avgMurmur);
+            Console.WriteLine("Average adler:\t" + avgAdler);
+            Console.WriteLine("Average md5:\t" + avgMd5);
             Console.ReadKey();
         }
     }

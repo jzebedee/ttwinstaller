@@ -174,7 +174,7 @@ namespace TaleOfTwoWastelands.Patching
             return new FileValidation(contents);
         }
 
-        public static FileValidation FromFile(string path)
+        public static FileValidation FromFile(string path, ChecksumType asType = ChecksumType.Murmur128)
         {
             if (!File.Exists(path))
                 throw new FileNotFoundException("path", path);
@@ -183,7 +183,15 @@ namespace TaleOfTwoWastelands.Patching
             if (fileInfo.Length == 0)
                 return null;
 
-            return new FileValidation(File.OpenRead(path));
+            switch (asType)
+            {
+                case ChecksumType.Murmur128:
+                    return new FileValidation(File.OpenRead(path));
+                case ChecksumType.Md5:
+                    return FileValidation.FromMd5(Util.GetMD5(path));
+                default:
+                    throw new NotImplementedException("Unknown checksum type: " + asType);
+            }
         }
 
         public static FileValidation FromMd5(BigInteger md5)

@@ -20,7 +20,7 @@ using System.Text;
 
 namespace TaleOfTwoWastelands.Patching
 {
-    internal static class Extensions
+    public static class Extensions
     {
 #if NET45
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

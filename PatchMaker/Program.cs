@@ -26,10 +26,10 @@ namespace PatchMaker
 
         static void Main(string[] args)
         {
+            //BenchmarkHash.Run();
+
             if (!Debugger.IsAttached)
                 Debugger.Launch();
-
-            //BenchmarkHash.Run();
 
             Console.WriteLine("Building {0} folder from {1} folder. Existing files are skipped. OK?", OUT_DIR, IN_DIR);
             Console.Write("y/n: ");
@@ -56,13 +56,13 @@ namespace PatchMaker
 
             SevenZipCompressor.LzmaDictionarySize = 1024 * 1024 * 64; //64MiB, 7z 'Ultra'
 
-            Parallel.ForEach(Installer.BuildableBSAs, kvpBsa => BuildBsaPatch(kvpBsa.Key, kvpBsa.Value));
+            Parallel.ForEach(Installer.BuildableBSAs, new ParallelOptions() { MaxDegreeOfParallelism = 2 }, kvpBsa => BuildBsaPatch(kvpBsa.Key, kvpBsa.Value));
 
             var knownEsmVersions =
                 Directory.EnumerateFiles(Path.Combine(IN_DIR, "Versions"), "*.esm", SearchOption.AllDirectories)
                 .ToLookup(esm => Path.GetFileName(esm), esm => esm);
 
-            Parallel.ForEach(Installer.CheckedESMs, ESM => BuildMasterPatch(ESM, knownEsmVersions));
+            Parallel.ForEach(Installer.CheckedESMs, new ParallelOptions() { MaxDegreeOfParallelism = 2 }, ESM => BuildMasterPatch(ESM, knownEsmVersions));
         }
 
         private static void BuildBsaPatch(string inBsaName, string outBsaName)
@@ -124,27 +124,31 @@ namespace PatchMaker
                     }
 
                     var patches = new List<PatchInfo>();
-                    if (newChk != oldChk)
+
+                    var md5OldChk = Util.GetMD5(oldBsaFile.GetContents(true));
+                    var md5NewChk = Util.GetMD5(join.newBsaFile.GetContents(true));
+
+                    var diffPath = Path.Combine(prefix, oldFilename + "." + ToWrongFormat(md5OldChk) + "." + ToWrongFormat(md5NewChk) + ".diff");
+                    var usedPath = Path.ChangeExtension(diffPath, ".used");
+                    if (File.Exists(usedPath))
+                        File.Move(usedPath, diffPath); //fixes moronic things
+
+                    var altDiffs = FindAlternateVersions(diffPath);
+                    if (altDiffs != null)
                     {
-                        var md5OldChk = Util.GetMD5(oldBsaFile.GetContents(true));
-                        var md5NewChk = Util.GetMD5(join.newBsaFile.GetContents(true));
-
-                        var diffPath = Path.Combine(prefix, oldFilename + "." + ToWrongFormat(md5OldChk) + "." + ToWrongFormat(md5NewChk) + ".diff");
-                        var usedPath = Path.ChangeExtension(diffPath, ".used");
-                        if (File.Exists(usedPath))
-                            File.Move(usedPath, diffPath); //fixes moronic things
-
-                        var altDiffs = FindAlternateVersions(diffPath).ToList();
                         foreach (var altDiff in altDiffs)
                         {
-                            var altDiffBytes = PatchInfo.GetDiff(altDiff, BinaryPatchUtility.SIG_LZDIFF41);
+                            var altDiffBytes = PatchInfo.GetDiff(altDiff.Item1, Diff.SIG_LZDIFF41);
                             patches.Add(new PatchInfo
                             {
-                                Metadata = FileValidation.FromMd5(md5OldChk),
+                                Metadata = FileValidation.FromMd5(altDiff.Item2),
                                 Data = altDiffBytes
                             });
                         }
+                    }
 
+                    if (newChk != oldChk)
+                    {
                         var patchInfo = PatchInfo.FromOldChecksum(diffPath, oldChk);
                         Debug.Assert(patchInfo.Data != null);
 
@@ -176,6 +180,14 @@ namespace PatchMaker
             }
 
             return BitConverter.ToString(bytes).Replace("-", "");
+        }
+        public static BigInteger FromWrongFormat(string s)
+        {
+            byte[] data = new byte[s.Length / 2];
+            for (int i = 0; i < data.Length; i++)
+                data[i] = Convert.ToByte(s.Substring(i * 2, 2), 16);
+
+            return data.ToBigInteger();
         }
 
         private static IDictionary<string, string> BuildRenameDict(string bsaName)
@@ -224,7 +236,7 @@ namespace PatchMaker
 
                     using (var msPatch = new MemoryStream())
                     {
-                        BinaryPatchUtility.Create(dataBytes, ttwBytes, msPatch);
+                        Diff.Create(dataBytes, ttwBytes, Diff.SIG_LZDIFF41, msPatch);
                         patchBytes = msPatch.ToArray();
                     }
 
@@ -244,7 +256,7 @@ namespace PatchMaker
                 patchDict.WriteAll(fixStream);
         }
 
-        private static IEnumerable<string> FindAlternateVersions(string file)
+        private static IEnumerable<Tuple<string, BigInteger>> FindAlternateVersions(string file)
         {
             var justName = Path.GetFileName(file);
             var split = justName.Split('.');
@@ -253,8 +265,13 @@ namespace PatchMaker
             //end[0] = diff, end[1] = newChk, end[2] = oldChk, end[3 ...] = fileName
 
             var justDir = Path.GetDirectoryName(file);
+            if (!Directory.Exists(justDir))
+                return null;
 
-            return Directory.EnumerateFiles(justDir, string.Join(".", split)).Where(other => other != file);
+            return from other in Directory.EnumerateFiles(justDir, string.Join(".", split))
+                   where other != file
+                   let splitOther = Path.GetFileName(other).Split('.')
+                   select Tuple.Create(other, FromWrongFormat(splitOther[splitOther.Length - 3]));
         }
 
         //Shameless code duplication. So sue me.

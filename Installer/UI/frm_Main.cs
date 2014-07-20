@@ -33,6 +33,7 @@ namespace TaleOfTwoWastelands.UI
         private void frm_Main_Load(object sender, EventArgs e)
         {
             //verify we are running as administrator
+            //TODO: change to a user-friendly condition and message
             Trace.Assert(new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator));
 
             //Progress<T> maintains SynchronizationContext

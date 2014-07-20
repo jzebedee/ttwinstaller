@@ -79,7 +79,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Patching\BinaryPatchUtility.cs" />
+    <Compile Include="Patching\Diff.cs" />
     <Compile Include="BSA.cs" />
     <Compile Include="Patching\BSADiff.cs" />
     <Compile Include="Patching\Extensions.cs" />

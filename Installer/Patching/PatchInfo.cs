@@ -49,6 +49,26 @@ namespace TaleOfTwoWastelands.Patching
             }
         }
 
+        public bool PatchBytes(byte[] inputBytes, FileValidation targetChk, out byte[] outputBytes, out FileValidation outputChk)
+        {
+            using (var output = new MemoryStream())
+            {
+                unsafe
+                {
+                    fixed (byte* pInput = inputBytes)
+                    fixed (byte* pPatch = Data)
+                        Diff.Apply(pInput, inputBytes.Length, pPatch, Data.Length, output);
+                }
+
+                outputBytes = output.ToArray();
+
+                output.Seek(0, SeekOrigin.Begin);
+                outputChk = new FileValidation(output);
+                
+                return targetChk == outputChk;
+            }
+        }
+
         /// <summary>
         /// Used only in PatchMaker
         /// </summary>
@@ -61,7 +81,7 @@ namespace TaleOfTwoWastelands.Patching
                     var diffBytes = File.ReadAllBytes(diffPath);
                     if (convertSignature > 0)
                         fixed (byte* pBz2 = diffBytes)
-                            return BinaryPatchUtility.ConvertPatch(pBz2, diffBytes.Length, BinaryPatchUtility.SIG_BSDIFF40, convertSignature);
+                            return Diff.ConvertPatch(pBz2, diffBytes.Length, Diff.SIG_BSDIFF40, convertSignature);
 
                     return diffBytes;
                 }
@@ -80,7 +100,7 @@ namespace TaleOfTwoWastelands.Patching
         /// </summary>
         public static PatchInfo FromOldChecksum(string diffPath, FileValidation oldChk)
         {
-            byte[] diffData = GetDiff(diffPath, BinaryPatchUtility.SIG_LZDIFF41);
+            byte[] diffData = GetDiff(diffPath, Diff.SIG_LZDIFF41);
             return new PatchInfo()
             {
                 Metadata = oldChk,
