@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Numerics;
 using System.Text;
 using ICSharpCode.SharpZipLib.BZip2;
 using SevenZip;

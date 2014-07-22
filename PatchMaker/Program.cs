@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Diagnostics;
 using System.IO;
-using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
 using TaleOfTwoWastelands;
@@ -125,10 +124,10 @@ namespace PatchMaker
 
                     var patches = new List<PatchInfo>();
 
-                    var md5OldChk = Util.GetMD5(oldBsaFile.GetContents(true));
-                    var md5NewChk = Util.GetMD5(join.newBsaFile.GetContents(true));
+                    var md5OldStr = Util.GetMD5String(oldBsaFile.GetContents(true));
+                    var md5NewStr = Util.GetMD5String(join.newBsaFile.GetContents(true));
 
-                    var diffPath = Path.Combine(prefix, oldFilename + "." + ToWrongFormat(md5OldChk) + "." + ToWrongFormat(md5NewChk) + ".diff");
+                    var diffPath = Path.Combine(prefix, oldFilename + "." + md5OldStr + "." + md5NewStr + ".diff");
                     var usedPath = Path.ChangeExtension(diffPath, ".used");
                     if (File.Exists(usedPath))
                         File.Move(usedPath, diffPath); //fixes moronic things
@@ -161,33 +160,6 @@ namespace PatchMaker
                 using (var stream = File.OpenWrite(patPath))
                     patchDict.WriteAll(stream);
             }
-        }
-
-        //antique strs are in wrong endianness, so we can't use MakeMD5String
-        private static readonly byte[] Terminator = { 0 };
-        public static string ToWrongFormat(BigInteger hash)
-        {
-            Debug.Assert(hash != BigInteger.Zero);
-
-            var bytes = hash.ToByteArray();
-            if (bytes.Length == 17 && bytes.Last() == 0)
-            {
-                bytes = bytes.Take(16).ToArray();
-            }
-            else if (bytes.Length < 16)
-            {
-                bytes = bytes.Concat(Terminator).ToArray();
-            }
-
-            return BitConverter.ToString(bytes).Replace("-", "");
-        }
-        public static BigInteger FromWrongFormat(string s)
-        {
-            byte[] data = new byte[s.Length / 2];
-            for (int i = 0; i < data.Length; i++)
-                data[i] = Convert.ToByte(s.Substring(i * 2, 2), 16);
-
-            return data.ToBigInteger();
         }
 
         private static IDictionary<string, string> BuildRenameDict(string bsaName)
@@ -289,7 +261,7 @@ namespace PatchMaker
                 patchDict.WriteAll(fixStream);
         }
 
-        private static IEnumerable<Tuple<string, BigInteger>> FindAlternateVersions(string file)
+        private static IEnumerable<Tuple<string, byte[]>> FindAlternateVersions(string file)
         {
             var justName = Path.GetFileName(file);
             var split = justName.Split('.');
@@ -304,7 +276,7 @@ namespace PatchMaker
             return from other in Directory.EnumerateFiles(justDir, string.Join(".", split))
                    where other != file
                    let splitOther = Path.GetFileName(other).Split('.')
-                   select Tuple.Create(other, FromWrongFormat(splitOther[splitOther.Length - 3]));
+                   select Tuple.Create(other, Util.FromMD5String(splitOther[splitOther.Length - 3]));
         }
 
         //Shameless code duplication. So sue me.

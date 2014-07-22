@@ -194,10 +194,7 @@ namespace TaleOfTwoWastelands.Patching
 
                     // sanity-check
                     if (newPosition + control[1] > newSize)
-                        if (newPosition == newSize)
-                            return;
-                        else
-                            throw new InvalidOperationException("Corrupt patch.");
+                        throw new InvalidOperationException("Corrupt patch.");
 
                     // read extra string
                     bytesToCopy = (int)control[1];

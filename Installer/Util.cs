@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Numerics;
 using System.Security.Cryptography;
 using TaleOfTwoWastelands.Patching;
 using TaleOfTwoWastelands.Patching.Murmur;
@@ -12,28 +11,36 @@ namespace TaleOfTwoWastelands
     public static class Util
     {
         #region GetMD5 overloads
-        public static BigInteger GetMD5(string file)
+        public static byte[] GetMD5(string file)
         {
             using (var stream = File.OpenRead(file))
                 return GetMD5(stream);
         }
 
-        public static BigInteger GetMD5(Stream stream)
+        public static byte[] GetMD5(Stream stream)
         {
             using (var fileHash = MD5.Create())
             using (stream)
-                return fileHash.ComputeHash(stream).ToBigInteger();
+                return fileHash.ComputeHash(stream);
         }
 
-        public static BigInteger GetMD5(byte[] buf)
+        public static byte[] GetMD5(byte[] buf)
         {
             using (var fileHash = MD5.Create())
-                return fileHash.ComputeHash(buf).ToBigInteger();
+                return fileHash.ComputeHash(buf);
         }
 
-        public static string MakeMD5String(BigInteger md5)
+        public static string MakeMD5String(byte[] md5)
         {
-            return md5.ToString("x32");
+            return BitConverter.ToString(md5).Replace("-", "");
+        }
+        public static byte[] FromMD5String(string md5str)
+        {
+            byte[] data = new byte[md5str.Length / 2];
+            for (int i = 0; i < data.Length; i++)
+                data[i] = Convert.ToByte(md5str.Substring(i * 2, 2), 16);
+
+            return data;
         }
 
         public static string GetMD5String(string file)

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Numerics;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using BSAsharp;
 using BSAsharp.Extensions;
@@ -13,6 +13,9 @@ namespace TaleOfTwoWastelands.Patching
 {
     public class FileValidation : IDisposable, IEquatable<FileValidation>
     {
+        [DllImport("msvcrt", CallingConvention = CallingConvention.Cdecl)]
+        private static extern int memcmp(byte[] b1, byte[] b2, UIntPtr count);
+
         public enum ChecksumType : byte
         {
             Murmur128,
@@ -20,11 +23,11 @@ namespace TaleOfTwoWastelands.Patching
         }
 
         public uint Filesize { get; private set; }
-        public BigInteger Checksum { get { return _computeChecksum.Value; } }
+        public byte[] Checksum { get { return _computeChecksum.Value; } }
         public ChecksumType Type { get; private set; }
 
         readonly Stream _stream;
-        Lazy<BigInteger> _computeChecksum;
+        Lazy<byte[]> _computeChecksum;
 
         public FileValidation(byte[] data)
         {
@@ -34,7 +37,7 @@ namespace TaleOfTwoWastelands.Patching
             SetContents(() =>
             {
                 using (var Hash = GetHash())
-                    return Hash.ComputeHash(data).ToBigInteger();
+                    return Hash.ComputeHash(data);
             }, (uint)data.LongLength);
         }
         public FileValidation(Stream stream)
@@ -47,12 +50,14 @@ namespace TaleOfTwoWastelands.Patching
             {
                 using (stream)
                 using (var Hash = GetHash())
-                    return Hash.ComputeHash(stream).ToBigInteger();
+                    return Hash.ComputeHash(stream);
             }, (uint)stream.Length);
         }
-        public FileValidation(BigInteger checksum, uint filesize, ChecksumType type = ChecksumType.Murmur128)
+        public FileValidation(byte[] checksum, uint filesize, ChecksumType type = ChecksumType.Murmur128)
         {
-            if (checksum == BigInteger.Zero)
+            if (checksum == null)
+                throw new ArgumentNullException("checksum");
+            if (checksum.Length == 0)
                 throw new ArgumentException("checksum must have a value");
             if (filesize == 0)
                 throw new ArgumentException("filesize must have a value");
@@ -65,12 +70,9 @@ namespace TaleOfTwoWastelands.Patching
 
             var type = (FileValidation.ChecksumType)typeByte;
             var filesize = reader.ReadUInt32();
+            var checksum = reader.ReadBytes(16);
 
-            var chkLength = reader.ReadByte();
-            var chkBytes = reader.ReadBytes(chkLength);
-            var checksum = chkBytes.ToBigInteger();
-
-            Debug.Assert(filesize != 0 && checksum != BigInteger.Zero);
+            Debug.Assert(filesize != 0 && checksum != null && checksum.Length != 0);
             SetContents(() => checksum, filesize, type);
         }
         ~FileValidation()
@@ -92,12 +94,12 @@ namespace TaleOfTwoWastelands.Patching
             GC.SuppressFinalize(this);
         }
 
-        private void SetContents(Func<BigInteger> getChecksum, uint filesize, ChecksumType type = ChecksumType.Murmur128)
+        private void SetContents(Func<byte[]> getChecksum, uint filesize, ChecksumType type = ChecksumType.Murmur128)
         {
             if (filesize == 0)
                 throw new ArgumentException("filesize must have a value");
 
-            _computeChecksum = new Lazy<BigInteger>(getChecksum);
+            _computeChecksum = new Lazy<byte[]>(getChecksum);
             Filesize = filesize;
             Type = type;
         }
@@ -106,10 +108,7 @@ namespace TaleOfTwoWastelands.Patching
         {
             writer.Write((byte)Type);
             writer.Write(Filesize);
-
-            var chkBytes = Checksum.ToByteArray();
-            writer.Write((byte)chkBytes.Length);
-            writer.Write(chkBytes);
+            writer.Write(Checksum);
         }
 
         private HashAlgorithm GetHash()
@@ -119,7 +118,7 @@ namespace TaleOfTwoWastelands.Patching
 
         public override string ToString()
         {
-            return string.Format("({0:x32}, {1} bytes, {2})", Checksum, Filesize, Enum.GetName(typeof(ChecksumType), Type));
+            return string.Format("({0}, {1} bytes, {2})", BitConverter.ToString(Checksum), Filesize, Enum.GetName(typeof(ChecksumType), Type));
         }
 
         public override bool Equals(object obj)
@@ -137,7 +136,7 @@ namespace TaleOfTwoWastelands.Patching
             if (Filesize != obj.Filesize)
                 return false;
 
-            return Checksum == obj.Checksum;
+            return Checksum.Length == obj.Checksum.Length && memcmp(Checksum, obj.Checksum, (UIntPtr)Checksum.Length) == 0;
         }
 
         public static bool operator ==(FileValidation a, FileValidation b)
@@ -194,7 +193,7 @@ namespace TaleOfTwoWastelands.Patching
             }
         }
 
-        public static FileValidation FromMd5(BigInteger md5)
+        public static FileValidation FromMd5(byte[] md5)
         {
             return new FileValidation(md5, uint.MaxValue, FileValidation.ChecksumType.Md5);
         }

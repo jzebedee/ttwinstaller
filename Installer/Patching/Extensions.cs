@@ -15,7 +15,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
 using System.Text;
 
 namespace TaleOfTwoWastelands.Patching
@@ -53,15 +52,6 @@ namespace TaleOfTwoWastelands.Patching
                 //int i2 = (*(pbyte + 4) << 24) | (*(pbyte + 5) << 16) | (*(pbyte + 6) << 8) | (*(pbyte + 7));
                 //return (uint)i2 | ((long)i1 << 32);
             }
-        }
-
-        private static readonly byte[] Terminator = { 0 };
-        public static BigInteger ToBigInteger(this IEnumerable<byte> data, bool unsigned = true)
-        {
-            if (unsigned && data.LastOrDefault() != 0)
-                return new BigInteger(data.Concat(Terminator).ToArray());
-
-            return new BigInteger(data.ToArray());
         }
 
 #if NET45

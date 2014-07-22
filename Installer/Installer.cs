@@ -417,7 +417,7 @@ namespace TaleOfTwoWastelands
                         {
                             if (bsaOptions.ExtensionCompressionLevel.Count == 0)
                                 bsaOptions.ExtensionCompressionLevel = DefaultBSAOptions.ExtensionCompressionLevel;
-                            if (bsaOptions.Strategy == CompressionOptions.DEFAULT_STRATEGY)
+                            if (bsaOptions.Strategy == CompressionStrategy.Safe)
                                 bsaOptions.Strategy = DefaultBSAOptions.Strategy;
                         }
                         else
