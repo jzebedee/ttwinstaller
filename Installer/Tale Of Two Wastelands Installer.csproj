@@ -85,7 +85,6 @@
     <Compile Include="Patching\Extensions.cs" />
     <Compile Include="Patching\Murmur\Murmur128.cs" />
     <Compile Include="Patching\Murmur\Murmur128UnmanagedX64.cs" />
-    <Compile Include="Patching\Murmur\Murmur128UnmanagedX86.cs" />
     <Compile Include="Patching\PatchDict.cs" />
     <Compile Include="Patching\PatchInfo.cs" />
     <Compile Include="Patching\FileValidation.cs" />

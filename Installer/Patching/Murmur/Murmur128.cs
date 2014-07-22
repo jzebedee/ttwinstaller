@@ -32,10 +32,7 @@ namespace TaleOfTwoWastelands.Patching.Murmur
 
         public static Murmur128 CreateMurmur()
         {
-            if (Environment.Is64BitProcess)
-                return new Murmur128UnmanagedX64();
-
-            return new Murmur128UnmanagedX86();
+            return new Murmur128UnmanagedX64();
         }
     }
 }
