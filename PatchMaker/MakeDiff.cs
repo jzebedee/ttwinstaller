@@ -31,6 +31,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using TaleOfTwoWastelands.Patching;
@@ -123,29 +124,23 @@ namespace PatchMaker
             using (var msOut = new MemoryStream())
             {
                 var buf = new byte[8];
+                fixed (byte* pB = buf)
+                {
+                    WriteInt64(outputSig, pB);
+                    msOut.Write(buf, 0, buf.Length);
 
-                //
-                WriteInt64(outputSig, buf, 0);
-                msOut.Write(buf, 0, buf.Length);
+                    WriteInt64(outControlBytes.LongLength, pB);
+                    msOut.Write(buf, 0, buf.Length);
 
-                //
-                WriteInt64(outControlBytes.LongLength, buf, 0);
-                msOut.Write(buf, 0, buf.Length);
+                    WriteInt64(outDiffBytes.LongLength, pB);
+                    msOut.Write(buf, 0, buf.Length);
 
-                WriteInt64(outDiffBytes.LongLength, buf, 0);
-                msOut.Write(buf, 0, buf.Length);
+                    WriteInt64(newSize, pB);
+                    msOut.Write(buf, 0, buf.Length);
+                }
 
-                WriteInt64(newSize, buf, 0);
-                msOut.Write(buf, 0, buf.Length);
-
-                //
-                Debug.Assert(outControlBytes.Length == outControlBytes.LongLength);
                 msOut.Write(outControlBytes, 0, outControlBytes.Length);
-
-                Debug.Assert(outDiffBytes.Length == outDiffBytes.LongLength);
                 msOut.Write(outDiffBytes, 0, outDiffBytes.Length);
-
-                Debug.Assert(outExtraBytes.Length == outExtraBytes.LongLength);
                 msOut.Write(outExtraBytes, 0, outExtraBytes.Length);
 
                 return msOut.ToArray();
@@ -184,18 +179,26 @@ namespace PatchMaker
                 ??	??	Bzip2ed diff block
                 ??	??	Bzip2ed extra block */
             byte[] header = new byte[HEADER_SIZE];
-            WriteInt64(signature, header, 0);
-            WriteInt64(newBuf.LongLength, header, 24);
+            fixed (byte* pHead = header)
+            {
+                WriteInt64(signature, pHead);
+                WriteInt64(newBuf.LongLength, &pHead[24]);
+            }
 
             long startPosition = output.Position;
             output.Write(header, 0, header.Length);
 
+            //backing for ctrl writes
+            byte[] buf = new byte[8];
+
+            var bufI = new int[oldBuf.Length + 1];
+            SAIS.sufsort(oldBuf, bufI, oldBuf.Length);
+
             fixed (byte* oldData = oldBuf)
             fixed (byte* newData = newBuf)
+            fixed (byte* pB = buf)
+            fixed (int* I = bufI)
             {
-                var bufI = new int[oldBuf.Length];
-                SAIS.sufsort(oldBuf, bufI, oldBuf.Length);
-
                 using (MemoryStream msControl = new MemoryStream())
                 using (MemoryStream msDiff = new MemoryStream())
                 using (MemoryStream msExtra = new MemoryStream())
@@ -211,8 +214,6 @@ namespace PatchMaker
                         int lastpos = 0;
                         int lastoffset = 0;
 
-                        byte[] buf = new byte[8];
-
                         // compute the differences, writing ctrl as we go
                         while (scan < newBuf.Length)
                         {
@@ -220,8 +221,7 @@ namespace PatchMaker
 
                             for (int scsc = scan += len; scan < newBuf.Length; scan++)
                             {
-                                fixed (int* I = bufI)
-                                    len = Search(I, oldData, oldBuf.Length, newData, newBuf.Length, scan, 0, oldBuf.Length, out pos);
+                                len = Search(I, oldData, oldBuf.Length, newData, newBuf.Length, scan, 0, oldBuf.Length, out pos);
 
                                 for (; scsc < scan + len; scsc++)
                                 {
@@ -293,18 +293,23 @@ namespace PatchMaker
                                     lenb -= lens;
                                 }
 
+                                //write diff string
                                 for (int i = 0; i < lenf; i++)
                                     diffStream.WriteByte((byte)(newData[lastscan + i] - oldData[lastpos + i]));
 
-                                extraStream.Write(newBuf, lastscan + lenf, (scan - lenb) - (lastscan + lenf));
+                                //write extra string
+                                var extraLength = (scan - lenb) - (lastscan + lenf);
+                                if (extraLength > 0)
+                                    extraStream.Write(newBuf, lastscan + lenf, extraLength);
 
-                                WriteInt64(lenf, buf, 0);
+                                //write ctrl block
+                                WriteInt64(lenf, pB);
                                 ctrlStream.Write(buf, 0, 8);
 
-                                WriteInt64((scan - lenb) - (lastscan + lenf), buf, 0);
+                                WriteInt64(extraLength, pB);
                                 ctrlStream.Write(buf, 0, 8);
 
-                                WriteInt64((pos - lenb) - (lastpos + lenf), buf, 0);
+                                WriteInt64((pos - lenb) - (lastpos + lenf), pB);
                                 ctrlStream.Write(buf, 0, 8);
 
                                 lastscan = scan - lenb;
@@ -318,15 +323,18 @@ namespace PatchMaker
                     msControl.Seek(0, SeekOrigin.Begin);
                     msControl.CopyTo(output);
 
-                    // compute size of compressed ctrl data
-                    WriteInt64(msControl.Length, header, 8);
+                    fixed (byte* pHead = header)
+                    {
+                        // compute size of compressed ctrl data
+                        WriteInt64(msControl.Length, &pHead[8]);
 
-                    // write compressed diff data
-                    msDiff.Seek(0, SeekOrigin.Begin);
-                    msDiff.CopyTo(output);
+                        // write compressed diff data
+                        msDiff.Seek(0, SeekOrigin.Begin);
+                        msDiff.CopyTo(output);
 
-                    // compute size of compressed diff data
-                    WriteInt64(msDiff.Length, header, 16);
+                        // compute size of compressed diff data
+                        WriteInt64(msDiff.Length, &pHead[16]);
+                    }
 
                     // write compressed extra data
                     msExtra.Seek(0, SeekOrigin.Begin);
@@ -393,33 +401,33 @@ namespace PatchMaker
             }
         }
 
-        private static unsafe void WriteInt64(long y, byte[] buf, int offset)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe void WriteInt64(long y, byte* pb)
         {
-            fixed (byte* pb = &buf[offset])
-                if (y < 0)
-                {
-                    y = -y;
+            if (y < 0)
+            {
+                y = -y;
 
-                    pb[0] = (byte)y;
-                    pb[1] = (byte)(y >>= 8);
-                    pb[2] = (byte)(y >>= 8);
-                    pb[3] = (byte)(y >>= 8);
-                    pb[4] = (byte)(y >>= 8);
-                    pb[5] = (byte)(y >>= 8);
-                    pb[6] = (byte)(y >>= 8);
-                    pb[7] = (byte)((y >>= 8) | 0x80);
-                }
-                else
-                {
-                    pb[0] = (byte)y;
-                    pb[1] = (byte)(y >>= 8);
-                    pb[2] = (byte)(y >>= 8);
-                    pb[3] = (byte)(y >>= 8);
-                    pb[4] = (byte)(y >>= 8);
-                    pb[5] = (byte)(y >>= 8);
-                    pb[6] = (byte)(y >>= 8);
-                    pb[7] = (byte)(y >>= 8);
-                }
+                pb[0] = (byte)y;
+                pb[1] = (byte)(y >>= 8);
+                pb[2] = (byte)(y >>= 8);
+                pb[3] = (byte)(y >>= 8);
+                pb[4] = (byte)(y >>= 8);
+                pb[5] = (byte)(y >>= 8);
+                pb[6] = (byte)(y >>= 8);
+                pb[7] = (byte)((y >>= 8) | 0x80);
+            }
+            else
+            {
+                pb[0] = (byte)y;
+                pb[1] = (byte)(y >>= 8);
+                pb[2] = (byte)(y >>= 8);
+                pb[3] = (byte)(y >>= 8);
+                pb[4] = (byte)(y >>= 8);
+                pb[5] = (byte)(y >>= 8);
+                pb[6] = (byte)(y >>= 8);
+                pb[7] = (byte)(y >>= 8);
+            }
         }
     }
 }
