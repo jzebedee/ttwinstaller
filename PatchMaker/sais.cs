@@ -37,6 +37,90 @@ namespace PatchMaker
     {
         private const int MINBUCKETSIZE = 256;
 
+        private class IntAccessor : IList<int>
+        {
+            readonly byte[] _buffer;
+            public IntAccessor(byte[] buf)
+            {
+                _buffer = buf;
+            }
+
+            public int IndexOf(int item)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void Insert(int index, int item)
+            {
+                this[index] = item;
+            }
+
+            public void RemoveAt(int index)
+            {
+                throw new NotImplementedException();
+            }
+
+            public int this[int index]
+            {
+                get
+                {
+                    return _buffer[index];
+                }
+                set
+                {
+                    checked
+                    {
+                        _buffer[index] = (byte)value;
+                    }
+                }
+            }
+
+            public void Add(int item)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void Clear()
+            {
+                throw new NotImplementedException();
+            }
+
+            public bool Contains(int item)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void CopyTo(int[] array, int arrayIndex)
+            {
+                _buffer.CopyTo(array, arrayIndex);
+            }
+
+            public int Count
+            {
+                get { return _buffer.Length; }
+            }
+
+            public bool IsReadOnly
+            {
+                get { return true; }
+            }
+
+            public bool Remove(int item)
+            {
+                throw new NotImplementedException();
+            }
+
+            public IEnumerator<int> GetEnumerator()
+            {
+                throw new NotImplementedException();
+            }
+
+            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+            {
+                throw new NotImplementedException();
+            }
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void getCounts(IList<int> T, IList<int> C, int n, int k)
         {
@@ -259,73 +343,13 @@ namespace PatchMaker
             }
         }
 
-        private static int computeBWT(IList<int> T, int[] SA, IList<int> C, IList<int> B, int n, int k)
-        {
-            int b, i, j, pidx = -1;
-            int c0, c1;
-            /* compute SAl */
-            if (C == B)
-            {
-                getCounts(T, C, n, k);
-            }
-            getBuckets(C, B, k, false); /* find starts of buckets */
-            j = n - 1;
-            b = B[c1 = T[j]];
-            SA[b++] = ((0 < j) && (T[j - 1] < c1)) ? ~j : j;
-            for (i = 0; i < n; ++i)
-            {
-                if (0 < (j = SA[i]))
-                {
-                    SA[i] = ~(c0 = T[--j]);
-                    if (c0 != c1)
-                    {
-                        B[c1] = b;
-                        b = B[c1 = c0];
-                    }
-                    SA[b++] = ((0 < j) && (T[j - 1] < c1)) ? ~j : j;
-                }
-                else if (j != 0)
-                {
-                    SA[i] = ~j;
-                }
-            }
-            /* compute SAs */
-            if (C == B)
-            {
-                getCounts(T, C, n, k);
-            }
-            getBuckets(C, B, k, true); /* find ends of buckets */
-            for (i = n - 1, b = B[c1 = 0]; 0 <= i; --i)
-            {
-                if (0 < (j = SA[i]))
-                {
-                    SA[i] = (c0 = T[--j]);
-                    if (c0 != c1)
-                    {
-                        B[c1] = b;
-                        b = B[c1 = c0];
-                    }
-                    SA[--b] = ((0 < j) && (T[j - 1] > c1)) ? ~((int)T[j - 1]) : j;
-                }
-                else if (j != 0)
-                {
-                    SA[i] = ~j;
-                }
-                else
-                {
-                    pidx = i;
-                }
-            }
-            return pidx;
-        }
-
         /* find the suffix array SA of T[0..n-1] in {0..k-1}^n
            use a working space (excluding T and SA) of at most 2n+O(1) for a constant alphabet */
         //[MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int sais_main(IList<int> T, int[] SA, int fs, int n, int k, bool isbwt)
+        private static void sais_main(IList<int> T, int[] SA, int fs, int n, int k)
         {
             IList<int> C, B, RA;
-            int i, j, b, m, p, q, name, pidx = 0, newfs;
+            int i, j, b, m, p, q, name, newfs;
             int c0, c1;
             uint flags = 0;
 
@@ -453,8 +477,9 @@ namespace PatchMaker
                         SA[j--] = SA[i] - 1;
                     }
                 }
+
                 RA = new ArraySegment<int>(SA, m + newfs, SA.Length - (m + newfs));
-                sais_main(RA, SA, newfs, m, name, false);
+                sais_main(RA, SA, newfs, m, name);
                 RA = null;
 
                 i = n - 1;
@@ -464,12 +489,14 @@ namespace PatchMaker
                 {
                     c1 = c0;
                 } while ((0 <= --i) && ((c0 = T[i]) >= c1));
+
                 for (; 0 <= i; )
                 {
                     do
                     {
                         c1 = c0;
                     } while ((0 <= --i) && ((c0 = T[i]) <= c1));
+
                     if (0 <= i)
                     {
                         SA[j--] = i + 1;
@@ -529,17 +556,8 @@ namespace PatchMaker
                     SA[--j] = 0;
                 }
             }
-            if (isbwt == false)
-            {
-                induceSA(T, SA, C, B, n, k);
-            }
-            else
-            {
-                pidx = computeBWT(T, SA, C, B, n, k);
-            }
-            C = null;
-            B = null;
-            return pidx;
+
+            induceSA(T, SA, C, B, n, k);
         }
 
         /*- Suffixsorting -*/
@@ -551,21 +569,27 @@ namespace PatchMaker
         /// <param name="SA">output suffix array</param>
         /// <param name="n">length of the given string</param>
         /// <returns>0 if no error occurred, -1 or -2 otherwise</returns>
-        public static int sufsort(byte[] T, int[] SA, int n)
+        public static void sufsort(byte[] T, int[] SA, int n)
         {
-            if ((T == null) || (SA == null) || (T.Length < n) || (SA.Length < n))
-            {
-                return -1;
-            }
+            if (T == null)
+                throw new ArgumentNullException("T");
+            if (SA == null)
+                throw new ArgumentNullException("SA");
+            if (T.Length < n)
+                throw new ArgumentException("T must be size n");
+            if (SA.Length < n)
+                throw new ArgumentException("SA must be size n");
+
             if (n <= 1)
             {
                 if (n == 1)
                 {
                     SA[0] = 0;
                 }
-                return 0;
+                return;
             }
-            return sais_main(Array.ConvertAll<byte, int>(T, b => (int)b), SA, 0, n, 256, false);
+
+            sais_main(new IntAccessor(T), SA, 0, n, 256);
         }
     }
 }
