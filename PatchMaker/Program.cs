@@ -114,7 +114,7 @@ namespace PatchMaker
                     var oldFilename = oldBsaFile.Filename;
                     if (oldFilename.StartsWith(BSADiff.VOICE_PREFIX))
                     {
-                        patchDict.Add(join.file, new Patch(/*newChk*/null, null));
+                        patchDict.Add(join.file, new Patch(newChk, null));
                         continue;
                     }
 
@@ -185,7 +185,7 @@ namespace PatchMaker
 
         private static IDictionary<string, string> BuildRenameDict(string bsaName)
         {
-            var dictPath = Path.Combine(Installer.AssetsDir, "TTW Patches", bsaName, "RenameFiles.dict");
+            var dictPath = Path.Combine(IN_DIR, "TTW Patches", bsaName, "RenameFiles.dict");
             if (File.Exists(dictPath))
             {
                 var renameDict = Util.ReadOldDatabase(dictPath);
