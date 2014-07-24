@@ -74,7 +74,6 @@ namespace TaleOfTwoWastelands.Patching
             var filesize = reader.ReadUInt32();
             var checksum = reader.ReadBytes(16);
 
-            Debug.Assert(filesize != 0 && checksum != null && checksum.Length != 0);
             SetContents(() => checksum, filesize, type);
         }
         ~FileValidation()
