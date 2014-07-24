@@ -1,5 +1,4 @@
-﻿#define PATCH
-/*
+﻿/*
     The original bsdiff.c source code (http://www.daemonology.net/bsdiff/) is
     distributed under the following license:
 
@@ -66,6 +65,7 @@ namespace TaleOfTwoWastelands.Patching
                     else
                         return new LzmaDecodeStream(stream);
                 case SIG_NONONONO:
+                    //TOFIX: this does not guarantee wrapping
                     return stream;
                 case SIG_BSDIFF40:
                     if (output)
@@ -77,7 +77,6 @@ namespace TaleOfTwoWastelands.Patching
             }
         }
 
-#if PATCH
         /// <summary>
         /// Applies a binary patch a quasi-(in <a href="http://www.daemonology.net/bsdiff/">bsdiff</a> format) to the data in
         /// <paramref name="input"/> and writes the results of patching to <paramref name="output"/>.
@@ -214,7 +213,6 @@ namespace TaleOfTwoWastelands.Patching
                 }
             }
         }
-#endif
 
         public static unsafe long ReadInt64(byte[] buf, int offset)
         {
