@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Numerics;
 using System.Text;
 using ICSharpCode.SharpZipLib.BZip2;
 using SevenZip;
@@ -63,10 +62,21 @@ namespace TaleOfTwoWastelands.Patching
                 outputBytes = output.ToArray();
 
                 output.Seek(0, SeekOrigin.Begin);
-                outputChk = new FileValidation(output);
-                
+                outputChk = new FileValidation(outputBytes, targetChk.Type);
+
                 return targetChk == outputChk;
             }
         }
+
+#if LEGACY || DEBUG
+        public static PatchInfo FromOldDiff(byte[] diffData, FileValidation oldChk)
+        {
+            return new PatchInfo()
+            {
+                Metadata = oldChk,
+                Data = diffData
+            };
+        }
+#endif
     }
 }

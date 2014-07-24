@@ -31,6 +31,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using TaleOfTwoWastelands.Patching;
@@ -123,29 +124,23 @@ namespace PatchMaker
             using (var msOut = new MemoryStream())
             {
                 var buf = new byte[8];
+                fixed (byte* pB = buf)
+                {
+                    WriteInt64(outputSig, pB);
+                    msOut.Write(buf, 0, buf.Length);
 
-                //
-                WriteInt64(outputSig, buf, 0);
-                msOut.Write(buf, 0, buf.Length);
+                    WriteInt64(outControlBytes.LongLength, pB);
+                    msOut.Write(buf, 0, buf.Length);
 
-                //
-                WriteInt64(outControlBytes.LongLength, buf, 0);
-                msOut.Write(buf, 0, buf.Length);
+                    WriteInt64(outDiffBytes.LongLength, pB);
+                    msOut.Write(buf, 0, buf.Length);
 
-                WriteInt64(outDiffBytes.LongLength, buf, 0);
-                msOut.Write(buf, 0, buf.Length);
+                    WriteInt64(newSize, pB);
+                    msOut.Write(buf, 0, buf.Length);
+                }
 
-                WriteInt64(newSize, buf, 0);
-                msOut.Write(buf, 0, buf.Length);
-
-                //
-                Debug.Assert(outControlBytes.Length == outControlBytes.LongLength);
                 msOut.Write(outControlBytes, 0, outControlBytes.Length);
-
-                Debug.Assert(outDiffBytes.Length == outDiffBytes.LongLength);
                 msOut.Write(outDiffBytes, 0, outDiffBytes.Length);
-
-                Debug.Assert(outExtraBytes.Length == outExtraBytes.LongLength);
                 msOut.Write(outExtraBytes, 0, outExtraBytes.Length);
 
                 return msOut.ToArray();
@@ -184,152 +179,167 @@ namespace PatchMaker
                 ??	??	Bzip2ed diff block
                 ??	??	Bzip2ed extra block */
             byte[] header = new byte[HEADER_SIZE];
-            WriteInt64(signature, header, 0);
-            WriteInt64(newBuf.LongLength, header, 24);
+            fixed (byte* pHead = header)
+            {
+                WriteInt64(signature, pHead);
+                WriteInt64(newBuf.LongLength, &pHead[24]);
+            }
 
             long startPosition = output.Position;
             output.Write(header, 0, header.Length);
 
+            //backing for ctrl writes
+            byte[] buf = new byte[8];
+
+            var bufI = new int[oldBuf.Length + 1];
+            SAIS.sufsort(oldBuf, bufI, oldBuf.Length);
+
             fixed (byte* oldData = oldBuf)
             fixed (byte* newData = newBuf)
+            fixed (byte* pB = buf)
+            fixed (int* I = bufI)
             {
-                var bufI = new int[oldBuf.Length];
-                SAIS.sufsort(oldBuf, bufI, oldBuf.Length);
-
-                byte[] db = new byte[newBuf.Length];
-                byte[] eb = new byte[newBuf.Length];
-
-                int dblen = 0;
-                int eblen = 0;
-
-                using (var controlStream = GetEncodingStream(output, signature, true))
+                using (MemoryStream msControl = new MemoryStream())
+                using (MemoryStream msDiff = new MemoryStream())
+                using (MemoryStream msExtra = new MemoryStream())
                 {
-                    // compute the differences, writing ctrl as we go
-                    int scan = 0;
-                    int pos = 0;
-                    int len = 0;
-                    int lastscan = 0;
-                    int lastpos = 0;
-                    int lastoffset = 0;
-                    while (scan < newBuf.Length)
+                    using (var ctrlStream = GetEncodingStream(msControl, signature, true))
+                    using (var diffStream = GetEncodingStream(msDiff, signature, true))
+                    using (var extraStream = GetEncodingStream(msExtra, signature, true))
                     {
-                        int oldscore = 0;
+                        int scan = 0;
+                        int pos = 0;
+                        int len = 0;
+                        int lastscan = 0;
+                        int lastpos = 0;
+                        int lastoffset = 0;
 
-                        for (int scsc = scan += len; scan < newBuf.Length; scan++)
+                        // compute the differences, writing ctrl as we go
+                        while (scan < newBuf.Length)
                         {
-                            fixed (int* I = bufI)
+                            int oldscore = 0;
+
+                            for (int scsc = scan += len; scan < newBuf.Length; scan++)
+                            {
                                 len = Search(I, oldData, oldBuf.Length, newData, newBuf.Length, scan, 0, oldBuf.Length, out pos);
 
-                            for (; scsc < scan + len; scsc++)
-                            {
-                                if ((scsc + lastoffset < oldBuf.Length) && (oldData[scsc + lastoffset] == newData[scsc]))
-                                    oldscore++;
-                            }
-
-                            if ((len == oldscore && len != 0) || (len > oldscore + 8))
-                                break;
-
-                            if ((scan + lastoffset < oldBuf.Length) && (oldData[scan + lastoffset] == newData[scan]))
-                                oldscore--;
-                        }
-
-                        if (len != oldscore || scan == newBuf.Length)
-                        {
-                            int s = 0;
-                            int sf = 0;
-                            int lenf = 0;
-                            for (int i = 0; (lastscan + i < scan) && (lastpos + i < oldBuf.Length); )
-                            {
-                                if (oldData[lastpos + i] == newData[lastscan + i])
-                                    s++;
-                                i++;
-                                if (s * 2 - i > sf * 2 - lenf)
+                                for (; scsc < scan + len; scsc++)
                                 {
-                                    sf = s;
-                                    lenf = i;
+                                    if ((scsc + lastoffset < oldBuf.Length) && (oldData[scsc + lastoffset] == newData[scsc]))
+                                        oldscore++;
                                 }
+
+                                if ((len == oldscore && len != 0) || (len > oldscore + 8))
+                                    break;
+
+                                if ((scan + lastoffset < oldBuf.Length) && (oldData[scan + lastoffset] == newData[scan]))
+                                    oldscore--;
                             }
 
-                            int lenb = 0;
-                            if (scan < newBuf.Length)
+                            if (len != oldscore || scan == newBuf.Length)
                             {
-                                s = 0;
-                                int sb = 0;
-                                for (int i = 1; (scan >= lastscan + i) && (pos >= i); i++)
+                                int s = 0;
+                                int sf = 0;
+                                int lenf = 0;
+                                for (int i = 0; (lastscan + i < scan) && (lastpos + i < oldBuf.Length); )
                                 {
-                                    if (oldData[pos - i] == newData[scan - i])
+                                    if (oldData[lastpos + i] == newData[lastscan + i])
                                         s++;
-                                    if (s * 2 - i > sb * 2 - lenb)
+                                    i++;
+                                    if (s * 2 - i > sf * 2 - lenf)
                                     {
-                                        sb = s;
-                                        lenb = i;
-                                    }
-                                }
-                            }
-
-                            if (lastscan + lenf > scan - lenb)
-                            {
-                                int overlap = (lastscan + lenf) - (scan - lenb);
-                                s = 0;
-                                int ss = 0;
-                                int lens = 0;
-                                for (int i = 0; i < overlap; i++)
-                                {
-                                    if (newData[lastscan + lenf - overlap + i] == oldData[lastpos + lenf - overlap + i])
-                                        s++;
-                                    if (newData[scan - lenb + i] == oldData[pos - lenb + i])
-                                        s--;
-                                    if (s > ss)
-                                    {
-                                        ss = s;
-                                        lens = i + 1;
+                                        sf = s;
+                                        lenf = i;
                                     }
                                 }
 
-                                lenf += lens - overlap;
-                                lenb -= lens;
+                                int lenb = 0;
+                                if (scan < newBuf.Length)
+                                {
+                                    s = 0;
+                                    int sb = 0;
+                                    for (int i = 1; (scan >= lastscan + i) && (pos >= i); i++)
+                                    {
+                                        if (oldData[pos - i] == newData[scan - i])
+                                            s++;
+                                        if (s * 2 - i > sb * 2 - lenb)
+                                        {
+                                            sb = s;
+                                            lenb = i;
+                                        }
+                                    }
+                                }
+
+                                if (lastscan + lenf > scan - lenb)
+                                {
+                                    int overlap = (lastscan + lenf) - (scan - lenb);
+                                    s = 0;
+                                    int ss = 0;
+                                    int lens = 0;
+                                    for (int i = 0; i < overlap; i++)
+                                    {
+                                        if (newData[lastscan + lenf - overlap + i] == oldData[lastpos + lenf - overlap + i])
+                                            s++;
+                                        if (newData[scan - lenb + i] == oldData[pos - lenb + i])
+                                            s--;
+                                        if (s > ss)
+                                        {
+                                            ss = s;
+                                            lens = i + 1;
+                                        }
+                                    }
+
+                                    lenf += lens - overlap;
+                                    lenb -= lens;
+                                }
+
+                                //write diff string
+                                for (int i = 0; i < lenf; i++)
+                                    diffStream.WriteByte((byte)(newData[lastscan + i] - oldData[lastpos + i]));
+
+                                //write extra string
+                                var extraLength = (scan - lenb) - (lastscan + lenf);
+                                if (extraLength > 0)
+                                    extraStream.Write(newBuf, lastscan + lenf, extraLength);
+
+                                //write ctrl block
+                                WriteInt64(lenf, pB);
+                                ctrlStream.Write(buf, 0, 8);
+
+                                WriteInt64(extraLength, pB);
+                                ctrlStream.Write(buf, 0, 8);
+
+                                WriteInt64((pos - lenb) - (lastpos + lenf), pB);
+                                ctrlStream.Write(buf, 0, 8);
+
+                                lastscan = scan - lenb;
+                                lastpos = pos - lenb;
+                                lastoffset = pos - scan;
                             }
-
-                            for (int i = 0; i < lenf; i++)
-                                db[dblen + i] = (byte)(newData[lastscan + i] - oldData[lastpos + i]);
-                            for (int i = 0; i < (scan - lenb) - (lastscan + lenf); i++)
-                                eb[eblen + i] = newData[lastscan + lenf + i];
-
-                            dblen += lenf;
-                            eblen += (scan - lenb) - (lastscan + lenf);
-
-                            byte[] buf = new byte[8];
-                            WriteInt64(lenf, buf, 0);
-                            controlStream.Write(buf, 0, 8);
-
-                            WriteInt64((scan - lenb) - (lastscan + lenf), buf, 0);
-                            controlStream.Write(buf, 0, 8);
-
-                            WriteInt64((pos - lenb) - (lastpos + lenf), buf, 0);
-                            controlStream.Write(buf, 0, 8);
-
-                            lastscan = scan - lenb;
-                            lastpos = pos - lenb;
-                            lastoffset = pos - scan;
                         }
                     }
+
+                    //write compressed ctrl data
+                    msControl.Seek(0, SeekOrigin.Begin);
+                    msControl.CopyTo(output);
+
+                    fixed (byte* pHead = header)
+                    {
+                        // compute size of compressed ctrl data
+                        WriteInt64(msControl.Length, &pHead[8]);
+
+                        // write compressed diff data
+                        msDiff.Seek(0, SeekOrigin.Begin);
+                        msDiff.CopyTo(output);
+
+                        // compute size of compressed diff data
+                        WriteInt64(msDiff.Length, &pHead[16]);
+                    }
+
+                    // write compressed extra data
+                    msExtra.Seek(0, SeekOrigin.Begin);
+                    msExtra.CopyTo(output);
                 }
-
-                // compute size of compressed ctrl data
-                long controlEndPosition = output.Position;
-                WriteInt64(controlEndPosition - startPosition - HEADER_SIZE, header, 8);
-
-                // write compressed diff data
-                using (var diffStream = GetEncodingStream(output, signature, true))
-                    diffStream.Write(db, 0, dblen);
-
-                // compute size of compressed diff data
-                long diffEndPosition = output.Position;
-                WriteInt64(diffEndPosition - controlEndPosition, header, 16);
-
-                // write compressed extra data
-                using (var extraStream = GetEncodingStream(output, signature, true))
-                    extraStream.Write(eb, 0, eblen);
 
                 // seek to the beginning, write the header, then seek back to end
                 long endPosition = output.Position;
@@ -391,24 +401,32 @@ namespace PatchMaker
             }
         }
 
-        private static unsafe void WriteInt64(long value, byte[] buf, int offset)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe void WriteInt64(long y, byte* pb)
         {
-            long y = value < 0 ? -value : value;
-
-            fixed (byte* pb = &buf[offset])
+            if (y < 0)
             {
-                pb[0] = (byte)(y % 256);
-                y -= pb[0];
-                y = y / 256; pb[1] = (byte)(y % 256); y -= pb[1];
-                y = y / 256; pb[2] = (byte)(y % 256); y -= pb[2];
-                y = y / 256; pb[3] = (byte)(y % 256); y -= pb[3];
-                y = y / 256; pb[4] = (byte)(y % 256); y -= pb[4];
-                y = y / 256; pb[5] = (byte)(y % 256); y -= pb[5];
-                y = y / 256; pb[6] = (byte)(y % 256); y -= pb[6];
-                y = y / 256; pb[7] = (byte)(y % 256);
+                y = -y;
 
-                if (value < 0)
-                    pb[7] |= 0x80;
+                pb[0] = (byte)y;
+                pb[1] = (byte)(y >>= 8);
+                pb[2] = (byte)(y >>= 8);
+                pb[3] = (byte)(y >>= 8);
+                pb[4] = (byte)(y >>= 8);
+                pb[5] = (byte)(y >>= 8);
+                pb[6] = (byte)(y >>= 8);
+                pb[7] = (byte)((y >>= 8) | 0x80);
+            }
+            else
+            {
+                pb[0] = (byte)y;
+                pb[1] = (byte)(y >>= 8);
+                pb[2] = (byte)(y >>= 8);
+                pb[3] = (byte)(y >>= 8);
+                pb[4] = (byte)(y >>= 8);
+                pb[5] = (byte)(y >>= 8);
+                pb[6] = (byte)(y >>= 8);
+                pb[7] = (byte)(y >>= 8);
             }
         }
     }

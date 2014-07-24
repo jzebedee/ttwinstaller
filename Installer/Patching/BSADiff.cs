@@ -20,6 +20,8 @@ namespace TaleOfTwoWastelands.Patching
     using PatchJoin = Tuple<BSAFile, BSAFile, Patch>;
     public class BSADiff
     {
+        public const string VOICE_PREFIX = @"sound\voice";
+
         protected IProgress<string> ProgressDual { get; set; }
         protected IProgress<string> ProgressFile { get; set; }
         protected IProgress<InstallOperation> ProgressMinorUI { get; set; }
@@ -67,8 +69,16 @@ namespace TaleOfTwoWastelands.Patching
             {
                 Op.CurrentOperation = "Opening rename database";
 
+#if LEGACY
+                var renamePath = Path.Combine(Installer.PatchDir, outBsaFilename, "RenameFiles.dict");
+#else
                 var renamePath = Path.Combine(Installer.PatchDir, Path.ChangeExtension(outBsaFilename, ".ren"));
+#endif
                 if (File.Exists(renamePath))
+                {
+#if LEGACY
+                    renameDict = new Dictionary<string, string>(Util.ReadOldDatabase(renamePath));
+#else
                     using (var fileStream = File.OpenRead(renamePath))
                     using (var lzmaStream = new LzmaDecodeStream(fileStream))
                     using (var reader = new BinaryReader(lzmaStream))
@@ -79,6 +89,8 @@ namespace TaleOfTwoWastelands.Patching
                         while (numPairs-- > 0)
                             renameDict.Add(reader.ReadString(), reader.ReadString());
                     }
+#endif
+                }
                 else
                     renameDict = new Dictionary<string, string>();
             }
@@ -92,6 +104,11 @@ namespace TaleOfTwoWastelands.Patching
             {
                 Op.CurrentOperation = "Opening patch database";
 
+#if LEGACY
+                var chkPrefix = Path.Combine(Installer.PatchDir, outBsaFilename);
+                var chkPath = Path.Combine(chkPrefix, "CheckSums.dict");
+                patchDict = PatchDict.FromOldDatabase(Util.ReadOldDatabase(chkPath), chkPrefix, b => b);
+#else
                 var patchPath = Path.Combine(Installer.PatchDir, Path.ChangeExtension(outBsaFilename, ".pat"));
                 if (File.Exists(patchPath))
                 {
@@ -102,6 +119,7 @@ namespace TaleOfTwoWastelands.Patching
                     Log("\tNo patch database is available for: " + oldBSA);
                     return false;
                 }
+#endif
             }
             finally
             {
@@ -224,14 +242,14 @@ namespace TaleOfTwoWastelands.Patching
                 var newChk = patchTuple.Item1;
                 var patches = patchTuple.Item2;
 
-                if (newChk == null && (patches == null || patches.Length == 0))
+                if (filepath.StartsWith(VOICE_PREFIX) && (patches == null || patches.Length == 0))
                 {
                     opChk.CurrentOperation = "Skipping " + filename;
-                    LogFile("Skipping empty patch for " + filepath);
+                    LogFile("Skipping voice file: " + filepath);
                     return;
                 }
 
-                using (var curChk = RecreateChkType(oldFile, newChk.Type))
+                using (var curChk = FileValidation.FromBSAFile(oldFile, newChk.Type))
                     if (newChk == curChk)
                     {
                         opChk.CurrentOperation = "Compressing " + filename;
@@ -251,7 +269,7 @@ namespace TaleOfTwoWastelands.Patching
 
                             if (curChk.Type != oldChk.Type)
                             {
-                                using (var testChk = RecreateChkType(oldFile, oldChk.Type))
+                                using (var testChk = FileValidation.FromBSAFile(oldFile, oldChk.Type))
                                     if (oldChk != testChk)
                                         //this is a patch for a different original
                                         continue;
@@ -269,7 +287,7 @@ namespace TaleOfTwoWastelands.Patching
                                 Log("ERROR: Patching " + filepath + " failed");
                         }
 
-                        using (var patChk = RecreateChkType(newFile, newChk.Type))
+                        using (var patChk = FileValidation.FromBSAFile(newFile, newChk.Type))
                             if (newChk != patChk)
                             {
                                 //no patch exists for the file
@@ -281,19 +299,6 @@ namespace TaleOfTwoWastelands.Patching
             finally
             {
                 opChk.Step();
-            }
-        }
-
-        private static FileValidation RecreateChkType(BSAFile file, FileValidation.ChecksumType compareType)
-        {
-            switch (compareType)
-            {
-                case FileValidation.ChecksumType.Murmur128:
-                    return FileValidation.FromBSAFile(file);
-                case FileValidation.ChecksumType.Md5:
-                    return FileValidation.FromMd5(Util.GetMD5(file.GetContents(true)));
-                default:
-                    throw new NotImplementedException("Unknown checksum type in patch: " + compareType);
             }
         }
 

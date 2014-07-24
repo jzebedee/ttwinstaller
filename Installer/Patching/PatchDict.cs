@@ -86,5 +86,45 @@ namespace TaleOfTwoWastelands.Patching
                 return ms.ToArray();
             }
         }
+
+#if LEGACY
+        public static PatchDict FromOldDatabase(IDictionary<string, string> oldDict, string prefix, Func<byte[], byte[]> convertPatch)
+        {
+            Debug.Assert(oldDict != null);
+            var patchDict = new PatchDict(oldDict.Count);
+
+            foreach (var kvp in oldDict)
+            {
+                var file = kvp.Key;
+                var newMd5 = Util.FromMD5String(kvp.Value);
+
+                Debug.Assert(Util.MakeMD5String(newMd5) == kvp.Value);
+
+                var newChk = new FileValidation(newMd5, 0, FileValidation.ChecksumType.Md5);
+
+                var patches = new List<PatchInfo>();
+
+                var diffPath = Path.Combine(prefix, file + ".." + kvp.Value + ".diff");
+
+                //diffPath doesn't exist, so this will include the "right" diff
+                var diffs = Util.FindAlternateVersions(diffPath);
+                if (diffs != null)
+                {
+                    foreach (var diff in diffs)
+                    {
+                        //var altDiffBytes = convertPatch(altDiff.Item1, Diff.SIG_LZDIFF41);
+                        var diffBytes = convertPatch(File.ReadAllBytes(diff.Item1));
+                        var diffChk = new FileValidation(diff.Item2, 0, FileValidation.ChecksumType.Md5);
+
+                        patches.Add(PatchInfo.FromOldDiff(diffBytes, diffChk));
+                    }
+                }
+
+                patchDict.Add(file, new Patch(newChk, patches.ToArray()));
+            }
+
+            return patchDict;
+        }
+#endif
     }
 }

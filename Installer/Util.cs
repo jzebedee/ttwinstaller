@@ -1,7 +1,8 @@
 ﻿using System;
+using System.Linq;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
-using System.Numerics;
 using System.Security.Cryptography;
 using TaleOfTwoWastelands.Patching;
 using TaleOfTwoWastelands.Patching.Murmur;
@@ -12,28 +13,36 @@ namespace TaleOfTwoWastelands
     public static class Util
     {
         #region GetMD5 overloads
-        public static BigInteger GetMD5(string file)
+        public static byte[] GetMD5(string file)
         {
             using (var stream = File.OpenRead(file))
                 return GetMD5(stream);
         }
 
-        public static BigInteger GetMD5(Stream stream)
+        public static byte[] GetMD5(Stream stream)
         {
             using (var fileHash = MD5.Create())
             using (stream)
-                return fileHash.ComputeHash(stream).ToBigInteger();
+                return fileHash.ComputeHash(stream);
         }
 
-        public static BigInteger GetMD5(byte[] buf)
+        public static byte[] GetMD5(byte[] buf)
         {
             using (var fileHash = MD5.Create())
-                return fileHash.ComputeHash(buf).ToBigInteger();
+                return fileHash.ComputeHash(buf);
         }
 
-        public static string MakeMD5String(BigInteger md5)
+        public static string MakeMD5String(byte[] md5)
         {
-            return md5.ToString("x32");
+            return BitConverter.ToString(md5).Replace("-", "");
+        }
+        public static byte[] FromMD5String(string md5str)
+        {
+            byte[] data = new byte[md5str.Length / 2];
+            for (int i = 0; i < data.Length; i++)
+                data[i] = Convert.ToByte(md5str.Substring(i * 2, 2), 16);
+
+            return data;
         }
 
         public static string GetMD5String(string file)
@@ -50,6 +59,36 @@ namespace TaleOfTwoWastelands
         {
             return MakeMD5String(GetMD5(buf));
         }
+        #endregion
+
+        #region Legacy mode
+#if LEGACY || DEBUG
+        public static IDictionary<string, string> ReadOldDatabase(string path)
+        {
+            Debug.Assert(File.Exists(path));
+
+            using (var stream = File.OpenRead(path))
+                return (IDictionary<string, string>)new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter().Deserialize(stream);
+        }
+
+        public static IEnumerable<Tuple<string, byte[]>> FindAlternateVersions(string file)
+        {
+            var justName = Path.GetFileName(file);
+            var split = justName.Split('.');
+            split[split.Length - 3] = "*";
+            //combatshotgun.nif.8154C65E957F6A29B36ADA24CFBC1FDE.1389525E123CD0F8CD5BB47EF5FD1901.diff
+            //end[0] = diff, end[1] = newChk, end[2] = oldChk, end[3 ...] = fileName
+
+            var justDir = Path.GetDirectoryName(file);
+            if (!Directory.Exists(justDir))
+                return null;
+
+            return from other in Directory.EnumerateFiles(justDir, string.Join(".", split))
+                   where other != file
+                   let splitOther = Path.GetFileName(other).Split('.')
+                   select Tuple.Create(other, Util.FromMD5String(splitOther[splitOther.Length - 3]));
+        }
+#endif
         #endregion
 
         public static void CopyFolder(string inFolder, string destFolder, IProgress<string> log)

@@ -49,8 +49,10 @@ namespace TaleOfTwoWastelands.UI
 
         private void frm_Main_FormClosed(object sender, FormClosedEventArgs e)
         {
-            _install_cts.Dispose();
-            _install.Dispose();
+            if (_install_cts != null)
+                _install_cts.Dispose();
+            if (_install != null)
+                _install.Dispose();
         }
 
         private void UpdateProgressBar(InstallOperation opProg, TextProgressBar bar)
