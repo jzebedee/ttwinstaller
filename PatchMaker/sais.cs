@@ -68,10 +68,7 @@ namespace PatchMaker
                 }
                 set
                 {
-                    checked
-                    {
-                        _buffer[index] = (byte)value;
-                    }
+                    _buffer[index] = (byte)value;
                 }
             }
 
@@ -102,7 +99,7 @@ namespace PatchMaker
 
             public bool IsReadOnly
             {
-                get { return true; }
+                get { return false; }
             }
 
             public bool Remove(int item)
@@ -218,11 +215,11 @@ namespace PatchMaker
 
             /* compact all the sorted substrings into the first m items of SA
                 2*m must be not larger than n (proveable) */
-            for (i = 0;
-            (p = SA[i]) < 0; ++i)
+            for (i = 0; (p = SA[i]) < 0; ++i)
             {
                 SA[i] = ~p;
             }
+
             if (i < m)
             {
                 for (j = i, ++i; ; ++i)
@@ -345,7 +342,6 @@ namespace PatchMaker
 
         /* find the suffix array SA of T[0..n-1] in {0..k-1}^n
            use a working space (excluding T and SA) of at most 2n+O(1) for a constant alphabet */
-        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void sais_main(IList<int> T, int[] SA, int fs, int n, int k)
         {
             IList<int> C, B, RA;
@@ -400,6 +396,7 @@ namespace PatchMaker
             {
                 SA[i] = 0;
             }
+
             b = -1;
             i = n - 1;
             j = n;
@@ -409,6 +406,7 @@ namespace PatchMaker
             {
                 c1 = c0;
             } while ((0 <= --i) && ((c0 = T[i]) >= c1));
+
             for (; 0 <= i; )
             {
                 do
