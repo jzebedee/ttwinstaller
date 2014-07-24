@@ -18,8 +18,7 @@ namespace PatchMaker
     {
         const string
             IN_DIR = "BuildDB",
-            OUT_DIR = "OutDB",
-            VOICE_PREFIX = @"sound\voice";
+            OUT_DIR = "OutDB";
 
         private static string dirTTWMain, dirTTWOptional, dirFO3Data;
 
@@ -106,9 +105,6 @@ namespace PatchMaker
                 var patchDict = new PatchDict(allJoinedPatches.Count);
                 foreach (var join in allJoinedPatches)
                 {
-                    //var oldChkDict = FileValidation.FromBSA(inBSA);
-                    //                 join oldKvp in oldChkDict on patKvp.Key equals oldKvp.Key into foundOld
-                    //                  oldChk = foundOld.SingleOrDefault()
                     var oldBsaFile = oldFiles.SingleOrDefault(file => file.Filename == join.file);
                     Debug.Assert(oldBsaFile != null, "File not found: " + join.file);
 
@@ -116,7 +112,7 @@ namespace PatchMaker
                     var newChk = join.patch;
 
                     var oldFilename = oldBsaFile.Filename;
-                    if (oldFilename.StartsWith(VOICE_PREFIX))
+                    if (oldFilename.StartsWith(BSADiff.VOICE_PREFIX))
                     {
                         patchDict.Add(join.file, new Patch(/*newChk*/null, null));
                         continue;
@@ -132,7 +128,7 @@ namespace PatchMaker
                     if (File.Exists(usedPath))
                         File.Move(usedPath, diffPath); //fixes moronic things
 
-                    var altDiffs = FindAlternateVersions(diffPath);
+                    var altDiffs = Util.FindAlternateVersions(diffPath);
                     if (altDiffs != null)
                     {
                         foreach (var altDiff in altDiffs)
@@ -140,7 +136,7 @@ namespace PatchMaker
                             var altDiffBytes = GetDiff(altDiff.Item1, Diff.SIG_LZDIFF41);
                             patches.Add(new PatchInfo
                             {
-                                Metadata = FileValidation.FromMd5(altDiff.Item2),
+                                Metadata = new FileValidation(altDiff.Item2, 0, FileValidation.ChecksumType.Md5),
                                 Data = altDiffBytes
                             });
                         }
@@ -148,7 +144,9 @@ namespace PatchMaker
 
                     if (newChk != oldChk)
                     {
-                        var patchInfo = FromOldChecksum(diffPath, oldChk);
+                        byte[] diffData = GetDiff(diffPath, Diff.SIG_LZDIFF41);
+
+                        var patchInfo = PatchInfo.FromOldDiff(diffData, oldChk);
                         Debug.Assert(patchInfo.Data != null);
 
                         patches.Add(patchInfo);
@@ -160,32 +158,6 @@ namespace PatchMaker
                 using (var stream = File.OpenWrite(patPath))
                     patchDict.WriteAll(stream);
             }
-        }
-
-        private static IDictionary<string, string> BuildRenameDict(string bsaName)
-        {
-            var renDict = ReadOldDict(bsaName, "RenameFiles.dict");
-            if (renDict != null)
-            {
-                var renameDict = new Dictionary<string, string>(renDict);
-                var newRenPath = Path.Combine(OUT_DIR, Path.ChangeExtension(bsaName, ".ren"));
-                if (!File.Exists(newRenPath))
-                    using (var fileStream = File.OpenWrite(newRenPath))
-                    using (var lzmaStream = new LzmaEncodeStream(fileStream))
-                    using (var writer = new BinaryWriter(lzmaStream))
-                    {
-                        writer.Write(renameDict.Count);
-                        foreach (var kvp in renameDict)
-                        {
-                            writer.Write(kvp.Key);
-                            writer.Write(kvp.Value);
-                        }
-                    }
-
-                return renameDict;
-            }
-
-            return new Dictionary<string, string>();
         }
 
         static unsafe byte[] GetDiff(string diffPath, long convertSignature = -1, bool moveToUsed = false)
@@ -211,14 +183,30 @@ namespace PatchMaker
             return null;
         }
 
-        static PatchInfo FromOldChecksum(string diffPath, FileValidation oldChk)
+        private static IDictionary<string, string> BuildRenameDict(string bsaName)
         {
-            byte[] diffData = GetDiff(diffPath, Diff.SIG_LZDIFF41);
-            return new PatchInfo()
+            var dictPath = Path.Combine(Installer.AssetsDir, "TTW Patches", bsaName, "RenameFiles.dict");
+            if (File.Exists(dictPath))
             {
-                Metadata = oldChk,
-                Data = diffData
-            };
+                var renameDict = Util.ReadOldDatabase(dictPath);
+                var newRenPath = Path.Combine(OUT_DIR, Path.ChangeExtension(bsaName, ".ren"));
+                if (!File.Exists(newRenPath))
+                    using (var fileStream = File.OpenWrite(newRenPath))
+                    using (var lzmaStream = new LzmaEncodeStream(fileStream))
+                    using (var writer = new BinaryWriter(lzmaStream))
+                    {
+                        writer.Write(renameDict.Count);
+                        foreach (var kvp in renameDict)
+                        {
+                            writer.Write(kvp.Key);
+                            writer.Write(kvp.Value);
+                        }
+                    }
+
+                return renameDict;
+            }
+
+            return new Dictionary<string, string>();
         }
 
         private static void BuildMasterPatch(string ESM, ILookup<string, string> knownEsmVersions)
@@ -247,7 +235,7 @@ namespace PatchMaker
 
                     return new PatchInfo
                     {
-                        Metadata = FileValidation.FromFile(dataESM),
+                        Metadata = new FileValidation(dataESM),
                         Data = patchBytes
                     };
                 })
@@ -259,34 +247,6 @@ namespace PatchMaker
 
             using (var fixStream = File.OpenWrite(fixPath))
                 patchDict.WriteAll(fixStream);
-        }
-
-        private static IEnumerable<Tuple<string, byte[]>> FindAlternateVersions(string file)
-        {
-            var justName = Path.GetFileName(file);
-            var split = justName.Split('.');
-            split[split.Length - 3] = "*";
-            //combatshotgun.nif.8154C65E957F6A29B36ADA24CFBC1FDE.1389525E123CD0F8CD5BB47EF5FD1901.diff
-            //end[0] = diff, end[1] = newChk, end[2] = oldChk, end[3 ...] = fileName
-
-            var justDir = Path.GetDirectoryName(file);
-            if (!Directory.Exists(justDir))
-                return null;
-
-            return from other in Directory.EnumerateFiles(justDir, string.Join(".", split))
-                   where other != file
-                   let splitOther = Path.GetFileName(other).Split('.')
-                   select Tuple.Create(other, Util.FromMD5String(splitOther[splitOther.Length - 3]));
-        }
-
-        //Shameless code duplication. So sue me.
-        private static IDictionary<string, string> ReadOldDict(string outFilename, string dictName)
-        {
-            var dictPath = Path.Combine(IN_DIR, "TTW Patches", outFilename, dictName);
-            if (!File.Exists(dictPath))
-                return null;
-            using (var stream = File.OpenRead(dictPath))
-                return (IDictionary<string, string>)new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter().Deserialize(stream);
         }
     }
 }

@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Linq;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Security.Cryptography;
 using TaleOfTwoWastelands.Patching;
@@ -57,6 +59,36 @@ namespace TaleOfTwoWastelands
         {
             return MakeMD5String(GetMD5(buf));
         }
+        #endregion
+
+        #region Legacy mode
+#if LEGACY || DEBUG
+        public static IDictionary<string, string> ReadOldDatabase(string path)
+        {
+            Debug.Assert(File.Exists(path));
+
+            using (var stream = File.OpenRead(path))
+                return (IDictionary<string, string>)new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter().Deserialize(stream);
+        }
+
+        public static IEnumerable<Tuple<string, byte[]>> FindAlternateVersions(string file)
+        {
+            var justName = Path.GetFileName(file);
+            var split = justName.Split('.');
+            split[split.Length - 3] = "*";
+            //combatshotgun.nif.8154C65E957F6A29B36ADA24CFBC1FDE.1389525E123CD0F8CD5BB47EF5FD1901.diff
+            //end[0] = diff, end[1] = newChk, end[2] = oldChk, end[3 ...] = fileName
+
+            var justDir = Path.GetDirectoryName(file);
+            if (!Directory.Exists(justDir))
+                return null;
+
+            return from other in Directory.EnumerateFiles(justDir, string.Join(".", split))
+                   where other != file
+                   let splitOther = Path.GetFileName(other).Split('.')
+                   select Tuple.Create(other, Util.FromMD5String(splitOther[splitOther.Length - 3]));
+        }
+#endif
         #endregion
 
         public static void CopyFolder(string inFolder, string destFolder, IProgress<string> log)

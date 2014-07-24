@@ -606,7 +606,7 @@ namespace TaleOfTwoWastelands
 
         private static bool CheckExisting(string path, FileValidation newChk)
         {
-            using (var existingChk = FileValidation.FromFile(path, newChk.Type))
+            using (var existingChk = new FileValidation(path, newChk.Type))
                 return newChk == existingChk;
         }
 
@@ -645,7 +645,7 @@ namespace TaleOfTwoWastelands
                 Trace.Assert(File.Exists(dataPath));
 
                 Debug.Assert(patches.All(p => p.Metadata.Type == FileValidation.ChecksumType.Murmur128));
-                using (var dataChk = FileValidation.FromFile(dataPath))
+                using (var dataChk = new FileValidation(dataPath))
                 {
                     var matchPatch = patches.SingleOrDefault(p => p.Metadata == dataChk);
                     if (matchPatch == null)
