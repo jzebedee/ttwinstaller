@@ -57,7 +57,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BenchmarkHash.cs" />
-    <Compile Include="DiffTesting.cs" />
     <Compile Include="MakeDiff.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
