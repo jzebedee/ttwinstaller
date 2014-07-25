@@ -63,7 +63,7 @@ namespace TaleOfTwoWastelands.UI
             }
 
             // Set the Display text (Either a % amount or our custom text
-            string text = DisplayStyle == ProgressBarDisplayText.Percentage ? Value.ToString() + '%' : CustomText;
+            string text = DisplayStyle == ProgressBarDisplayText.Percentage ? Value + "%" : CustomText;
 
             SizeF len = g.MeasureString(text, Font);
 
