@@ -415,7 +415,7 @@ namespace PatchMaker
                 pb[4] = (byte)(y >>= 8);
                 pb[5] = (byte)(y >>= 8);
                 pb[6] = (byte)(y >>= 8);
-                pb[7] = (byte)((y >>= 8) | 0x80);
+                pb[7] = (byte)((y >> 8) | 0x80);
             }
             else
             {
@@ -426,7 +426,7 @@ namespace PatchMaker
                 pb[4] = (byte)(y >>= 8);
                 pb[5] = (byte)(y >>= 8);
                 pb[6] = (byte)(y >>= 8);
-                pb[7] = (byte)(y >>= 8);
+                pb[7] = (byte)(y >> 8);
             }
         }
     }
