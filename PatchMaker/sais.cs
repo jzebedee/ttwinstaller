@@ -26,6 +26,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace PatchMaker
@@ -37,12 +38,26 @@ namespace PatchMaker
     {
         private const int MINBUCKETSIZE = 256;
 
-        private class IntAccessor : IList<int>
+        private unsafe class IntAccessor : IList<int>
         {
-            readonly byte[] _buffer;
-            public IntAccessor(byte[] buf)
+            readonly byte* _pB;
+            public byte* Pointer
             {
-                _buffer = buf;
+                get
+                {
+                    return _pB;
+                }
+            }
+
+            public IntAccessor(void* pB)
+            {
+                _pB = (byte*)pB;
+                Debug.Assert((UIntPtr)_pB != UIntPtr.Zero);
+            }
+            public IntAccessor(IntAccessor acc, int offset)
+            {
+                _pB = acc.Pointer + offset;
+                Debug.Assert((UIntPtr)_pB != UIntPtr.Zero);
             }
 
             public int IndexOf(int item)
@@ -52,7 +67,7 @@ namespace PatchMaker
 
             public void Insert(int index, int item)
             {
-                this[index] = item;
+                throw new NotImplementedException();
             }
 
             public void RemoveAt(int index)
@@ -64,11 +79,11 @@ namespace PatchMaker
             {
                 get
                 {
-                    return _buffer[index];
+                    return _pB[index];
                 }
                 set
                 {
-                    _buffer[index] = (byte)value;
+                    _pB[index] = (byte)value;
                 }
             }
 
@@ -89,12 +104,15 @@ namespace PatchMaker
 
             public void CopyTo(int[] array, int arrayIndex)
             {
-                _buffer.CopyTo(array, arrayIndex);
+                throw new NotImplementedException();
             }
 
             public int Count
             {
-                get { return _buffer.Length; }
+                get
+                {
+                    throw new NotImplementedException();
+                }
             }
 
             public bool IsReadOnly
@@ -155,7 +173,7 @@ namespace PatchMaker
         }
 
         /* sort all type LMS suffixes */
-        private static void LMSsort(IList<int> T, int[] SA, IList<int> C, IList<int> B, int n, int k)
+        private static void LMSsort(IList<int> T, IList<int> SA, IList<int> C, IList<int> B, int n, int k)
         {
             int b, i, j;
             int c0, c1;
@@ -207,7 +225,7 @@ namespace PatchMaker
             }
         }
 
-        private static int LMSpostproc(IList<int> T, int[] SA, int n, int m)
+        private static int LMSpostproc(IList<int> T, IList<int> SA, int n, int m)
         {
             int i, j, p, q, plen, qlen, name;
             int c0, c1;
@@ -289,7 +307,7 @@ namespace PatchMaker
         }
 
         /* compute SA and BWT */
-        private static void induceSA(IList<int> T, int[] SA, IList<int> C, IList<int> B, int n, int k)
+        private static void induceSA(IList<int> T, IList<int> SA, IList<int> C, IList<int> B, int n, int k)
         {
             int b, i, j;
             int c0, c1;
@@ -342,9 +360,10 @@ namespace PatchMaker
 
         /* find the suffix array SA of T[0..n-1] in {0..k-1}^n
            use a working space (excluding T and SA) of at most 2n+O(1) for a constant alphabet */
-        private static void sais_main(IList<int> T, int[] SA, int fs, int n, int k)
+        private static void sais_main(IntAccessor T, IntAccessor SA, int fs, int n, int k)
         {
-            IList<int> C, B, RA;
+            IList<int> C, B;
+            IntAccessor RA;
             int i, j, b, m, p, q, name, newfs;
             int c0, c1;
             uint flags = 0;
@@ -354,7 +373,7 @@ namespace PatchMaker
                 C = new int[k];
                 if (k <= fs)
                 {
-                    B = new ArraySegment<int>(SA, n + fs - k, SA.Length - (n + fs - k));
+                    B = new IntAccessor(SA, n + fs - k);
                     flags = 1;
                 }
                 else
@@ -365,10 +384,10 @@ namespace PatchMaker
             }
             else if (k <= fs)
             {
-                C = new ArraySegment<int>(SA, n + fs - k, SA.Length - (n + fs - k));
+                C = new IntAccessor(SA, n + fs - k);
                 if (k <= (fs - k))
                 {
-                    B = new ArraySegment<int>(SA, n + fs - k * 2, SA.Length - (n + fs - k * 2));
+                    B = new IntAccessor(SA, n + fs - k * 2);
                     flags = 0;
                 }
                 else if (k <= (MINBUCKETSIZE * 4))
@@ -476,7 +495,7 @@ namespace PatchMaker
                     }
                 }
 
-                RA = new ArraySegment<int>(SA, m + newfs, SA.Length - (m + newfs));
+                RA = new IntAccessor(SA, m + newfs);
                 sais_main(RA, SA, newfs, m, name);
                 RA = null;
 
@@ -567,17 +586,8 @@ namespace PatchMaker
         /// <param name="SA">output suffix array</param>
         /// <param name="n">length of the given string</param>
         /// <returns>0 if no error occurred, -1 or -2 otherwise</returns>
-        public static void sufsort(byte[] T, int[] SA, int n)
+        public static unsafe void sufsort(byte* T, int* SA, int n)
         {
-            if (T == null)
-                throw new ArgumentNullException("T");
-            if (SA == null)
-                throw new ArgumentNullException("SA");
-            if (T.Length < n)
-                throw new ArgumentException("T must be size n");
-            if (SA.Length < n)
-                throw new ArgumentException("SA must be size n");
-
             if (n <= 1)
             {
                 if (n == 1)
@@ -587,7 +597,7 @@ namespace PatchMaker
                 return;
             }
 
-            sais_main(new IntAccessor(T), SA, 0, n, 256);
+            sais_main(new IntAccessor(T), new IntAccessor(SA), 0, n, 256);
         }
     }
 }

@@ -41,9 +41,9 @@ namespace PatchMaker
     internal static class MakeDiff
     {
         const int HEADER_SIZE = Diff.HEADER_SIZE;
-        static long ReadInt64(byte[] buf, int offset)
+        static unsafe long ReadInt64(byte* buf)
         {
-            return Diff.ReadInt64(buf, offset);
+            return Diff.ReadInt64(buf);
         }
         static Stream GetEncodingStream(Stream stream, long signature, bool output)
         {
@@ -79,15 +79,20 @@ namespace PatchMaker
             using (var inputStream = openPatchStream(0, HEADER_SIZE))
                 inputStream.Read(header, 0, HEADER_SIZE);
 
-            // check for appropriate magic
-            long signature = ReadInt64(header, 0);
-            if (signature != inputSig)
-                throw new InvalidOperationException("Corrupt patch.");
+            long controlLength, diffLength, newSize;
+            fixed (byte* pHead = header)
+            {
+                // check for appropriate magic
+                long signature = ReadInt64(pHead);
+                if (signature != inputSig)
+                    throw new InvalidOperationException("Corrupt patch.");
 
-            // read lengths from header
-            var controlLength = ReadInt64(header, sizeof(long));
-            var diffLength = ReadInt64(header, sizeof(long) * 2);
-            var newSize = ReadInt64(header, sizeof(long) * 3);
+                // read lengths from header
+                controlLength = ReadInt64(pHead + 8); //8 = sizeof(long)
+                diffLength = ReadInt64(pHead + 16);
+                newSize = ReadInt64(pHead + 24);
+            }
+
             if (controlLength < 0 || diffLength < 0 || newSize < 0)
                 throw new InvalidOperationException("Corrupt patch.");
 
@@ -182,7 +187,7 @@ namespace PatchMaker
             fixed (byte* pHead = header)
             {
                 WriteInt64(signature, pHead);
-                WriteInt64(newBuf.LongLength, &pHead[24]);
+                WriteInt64(newBuf.LongLength, pHead + 24);
             }
 
             long startPosition = output.Position;
@@ -190,15 +195,15 @@ namespace PatchMaker
 
             //backing for ctrl writes
             byte[] buf = new byte[8];
-
-            var bufI = new int[oldBuf.Length + 1];
-            SAIS.sufsort(oldBuf, bufI, oldBuf.Length);
+            int[] bufI = new int[oldBuf.Length];
 
             fixed (byte* oldData = oldBuf)
             fixed (byte* newData = newBuf)
             fixed (byte* pB = buf)
             fixed (int* I = bufI)
             {
+                SAIS.sufsort(oldData, I, oldBuf.Length);
+
                 using (MemoryStream msControl = new MemoryStream())
                 using (MemoryStream msDiff = new MemoryStream())
                 using (MemoryStream msExtra = new MemoryStream())

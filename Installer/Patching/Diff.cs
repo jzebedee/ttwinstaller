@@ -126,13 +126,17 @@ namespace TaleOfTwoWastelands.Patching
                 byte[] header = new byte[HEADER_SIZE];
                 patchStream.Read(header, 0, HEADER_SIZE);
 
-                // check for appropriate magic
-                signature = ReadInt64(header, 0);
+                fixed (byte* pHead = header)
+                {
+                    // check for appropriate magic
+                    signature = ReadInt64(pHead);
 
-                // read lengths from header
-                controlLength = ReadInt64(header, 8);
-                diffLength = ReadInt64(header, 16);
-                newSize = ReadInt64(header, 24);
+                    // read lengths from header
+                    controlLength = ReadInt64(pHead + 8);
+                    diffLength = ReadInt64(pHead + 16);
+                    newSize = ReadInt64(pHead + 24);
+                }
+
                 if (controlLength < 0 || diffLength < 0 || newSize < 0)
                     throw new InvalidOperationException("Corrupt patch.");
             }
@@ -156,81 +160,77 @@ namespace TaleOfTwoWastelands.Patching
 
                 int oldPosition = 0;
                 int newPosition = 0;
-                while (newPosition < newSize)
-                {
-                    // read control data
-                    for (int i = 0; i < 3; i++)
+                fixed (byte* pNew = newData)
+                fixed (byte* pBuf = buffer)
+                    while (newPosition < newSize)
                     {
-                        controlStream.Read(buffer, 0, 8);
-                        control[i] = ReadInt64(buffer, 0);
+                        // read control data
+                        for (int i = 0; i < 3; i++)
+                        {
+                            controlStream.Read(buffer, 0, 8);
+                            control[i] = ReadInt64(pBuf);
+                        }
+
+                        // sanity-check
+                        if (newPosition + control[0] > newSize)
+                            throw new InvalidOperationException("Corrupt patch.");
+
+                        int bytesToCopy = (int)control[0];
+                        while (bytesToCopy > 0)
+                        {
+                            int actualBytesToCopy = Math.Min(bytesToCopy, BUFFER_SIZE);
+
+                            // read diff string
+                            diffStream.Read(newData, 0, actualBytesToCopy);
+
+                            // add old data to diff string
+                            int availableInputBytes = Math.Min(actualBytesToCopy, (int)(length - oldPosition));
+                            for (int i = 0; i < availableInputBytes; i++)
+                                pNew[i] += pInput[oldPosition + i];
+
+                            output.Write(newData, 0, actualBytesToCopy);
+
+                            // adjust counters
+                            newPosition += actualBytesToCopy;
+                            oldPosition += actualBytesToCopy;
+                            bytesToCopy -= actualBytesToCopy;
+                        }
+
+                        // sanity-check
+                        if (newPosition + control[1] > newSize)
+                            throw new InvalidOperationException("Corrupt patch.");
+
+                        // read extra string
+                        bytesToCopy = (int)control[1];
+                        while (bytesToCopy > 0)
+                        {
+                            int actualBytesToCopy = Math.Min(bytesToCopy, BUFFER_SIZE);
+
+                            extraStream.Read(newData, 0, actualBytesToCopy);
+                            output.Write(newData, 0, actualBytesToCopy);
+
+                            newPosition += actualBytesToCopy;
+                            bytesToCopy -= actualBytesToCopy;
+                        }
+
+                        // adjust position
+                        oldPosition = (int)(oldPosition + control[2]);
                     }
-
-                    // sanity-check
-                    if (newPosition + control[0] > newSize)
-                        throw new InvalidOperationException("Corrupt patch.");
-
-                    int bytesToCopy = (int)control[0];
-                    while (bytesToCopy > 0)
-                    {
-                        int actualBytesToCopy = Math.Min(bytesToCopy, BUFFER_SIZE);
-
-                        // read diff string
-                        diffStream.Read(newData, 0, actualBytesToCopy);
-
-                        // add old data to diff string
-                        int availableInputBytes = Math.Min(actualBytesToCopy, (int)(length - oldPosition));
-                        for (int i = 0; i < availableInputBytes; i++)
-                            fixed (byte* pN = newData)
-                                pN[i] += pInput[oldPosition + i];
-
-                        output.Write(newData, 0, actualBytesToCopy);
-
-                        // adjust counters
-                        newPosition += actualBytesToCopy;
-                        oldPosition += actualBytesToCopy;
-                        bytesToCopy -= actualBytesToCopy;
-                    }
-
-                    // sanity-check
-                    if (newPosition + control[1] > newSize)
-                        throw new InvalidOperationException("Corrupt patch.");
-
-                    // read extra string
-                    bytesToCopy = (int)control[1];
-                    while (bytesToCopy > 0)
-                    {
-                        int actualBytesToCopy = Math.Min(bytesToCopy, BUFFER_SIZE);
-
-                        extraStream.Read(newData, 0, actualBytesToCopy);
-                        output.Write(newData, 0, actualBytesToCopy);
-
-                        newPosition += actualBytesToCopy;
-                        bytesToCopy -= actualBytesToCopy;
-                    }
-
-                    // adjust position
-                    oldPosition = (int)(oldPosition + control[2]);
-                }
             }
         }
 
-        public static unsafe long ReadInt64(byte[] buf, int offset)
+        public static unsafe long ReadInt64(byte* pb)
         {
-            long y;
+            long y = pb[7] & 0x7F;
+            y <<= 8; y += pb[6];
+            y <<= 8; y += pb[5];
+            y <<= 8; y += pb[4];
+            y <<= 8; y += pb[3];
+            y <<= 8; y += pb[2];
+            y <<= 8; y += pb[1];
+            y <<= 8; y += pb[0];
 
-            fixed (byte* pb = &buf[offset])
-            {
-                y = pb[7] & 0x7F;
-                for (int i = 6; i >= 0; i--)
-                {
-                    y = y << 8;
-                    y += pb[i];
-                }
-
-                y = (pb[7] & 0x80) != 0 ? -y : y;
-            }
-
-            return y;
+            return (pb[7] & 0x80) != 0 ? -y : y;
         }
     }
 }
