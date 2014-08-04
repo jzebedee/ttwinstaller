@@ -7,6 +7,7 @@ using System.Security.Cryptography;
 using TaleOfTwoWastelands.Patching;
 using TaleOfTwoWastelands.Patching.Murmur;
 using TaleOfTwoWastelands.ProgressTypes;
+using System.Text;
 
 namespace TaleOfTwoWastelands
 {
@@ -91,6 +92,59 @@ namespace TaleOfTwoWastelands
 #endif
         #endregion
 
+        public static string Truncate(this string value, int maxLength)
+        {
+            if (string.IsNullOrEmpty(value)) return value;
+            return value.Length <= maxLength ? value : value.Substring(0, maxLength);
+        }
+
+        public static bool PatternSearch(Stream inStream, string pattern, out string result)
+        {
+            if (!inStream.CanRead)
+                throw new ArgumentException("Stream must be readable");
+
+            var sb = new StringBuilder();
+            bool wild = false, found = false;
+
+            int matchLen = 0, cur;
+            while ((cur = inStream.ReadByte()) != -1)
+            {
+                if (wild || pattern[matchLen] == cur)
+                {
+                    matchLen++;
+                    sb.Append((char)cur);
+
+                    if (wild)
+                    {
+                        found = true;
+                        for (int i = 0; i < pattern.Length; i++)
+                        {
+                            var soFar = sb[sb.Length - pattern.Length + i];
+                            if (soFar != pattern[i])
+                            {
+                                found = false;
+                                break;
+                            }
+                        }
+
+                        if (found)
+                            break;
+                    }
+                }
+                else if (pattern[matchLen] == '*')
+                {
+                    sb.Append((char)cur);
+
+                    pattern = pattern.Substring(matchLen + 1);
+                    matchLen = 0;
+                    wild = true;
+                }
+            }
+
+            result = sb.ToString();
+            return found;
+        }
+
         public static void CopyFolder(string inFolder, string destFolder, IProgress<string> log)
         {
             Directory.CreateDirectory(destFolder);
@@ -110,7 +164,8 @@ namespace TaleOfTwoWastelands
                 }
                 catch (UnauthorizedAccessException error)
                 {
-                    log.Report("ERROR: " + file.Replace(inFolder, "") + " did not copy successfully due to: Unauthorized Access Exception " + error.Source + ".");
+                    if (log != null)
+                        log.Report("ERROR: " + file.Replace(inFolder, "") + " did not copy successfully due to: Unauthorized Access Exception " + error.Source + ".");
                 }
             }
         }

@@ -14,6 +14,7 @@ using TaleOfTwoWastelands.ProgressTypes;
 using TaleOfTwoWastelands.Patching;
 using Microsoft;
 using SevenZip;
+using System.Net;
 
 namespace TaleOfTwoWastelands
 {
@@ -25,7 +26,10 @@ namespace TaleOfTwoWastelands
             OptDir = "Optional Files",
             AssetsDir = "resources",
             MainFOMOD = "TaleOfTwoWastelands_Main.fomod",
-            OptFOMOD = "TaleOfTwoWastelands_Options.fomod";
+            OptFOMOD = "TaleOfTwoWastelands_Options.fomod",
+            NvseFile = "nvse_loader.exe",
+            NvseLink = @"http://nvse.silverlock.org/",
+            NvseSearch = @"http://nvse.silverlock.org/download/*.7z";
 
         public const CompressionStrategy FastStrategy = CompressionStrategy.Unsafe | CompressionStrategy.Speed;
         public const CompressionStrategy GoodStrategy = CompressionStrategy.Unsafe | CompressionStrategy.Size;
@@ -170,7 +174,7 @@ namespace TaleOfTwoWastelands
             //create or retrieve TTW path
             TTWSavePath = GetPathFromKey("TaleOfTwoWastelands");
 
-            InstallChecks(openDialog, saveDialog);
+            PromptPaths(openDialog, saveDialog);
         }
         ~Installer()
         {
@@ -261,7 +265,7 @@ namespace TaleOfTwoWastelands
                 {
                     opProg.CurrentOperation = "Checking for required files";
 
-                    if (CheckFiles())
+                    if (CheckFiles() && CheckNVSE())
                     {
                         LogFile("All files found.");
                         LogDisplay("All files found. Proceeding with installation.");
@@ -677,8 +681,7 @@ namespace TaleOfTwoWastelands
             else
                 LogDual("\t" + ESM + " patch is missing from " + PatchDir);
 
-            LogFile(patchPath + " cannot be patched. Install aborted.");
-            LogDisplay("Your version of " + ESM + " cannot be patched. This is abnormal.");
+            Fail("Your version of " + ESM + " cannot be patched. This is abnormal.");
 
             return false;
         }
@@ -734,7 +737,7 @@ namespace TaleOfTwoWastelands
                 switch (MessageBox.Show("Errors occurred while patching " + inBSA, "Error Warning", MessageBoxButtons.AbortRetryIgnore))
                 {
                     case System.Windows.Forms.DialogResult.Abort:   //Quit install
-                        LogDual("Install aborted.");
+                        Fail();
                         return System.Windows.Forms.DialogResult.Abort;
                     case System.Windows.Forms.DialogResult.Retry:   //Start over from scratch
                         LogDual("Retrying build.");
@@ -749,7 +752,106 @@ namespace TaleOfTwoWastelands
             return System.Windows.Forms.DialogResult.OK;
         }
 
-        private void InstallChecks(FileDialog open, FileDialog save)
+        private bool CheckNVSE()
+        {
+            var nvseLoader = Path.Combine(FalloutNVPath, NvseFile);
+            if (!File.Exists(nvseLoader))
+            {
+                LogFile("NVSE missing");
+
+                var dlgResult = MessageBox.Show(@"New Vegas Script Extender (NVSE) was not found, but is required to play A Tale of Two Wastelands.
+
+Would you like to install NVSE?", "NVSE missing", MessageBoxButtons.YesNoCancel);
+
+                switch (dlgResult)
+                {
+                    case DialogResult.Yes:
+                        return InstallNVSE(FalloutNVPath);
+                    case DialogResult.No:
+                        LogDual("Proceeding without NVSE.");
+                        LogDisplay("NVSE must be installed before playing!");
+                        return true;
+                    case DialogResult.Cancel:
+                        LogFile("Install cancelled due to NVSE requirement");
+                        Fail();
+                        return false;
+                }
+            }
+            else LogFile("NVSE found");
+
+            return true;
+        }
+
+        //where's my async?
+        private bool InstallNVSE(string dlPath)
+        {
+            using (var wc = new WebClient())
+            {
+                LogFile("Requesting NVSE page at " + NvseLink);
+
+                string dlLink;
+                using (var resStream = wc.OpenRead(NvseLink))
+                {
+                    if (!Util.PatternSearch(resStream, NvseSearch, out dlLink))
+                    {
+                        Fail("Failed to download NVSE.");
+                        return false;
+                    }
+                }
+
+                LogFile("Parsed NVSE link: " + dlLink.Truncate(100));
+
+                var archiveName = Path.GetFileName(dlLink);
+                var tmpPath = Path.Combine(Path.GetTempPath(), archiveName);
+                wc.DownloadFile(dlLink, tmpPath);
+
+                using (var lzExtract = new SevenZipExtractor(tmpPath))
+                {
+                    if (!lzExtract.Check())
+                    {
+                        Fail(archiveName + " is an invalid 7z archive.");
+                        return false;
+                    }
+
+                    var wantedFiles = (from file in lzExtract.ArchiveFileNames
+                                       let filename = Path.GetFileName(file)
+                                       let ext = Path.GetExtension(filename).ToUpperInvariant()
+                                       where ext == ".EXE" || ext == ".DLL"
+                                       select new { file, filename }).ToArray();
+
+                    foreach (var a in wantedFiles)
+                    {
+                        var savePath = Path.Combine(dlPath, a.filename);
+                        LogFile("Extracting " + a.filename);
+
+                        using (var fsStream = File.OpenWrite(savePath))
+                        {
+                            try
+                            {
+                                lzExtract.ExtractFile(a.file, fsStream);
+                            }
+                            catch
+                            {
+                                Fail("Failed to extract NVSE.");
+                                throw;
+                            }
+                        }
+                    }
+                }
+            }
+
+            LogDual("NVSE was installed successfully.");
+            return true;
+        }
+
+        private void Fail(string msg = null)
+        {
+            if (msg != null)
+                LogDual(msg);
+            LogDual("Install aborted.");
+        }
+
+        private void PromptPaths(FileDialog open, FileDialog save)
         {
             SevenZipCompressor.SetLibraryPath(Path.Combine(AssetsDir, "7Zip", "7z" + (Environment.Is64BitProcess ? "64.dll" : ".dll")));
 
