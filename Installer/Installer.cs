@@ -449,50 +449,58 @@ namespace TaleOfTwoWastelands
         {
             var fo3BsaPath = Path.Combine(dirFO3Data, "Fallout - Sound.bsa");
 
+            var songsPath = Path.Combine("sound", "songs");
+
+            bool skipSongs = false, skipSFX = false;
+            if (Directory.Exists(Path.Combine(dirTTWMain, songsPath)))
+                skipSongs = ShowSkipDialog("Fallout 3 songs");
+
+            var outBsaPath = Path.Combine(dirTTWOptional, "Fallout3 Sound Effects", "TaleOfTwoWastelands - SFX.bsa");
+            if (File.Exists(outBsaPath))
+                skipSFX = ShowSkipDialog("Fallout 3 sound effects");
+
+            if (skipSongs && skipSFX)
+                return;
+
             using (BSA
-                inBsa = new BSA(fo3BsaPath),
-                outBsa = new BSA(inBsa.Settings))
+               inBsa = new BSA(fo3BsaPath),
+               outBsa = new BSA(inBsa.Settings))
             {
-
-                LogDisplay("Extracting songs");
-
-                var songsPath = Path.Combine("sound", "songs");
-                bool skipExisting = false;
-                if (Directory.Exists(Path.Combine(dirTTWMain, songsPath)))
-                    skipExisting = ShowSkipDialog("Fallout 3 songs");
-
-                var outBsaPath = Path.Combine(dirTTWOptional, "Fallout3 Sound Effects", "TaleOfTwoWastelands - SFX.bsa");
-                if (File.Exists(outBsaPath) && skipExisting)
-                    return;
-
-                ExtractBSA(ProgressFile, Token, inBsa.Values.Where(folder => folder.Path.StartsWith(songsPath)), dirTTWMain, skipExisting, "Fallout - Sound");
-
-                LogDisplay("Building optional TaleOfTwoWastelands - SFX.bsa...");
-
-                var fxuiPath = Path.Combine("sound", "fx", "ui");
-
-                var includedFilenames = new HashSet<string>(File.ReadLines(Path.Combine(AssetsDir, "TTW Data", "TTW_SFXCopy.txt")));
-
-                var includedGroups =
-                    from folder in inBsa.Where(kvp => kvp.Key.StartsWith(fxuiPath)).Select(kvp => kvp.Value)
-                    from file in folder
-                    where includedFilenames.Contains(file.Filename)
-                    group file by folder;
-
-                foreach (var group in includedGroups)
+                if (!skipSongs)
                 {
-                    //make folder only include files that matched includedFilenames
-                    group.Key.IntersectWith(group);
-
-                    //add folders back into output BSA
-                    outBsa.Add(group.Key.Path, group.Key);
+                    LogDisplay("Extracting songs");
+                    ExtractBSA(ProgressFile, Token, inBsa.Values.Where(folder => folder.Path.StartsWith(songsPath)), dirTTWMain, skipSongs, "Fallout - Sound");
                 }
 
-                LogFile("Building TaleOfTwoWastelands - SFX.bsa.");
-                outBsa.Save(outBsaPath);
-            }
+                if (!skipSFX)
+                {
+                    LogDisplay("Building optional TaleOfTwoWastelands - SFX.bsa...");
 
-            LogDisplay("\tDone");
+                    var fxuiPath = Path.Combine("sound", "fx", "ui");
+
+                    var includedFilenames = new HashSet<string>(File.ReadLines(Path.Combine(AssetsDir, "TTW Data", "TTW_SFXCopy.txt")));
+
+                    var includedGroups =
+                        from folder in inBsa.Where(kvp => kvp.Key.StartsWith(fxuiPath)).Select(kvp => kvp.Value)
+                        from file in folder
+                        where includedFilenames.Contains(file.Filename)
+                        group file by folder;
+
+                    foreach (var group in includedGroups)
+                    {
+                        //make folder only include files that matched includedFilenames
+                        group.Key.IntersectWith(group);
+
+                        //add folders back into output BSA
+                        outBsa.Add(group.Key.Path, group.Key);
+                    }
+
+                    LogFile("Building TaleOfTwoWastelands - SFX.bsa.");
+                    outBsa.Save(outBsaPath);
+
+                    LogDisplay("\tDone");
+                }
+            }
         }
 
         private void BuildVoice()
