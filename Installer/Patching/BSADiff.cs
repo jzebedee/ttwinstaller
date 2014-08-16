@@ -52,12 +52,12 @@ namespace TaleOfTwoWastelands.Patching
 
             var outBsaFilename = Path.GetFileNameWithoutExtension(newBSA);
 
-            BSAWrapper BSA;
+            BSA bsa;
             try
             {
                 Op.CurrentOperation = "Opening " + Path.GetFileName(oldBSA);
 
-                BSA = new BSAWrapper(oldBSA, bsaOptions);
+                bsa = new BSA(oldBSA, bsaOptions);
             }
             finally
             {
@@ -126,11 +126,11 @@ namespace TaleOfTwoWastelands.Patching
                 Op.Step();
             }
 
-            using (BSA)
+            using (bsa)
             {
                 try
                 {
-                    RenameFiles(BSA, renameDict);
+                    RenameFiles(bsa, renameDict);
 
                     if (renameDict.Count > 0)
                     {
@@ -146,7 +146,7 @@ namespace TaleOfTwoWastelands.Patching
                     Op.Step();
                 }
 
-                var allFiles = BSA.SelectMany(folder => folder).ToList();
+                var allFiles = bsa.Values.SelectMany(folder => folder).ToList();
                 try
                 {
                     var opChk = new InstallOperation(ProgressMinorUI, Token);
@@ -196,8 +196,9 @@ namespace TaleOfTwoWastelands.Patching
                     var notIncluded = allFiles.Where(file => !patchDict.ContainsKey(file.Filename));
                     var filesToRemove = new HashSet<BSAFile>(notIncluded);
 
-                    var filesRemoved = BSA.Sum(folder => folder.RemoveWhere(bsafile => filesToRemove.Contains(bsafile)));
-                    BSA.RemoveWhere(folder => folder.Count == 0);
+                    var filesRemoved = bsa.Values.Sum(folder => folder.RemoveWhere(bsafile => filesToRemove.Contains(bsafile)));
+                    var emptyFolders = bsa.Where(kvp => kvp.Value.Count == 0).ToList();
+                    emptyFolders.ForEach(kvp => bsa.Remove(kvp.Key));
                 }
                 finally
                 {
@@ -209,7 +210,7 @@ namespace TaleOfTwoWastelands.Patching
                     Op.CurrentOperation = "Saving " + Path.GetFileName(newBSA);
 
                     if (!simulate)
-                        BSA.Save(newBSA.ToLowerInvariant());
+                        bsa.Save(newBSA.ToLowerInvariant());
                 }
                 finally
                 {
@@ -302,9 +303,10 @@ namespace TaleOfTwoWastelands.Patching
             }
         }
 
-        public static IEnumerable<Tuple<string, string, string>> CreateRenameQuery(BSAWrapper BSA, IDictionary<string, string> renameDict)
+        public static IEnumerable<Tuple<string, string, string>> CreateRenameQuery(BSA bsa, IDictionary<string, string> renameDict)
         {
-            var renameGroup = from folder in BSA
+            //TODO: use dict union
+            var renameGroup = from folder in bsa.Values
                               from file in folder
                               join kvp in renameDict on file.Filename equals kvp.Value
                               let a = new { folder, file, kvp }
@@ -319,24 +321,24 @@ namespace TaleOfTwoWastelands.Patching
                                select outs;
 
             var newBsaFolders = renameCopies.ToList();
-            newBsaFolders.ForEach(g => BSA.Add(new BSAFolder(g.Key)));
+            newBsaFolders.ForEach(g => bsa.Add(g.Key, new BSAFolder(g.Key)));
 
             return from g in newBsaFolders
                    from a in g
-                   join newFolder in BSA on g.Key equals newFolder.Path
+                   join kvp in bsa on g.Key equals kvp.Key
                    let newFile = a.file.DeepCopy(g.Key, Path.GetFileName(a.newFilename))
-                   let addedFile = newFolder.Add(newFile)
+                   let addedFile = kvp.Value.Add(newFile)
                    select Tuple.Create(a.file.Name, newFile.Name, a.newFilename);
         }
 
-        public void RenameFiles(BSAWrapper BSA, IDictionary<string, string> renameDict)
+        public void RenameFiles(BSA bsa, IDictionary<string, string> renameDict)
         {
             var opPrefix = "Renaming BSA files";
 
             var opRename = new InstallOperation(ProgressMinorUI, Token);
             opRename.CurrentOperation = opPrefix;
 
-            var renameFixes = CreateRenameQuery(BSA, renameDict);
+            var renameFixes = CreateRenameQuery(bsa, renameDict);
             opRename.ItemsTotal = renameDict.Count;
 
 #if PARALLEL

@@ -449,9 +449,9 @@ namespace TaleOfTwoWastelands
         {
             var fo3BsaPath = Path.Combine(dirFO3Data, "Fallout - Sound.bsa");
 
-            using (BSAWrapper
-                inBsa = new BSAWrapper(fo3BsaPath),
-                outBsa = new BSAWrapper(inBsa.Settings))
+            using (BSA
+                inBsa = new BSA(fo3BsaPath),
+                outBsa = new BSA(inBsa.Settings))
             {
 
                 LogDisplay("Extracting songs");
@@ -461,11 +461,11 @@ namespace TaleOfTwoWastelands
                 if (Directory.Exists(Path.Combine(dirTTWMain, songsPath)))
                     skipExisting = ShowSkipDialog("Fallout 3 songs");
 
-                BSA.ExtractBSA(ProgressFile, Token, inBsa.Where(folder => folder.Path.StartsWith(songsPath)), dirTTWMain, skipExisting, "Fallout - Sound");
-
                 var outBsaPath = Path.Combine(dirTTWOptional, "Fallout3 Sound Effects", "TaleOfTwoWastelands - SFX.bsa");
-                if (File.Exists(outBsaPath))
+                if (File.Exists(outBsaPath) && skipExisting)
                     return;
+
+                ExtractBSA(ProgressFile, Token, inBsa.Values.Where(folder => folder.Path.StartsWith(songsPath)), dirTTWMain, skipExisting, "Fallout - Sound");
 
                 LogDisplay("Building optional TaleOfTwoWastelands - SFX.bsa...");
 
@@ -474,7 +474,7 @@ namespace TaleOfTwoWastelands
                 var includedFilenames = new HashSet<string>(File.ReadLines(Path.Combine(AssetsDir, "TTW Data", "TTW_SFXCopy.txt")));
 
                 var includedGroups =
-                    from folder in inBsa.Where(folder => folder.Path.StartsWith(fxuiPath))
+                    from folder in inBsa.Where(kvp => kvp.Key.StartsWith(fxuiPath)).Select(kvp => kvp.Value)
                     from file in folder
                     where includedFilenames.Contains(file.Filename)
                     group file by folder;
@@ -485,7 +485,7 @@ namespace TaleOfTwoWastelands
                     group.Key.IntersectWith(group);
 
                     //add folders back into output BSA
-                    outBsa.Add(group.Key);
+                    outBsa.Add(group.Key.Path, group.Key);
                 }
 
                 LogFile("Building TaleOfTwoWastelands - SFX.bsa.");
@@ -503,15 +503,16 @@ namespace TaleOfTwoWastelands
 
             var inBsaPath = Path.Combine(dirFO3Data, "Fallout - Voices.bsa");
 
-            using (BSAWrapper
-                inBsa = new BSAWrapper(inBsaPath),
-                outBsa = new BSAWrapper(inBsa.Settings))
+            using (BSA
+                inBsa = new BSA(inBsaPath),
+                outBsa = new BSA(inBsa.Settings))
             {
                 var includedFolders = inBsa
-                    .Where(folder => VoicePaths.ContainsKey(folder.Path))
-                    .Select(folder => new BSAFolder(VoicePaths[folder.Path], folder));
+                    .Where(kvp => VoicePaths.ContainsKey(kvp.Key))
+                    .Select(kvp => new BSAFolder(VoicePaths[kvp.Key], kvp.Value));
 
-                Debug.Assert(includedFolders.All(folder => outBsa.Add(folder)));
+                foreach (var folder in includedFolders)
+                    outBsa.Add(folder.Path, folder);
                 outBsa.Save(outBsaPath);
             }
         }
@@ -918,6 +919,31 @@ Would you like to install NVSE?", "NVSE missing", MessageBoxButtons.YesNoCancel)
             while (dlgResult != DialogResult.OK);
 
             return null;
+        }
+
+        public static void ExtractBSA(IProgress<string> progress, CancellationToken token, IEnumerable<BSAFolder> folders, string bsaOutputDir, bool skipExisting, string bsaName = null)
+        {
+            foreach (var folder in folders)
+            {
+                Directory.CreateDirectory(Path.Combine(bsaOutputDir, folder.Path));
+                progress.Report("Created " + folder.Path);
+
+                foreach (var file in folder)
+                {
+                    token.ThrowIfCancellationRequested();
+
+                    var filePath = Path.Combine(bsaOutputDir, file.Filename);
+                    if (File.Exists(filePath) && skipExisting)
+                    {
+                        progress.Report("Skipped (already exists) " + file.Filename);
+                        continue;
+                    }
+
+                    File.WriteAllBytes(filePath, file.GetContents(true));
+                    progress.Report("Extracted " + file.Filename);
+                }
+            }
+            progress.Report("Extract from " + bsaName ?? bsaOutputDir.Replace(Path.GetDirectoryName(bsaOutputDir), "").TrimEnd(Path.DirectorySeparatorChar) + " done!");
         }
 
         private bool CheckFiles()

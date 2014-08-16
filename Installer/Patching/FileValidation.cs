@@ -163,10 +163,10 @@ namespace TaleOfTwoWastelands.Patching
             return !(a == b);
         }
 
-        public static Dictionary<string, FileValidation> FromBSA(BSAWrapper BSA)
+        public static Dictionary<string, FileValidation> FromBSA(BSA bsa)
         {
-            return BSA
-                .SelectMany(folder => folder)
+            return bsa
+                .SelectMany(kvp => kvp.Value)
                 .ToDictionary(file => file.Filename, file => FromBSAFile(file));
         }
 

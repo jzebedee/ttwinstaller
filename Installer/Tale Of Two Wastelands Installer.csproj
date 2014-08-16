@@ -79,7 +79,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Patching\Diff.cs" />
-    <Compile Include="BSA.cs" />
     <Compile Include="Patching\BSADiff.cs" />
     <Compile Include="Patching\Extensions.cs" />
     <Compile Include="Patching\Murmur\Murmur128.cs" />

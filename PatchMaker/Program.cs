@@ -80,15 +80,15 @@ namespace PatchMaker
 
             var prefix = Path.Combine(IN_DIR, "TTW Patches", outBsaName);
 
-            using (var inBSA = new BSAWrapper(inBSAPath))
-            using (var outBSA = new BSAWrapper(outBSAPath))
+            using (var inBSA = new BSA(inBSAPath))
+            using (var outBSA = new BSA(outBSAPath))
             {
                 BSADiff
                     .CreateRenameQuery(inBSA, renameDict)
                     .ToList(); // execute query
 
-                var oldFiles = inBSA.SelectMany(folder => folder).ToList();
-                var newFiles = outBSA.SelectMany(folder => folder).ToList();
+                var oldFiles = inBSA.Values.SelectMany(folder => folder).ToList();
+                var newFiles = outBSA.Values.SelectMany(folder => folder).ToList();
 
                 var newChkDict = FileValidation.FromBSA(outBSA);
 

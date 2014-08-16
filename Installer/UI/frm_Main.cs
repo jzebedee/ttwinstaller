@@ -33,8 +33,7 @@ namespace TaleOfTwoWastelands.UI
         private void frm_Main_Load(object sender, EventArgs e)
         {
             //verify we are running as administrator
-            //TODO: change to a user-friendly condition and message
-            Trace.Assert(new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator));
+            VerifyElevation();
 
             //Progress<T> maintains SynchronizationContext
             var progressLog = new Progress<string>(s => UpdateLog(s));
@@ -45,6 +44,16 @@ namespace TaleOfTwoWastelands.UI
             txt_FO3Location.Text = _install.Fallout3Path;
             txt_FNVLocation.Text = _install.FalloutNVPath;
             txt_TTWLocation.Text = _install.TTWSavePath;
+        }
+
+        private void VerifyElevation()
+        {
+            bool elevated = new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator);
+            if (!elevated)
+            {
+                MessageBox.Show(Application.ProductName + " must be run as Administrator.");
+                Close();
+            }
         }
 
         private void frm_Main_FormClosed(object sender, FormClosedEventArgs e)
