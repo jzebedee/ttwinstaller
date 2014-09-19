@@ -195,15 +195,13 @@ namespace PatchMaker
 
             //backing for ctrl writes
             byte[] buf = new byte[8];
-            int[] bufI = new int[oldBuf.Length];
+            int[] bufI = SAIS.sufsort(oldBuf);
 
             fixed (byte* oldData = oldBuf)
             fixed (byte* newData = newBuf)
             fixed (byte* pB = buf)
             fixed (int* I = bufI)
             {
-                SAIS.sufsort(oldData, I, oldBuf.Length);
-
                 using (MemoryStream msControl = new MemoryStream())
                 using (MemoryStream msDiff = new MemoryStream())
                 using (MemoryStream msExtra = new MemoryStream())
@@ -336,7 +334,7 @@ namespace PatchMaker
                         // write compressed diff data
                         msDiff.Seek(0, SeekOrigin.Begin);
                         msDiff.CopyTo(output);
-
+                        
                         // compute size of compressed diff data
                         WriteInt64(msDiff.Length, &pHead[16]);
                     }
