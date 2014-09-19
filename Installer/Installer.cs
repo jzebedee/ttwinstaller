@@ -88,9 +88,10 @@ namespace TaleOfTwoWastelands
             Strategy = GoodStrategy,
             ExtensionCompressionLevel = new Dictionary<string, int>
             {
-                {".ogg", -1},
-                {".wav", -1},
-                {".mp3", -1},
+                //TODO: bsa# is broken and converts these to uppercase, fix asap!
+                {".OGG", -1},
+                {".WAV", -1},
+                {".MP3", -1},
                 //{".lip", -1},
             }
         };
