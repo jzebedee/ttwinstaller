@@ -95,13 +95,10 @@ namespace TaleOfTwoWastelands
             }
         };
 
-        public static readonly string TTWBase = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "My Games", "TaleOfTwoWastelands");
         public static readonly string PatchDir = Path.Combine(Installer.AssetsDir, "TTW Data", "TTW Patches");
         #endregion
 
         #region Instance private
-        readonly private StreamWriter logWriter;
-
         readonly string dirFO3Data, dirFNVData;
 
         private string dirTTWMain { get { return Path.Combine(TTWSavePath, MainDir); } }
@@ -142,13 +139,6 @@ namespace TaleOfTwoWastelands
 
         public Installer(IProgress<string> progressLog, IProgress<InstallOperation> uiMinor, IProgress<InstallOperation> uiMajor, OpenFileDialog openDialog, SaveFileDialog saveDialog)
         {
-            //Create TTW log directory
-            Directory.CreateDirectory(TTWBase);
-
-            //Create and open TTW log file
-            var logFilename = "Install Log " + DateTime.Now.ToString("MM_dd_yyyy - HH_mm_ss") + ".txt";
-            var logFilepath = Path.Combine(TTWBase, logFilename);
-            this.logWriter = new StreamWriter(logFilepath, true) { AutoFlush = true };
             ProgressFile = new Progress<string>(msg => LogFile(msg));
 
             ProgressLog = progressLog;
@@ -190,7 +180,6 @@ namespace TaleOfTwoWastelands
         {
             if (disposing)
             {
-                logWriter.Dispose();
             }
         }
 
@@ -200,7 +189,7 @@ namespace TaleOfTwoWastelands
         }
         private void LogFile(string s)
         {
-            logWriter.WriteLine("[{0}]\t{1}", DateTime.Now, s);
+            Trace.WriteLine(string.Format("[{0}]\t{1}", DateTime.Now, s));
         }
         private void LogDual(string s)
         {
@@ -383,12 +372,6 @@ namespace TaleOfTwoWastelands
             {
                 //intentionally cancelled - swallow exception
                 LogFile("Install was cancelled.");
-            }
-            catch (Exception ex)
-            {
-                LogFile(ex.Message);
-                LogDisplay(ex.Message);
-                MessageBox.Show("An unhandled exception has occurred:\n" + ex.Message, "Exception");
             }
         }
 
@@ -729,9 +712,9 @@ namespace TaleOfTwoWastelands
             {
                 watch.Start();
 #endif
-                patchSuccess = bsaDiff.PatchBSA(bsaOptions, inBSAPath, outBSAPath);
-                if (!patchSuccess)
-                    ProgressDual.Report(string.Format("Patching BSA {0} failed", inBSA));
+            patchSuccess = bsaDiff.PatchBSA(bsaOptions, inBSAPath, outBSAPath);
+            if (!patchSuccess)
+                ProgressDual.Report(string.Format("Patching BSA {0} failed", inBSA));
 #if DEBUG
             }
             finally
