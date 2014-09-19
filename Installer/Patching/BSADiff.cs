@@ -246,7 +246,7 @@ namespace TaleOfTwoWastelands.Patching
                 if (filepath.StartsWith(VOICE_PREFIX) && (patches == null || patches.Length == 0))
                 {
                     opChk.CurrentOperation = "Skipping " + filename;
-                    LogFile("Skipping voice file: " + filepath);
+                    //LogFile("Skipping voice file: " + filepath);
                     return;
                 }
 
@@ -262,7 +262,7 @@ namespace TaleOfTwoWastelands.Patching
                         //newChk - the checksum for the expected final result (after patching)
                         //oldChk - the checksum for the original file a diff is built against
                         //curChk - the checksum for the current file being compared or patched
-                        //testChk- the checksum for the current file, in the format of oldChk
+                        //tstChk - the checksum for the current file, in the format of oldChk
                         //patChk - the checksum for the current file, after patching or failure
                         foreach (var patchInfo in patches)
                         {
@@ -270,8 +270,8 @@ namespace TaleOfTwoWastelands.Patching
 
                             if (curChk.Type != oldChk.Type)
                             {
-                                using (var testChk = FileValidation.FromBSAFile(oldFile, oldChk.Type))
-                                    if (oldChk != testChk)
+                                using (var tstChk = FileValidation.FromBSAFile(oldFile, oldChk.Type))
+                                    if (oldChk != tstChk)
                                         //this is a patch for a different original
                                         continue;
                             }
