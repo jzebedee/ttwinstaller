@@ -459,7 +459,7 @@ namespace TaleOfTwoWastelands
                 if (!skipSongs)
                 {
                     LogDisplay("Extracting songs");
-                    ExtractBSA(ProgressFile, Token, inBsa.Values.Where(folder => folder.Path.StartsWith(songsPath)), dirTTWMain, skipSongs, "Fallout - Sound");
+                    ExtractBSA(ProgressFile, Token, inBsa.Where(folder => folder.Path.StartsWith(songsPath)), dirTTWMain, skipSongs, "Fallout - Sound");
                 }
 
                 if (!skipSFX)
@@ -471,7 +471,7 @@ namespace TaleOfTwoWastelands
                     var includedFilenames = new HashSet<string>(File.ReadLines(Path.Combine(AssetsDir, "TTW Data", "TTW_SFXCopy.txt")));
 
                     var includedGroups =
-                        from folder in inBsa.Where(kvp => kvp.Key.StartsWith(fxuiPath)).Select(kvp => kvp.Value)
+                        from folder in inBsa.Where(folder => folder.Path.StartsWith(fxuiPath))
                         from file in folder
                         where includedFilenames.Contains(file.Filename)
                         group file by folder;
@@ -482,7 +482,7 @@ namespace TaleOfTwoWastelands
                         group.Key.IntersectWith(group);
 
                         //add folders back into output BSA
-                        outBsa.Add(group.Key.Path, group.Key);
+                        outBsa.Add(group.Key);
                     }
 
                     LogFile("Building TaleOfTwoWastelands - SFX.bsa.");
@@ -506,11 +506,12 @@ namespace TaleOfTwoWastelands
                 outBsa = new BSA(inBsa.Settings))
             {
                 var includedFolders = inBsa
-                    .Where(kvp => VoicePaths.ContainsKey(kvp.Key))
-                    .Select(kvp => new BSAFolder(VoicePaths[kvp.Key], kvp.Value));
+                    .Where(folder => VoicePaths.ContainsKey(folder.Path))
+                    .Select(folder => new BSAFolder(VoicePaths[folder.Path], folder));
 
                 foreach (var folder in includedFolders)
-                    outBsa.Add(folder.Path, folder);
+                    outBsa.Add(folder);
+
                 outBsa.Save(outBsaPath);
             }
         }
@@ -719,9 +720,9 @@ namespace TaleOfTwoWastelands
             {
                 watch.Start();
 #endif
-            patchSuccess = bsaDiff.PatchBSA(bsaOptions, inBSAPath, outBSAPath);
-            if (!patchSuccess)
-                ProgressDual.Report(string.Format("Patching BSA {0} failed", inBSA));
+                patchSuccess = bsaDiff.PatchBSA(bsaOptions, inBSAPath, outBSAPath);
+                if (!patchSuccess)
+                    ProgressDual.Report(string.Format("Patching BSA {0} failed", inBSA));
 #if DEBUG
             }
             finally

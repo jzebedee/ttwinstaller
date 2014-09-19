@@ -166,7 +166,7 @@ namespace TaleOfTwoWastelands.Patching
         public static Dictionary<string, FileValidation> FromBSA(BSA bsa)
         {
             return bsa
-                .SelectMany(kvp => kvp.Value)
+                .SelectMany(folder => folder)
                 .ToDictionary(file => file.Filename, file => FromBSAFile(file));
         }
 

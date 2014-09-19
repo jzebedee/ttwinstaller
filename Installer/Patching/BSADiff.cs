@@ -146,7 +146,7 @@ namespace TaleOfTwoWastelands.Patching
                     Op.Step();
                 }
 
-                var allFiles = bsa.Values.SelectMany(folder => folder).ToList();
+                var allFiles = bsa.SelectMany(folder => folder).ToList();
                 try
                 {
                     var opChk = new InstallOperation(ProgressMinorUI, Token);
@@ -196,9 +196,9 @@ namespace TaleOfTwoWastelands.Patching
                     var notIncluded = allFiles.Where(file => !patchDict.ContainsKey(file.Filename));
                     var filesToRemove = new HashSet<BSAFile>(notIncluded);
 
-                    var filesRemoved = bsa.Values.Sum(folder => folder.RemoveWhere(bsafile => filesToRemove.Contains(bsafile)));
-                    var emptyFolders = bsa.Where(kvp => kvp.Value.Count == 0).ToList();
-                    emptyFolders.ForEach(kvp => bsa.Remove(kvp.Key));
+                    var filesRemoved = bsa.Sum(folder => folder.RemoveWhere(bsafile => filesToRemove.Contains(bsafile)));
+                    var emptyFolders = bsa.Where(folder => folder.Count == 0).ToList();
+                    emptyFolders.ForEach(folder => bsa.Remove(folder));
                 }
                 finally
                 {
@@ -306,7 +306,7 @@ namespace TaleOfTwoWastelands.Patching
         public static IEnumerable<Tuple<string, string, string>> CreateRenameQuery(BSA bsa, IDictionary<string, string> renameDict)
         {
             //TODO: use dict union
-            var renameGroup = from folder in bsa.Values
+            var renameGroup = from folder in bsa
                               from file in folder
                               join kvp in renameDict on file.Filename equals kvp.Value
                               let a = new { folder, file, kvp }
@@ -321,13 +321,13 @@ namespace TaleOfTwoWastelands.Patching
                                select outs;
 
             var newBsaFolders = renameCopies.ToList();
-            newBsaFolders.ForEach(g => bsa.Add(g.Key, new BSAFolder(g.Key)));
+            newBsaFolders.ForEach(g => bsa.Add(new BSAFolder(g.Key)));
 
             return from g in newBsaFolders
                    from a in g
-                   join kvp in bsa on g.Key equals kvp.Key
+                   join folder in bsa on g.Key equals folder.Path
                    let newFile = a.file.DeepCopy(g.Key, Path.GetFileName(a.newFilename))
-                   let addedFile = kvp.Value.Add(newFile)
+                   let addedFile = folder.Add(newFile)
                    select Tuple.Create(a.file.Name, newFile.Name, a.newFilename);
         }
 

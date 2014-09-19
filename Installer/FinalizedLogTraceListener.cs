@@ -42,10 +42,20 @@ namespace TaleOfTwoWastelands
             base.WriteLine(message);
         }
 
-        public override void Close()
+        protected override void Dispose(bool disposing)
         {
-            base.WriteLine(_checksum.Value.ToString("X"));
-            base.Close();
+            try
+            {
+                if (disposing)
+                {
+                    Flush();
+                    base.WriteLine(_checksum.Value.ToString("X"));
+                }
+            }
+            finally
+            {
+                base.Dispose(disposing);
+            }
         }
     }
 }

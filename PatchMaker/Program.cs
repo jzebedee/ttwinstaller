@@ -87,8 +87,8 @@ namespace PatchMaker
                     .CreateRenameQuery(inBSA, renameDict)
                     .ToList(); // execute query
 
-                var oldFiles = inBSA.Values.SelectMany(folder => folder).ToList();
-                var newFiles = outBSA.Values.SelectMany(folder => folder).ToList();
+                var oldFiles = inBSA.SelectMany(folder => folder).ToList();
+                var newFiles = outBSA.SelectMany(folder => folder).ToList();
 
                 var newChkDict = FileValidation.FromBSA(outBSA);
 
