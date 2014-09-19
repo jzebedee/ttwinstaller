@@ -544,7 +544,7 @@ namespace TaleOfTwoWastelands
             var compressor = new SevenZipCompressor()
             {
                 ArchiveFormat = OutArchiveFormat.SevenZip,
-                CompressionLevel = CompressionLevel.Ultra,
+                CompressionLevel = CompressionLevel.Fast,
                 CompressionMethod = CompressionMethod.Lzma2,
                 CompressionMode = CompressionMode.Create,
             };
