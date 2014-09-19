@@ -42,7 +42,7 @@ namespace TaleOfTwoWastelands
         static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
             var ex = (Exception)e.ExceptionObject;
-            Trace.TraceError("An uncaught exception occurred: {0}", ex.ToString());
+            Trace.WriteLine("An uncaught exception occurred: " + ex);
         }
     }
 }

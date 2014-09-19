@@ -373,6 +373,12 @@ namespace TaleOfTwoWastelands
                 //intentionally cancelled - swallow exception
                 LogFile("Install was cancelled.");
             }
+            catch (Exception ex)
+            {
+                LogFile(ex.Message);
+                LogDisplay(ex.Message);
+                MessageBox.Show("An error occurred while installing:\n" + ex.Message, "Exception");
+            }
         }
 
         private bool ShowSkipDialog(string description)
