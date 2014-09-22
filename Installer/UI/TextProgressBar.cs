@@ -42,24 +42,38 @@ namespace TaleOfTwoWastelands.UI
         }
 
         public TextProgressBar()
+            : base()
         {
             // Modify the ControlStyles flags
             //http://msdn.microsoft.com/en-us/library/system.windows.forms.controlstyles.aspx
-            SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, true);
+            DoubleBuffered = true;
+            SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint, true);
         }
 
         protected override void OnPaint(PaintEventArgs e)
         {
             Rectangle rect = ClientRectangle;
+            rect.Inflate(-3, -3);
+
             Graphics g = e.Graphics;
 
-            ProgressBarRenderer.DrawHorizontalBar(g, rect);
-            rect.Inflate(-3, -3);
-            if (Value > 0)
+            if (ProgressBarRenderer.IsSupported)
             {
-                // As we doing this ourselves we need to draw the chunks on the progress bar
-                Rectangle clip = new Rectangle(rect.X, rect.Y, (int)Math.Round(((float)Value / Maximum) * rect.Width), rect.Height);
-                ProgressBarRenderer.DrawHorizontalChunks(g, clip);
+                ProgressBarRenderer.DrawHorizontalBar(g, rect);
+                if (Value > 0)
+                {
+                    // As we doing this ourselves we need to draw the chunks on the progress bar
+                    Rectangle clip = new Rectangle(rect.X, rect.Y, (int)Math.Round(((float)Value / Maximum) * rect.Width), rect.Height);
+                    ProgressBarRenderer.DrawHorizontalChunks(g, clip);
+                }
+            }
+            else
+            {
+                if (Value > 0)
+                {
+                    Rectangle clip = new Rectangle(rect.X, rect.Y, (int)Math.Round(((float)Value / Maximum) * rect.Width), rect.Height);
+                    g.FillRegion(Brushes.ForestGreen, new Region(clip));
+                }
             }
 
             // Set the Display text (Either a % amount or our custom text
