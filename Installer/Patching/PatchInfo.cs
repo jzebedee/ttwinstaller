@@ -68,6 +68,20 @@ namespace TaleOfTwoWastelands.Patching
             }
         }
 
+        public bool PatchStream(Stream input, FileValidation targetChk, Stream output, out FileValidation outputChk)
+        {
+            unsafe
+            {
+                fixed (byte* pPatch = Data)
+                    Diff.Apply(input, pPatch, Data.LongLength, output);
+            }
+
+            output.Seek(0, SeekOrigin.Begin);
+            outputChk = new FileValidation(output, targetChk.Type);
+
+            return targetChk == outputChk;
+        }
+
 #if LEGACY || DEBUG
         public static PatchInfo FromOldDiff(byte[] diffData, FileValidation oldChk)
         {

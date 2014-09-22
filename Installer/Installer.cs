@@ -647,7 +647,9 @@ namespace TaleOfTwoWastelands
                 //TODO: change to a user-friendly condition and message
                 Trace.Assert(File.Exists(dataPath));
 
+                //make sure we didn't include old patches by mistake
                 Debug.Assert(patches.All(p => p.Metadata.Type == FileValidation.ChecksumType.Murmur128));
+
                 using (var dataChk = new FileValidation(dataPath))
                 {
                     var matchPatch = patches.SingleOrDefault(p => p.Metadata == dataChk);
@@ -658,21 +660,21 @@ namespace TaleOfTwoWastelands
                     }
                     else
                     {
-                        byte[]
-                            dataBytes = File.ReadAllBytes(dataPath),
-                            outputBytes;
-
                         FileValidation outputChk;
 
-                        if (matchPatch.PatchBytes(dataBytes, newChk, out outputBytes, out outputChk))
+                        using (FileStream
+                            dataStream = File.OpenRead(dataPath),
+                            outputStream = File.Open(finalPath, FileMode.Create, FileAccess.ReadWrite))
                         {
-                            File.WriteAllBytes(finalPath, outputBytes);
-                            LogDual("\tPatch successful");
-                            return true;
-                        }
-                        else
-                        {
-                            LogFile("\tPatch failed");
+                            if (matchPatch.PatchStream(dataStream, newChk, outputStream, out outputChk))
+                            {
+                                LogDual("\tPatch successful");
+                                return true;
+                            }
+                            else
+                            {
+                                LogFile("\tPatch failed - " + outputChk);
+                            }
                         }
                     }
                 }
