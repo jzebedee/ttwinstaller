@@ -148,10 +148,11 @@ namespace TaleOfTwoWastelands
             ProgressMinorOperation = uiMinor;
             ProgressMajorOperation = uiMajor;
 
+            LogFile("Version " + Application.ProductVersion);
             if (Environment.Is64BitOperatingSystem)
-                LogFile("\t64-bit architecture found.");
+                LogFile("64-bit architecture found.");
             else
-                LogFile("\t32-bit architecture found.");
+                LogFile("32-bit architecture found.");
 
             //create or retrieve FO3 path
             Fallout3Path = GetPathFromKey("Fallout3");
@@ -189,7 +190,7 @@ namespace TaleOfTwoWastelands
         }
         private void LogFile(string s)
         {
-            Trace.WriteLine(string.Format("[{0}]\t{1}", DateTime.Now, s));
+            Trace.WriteLine(s);
         }
         private void LogDual(string s)
         {
@@ -371,7 +372,7 @@ namespace TaleOfTwoWastelands
             catch (OperationCanceledException)
             {
                 //intentionally cancelled - swallow exception
-                LogFile("Install was cancelled.");
+                LogDual("Install was cancelled.");
             }
             catch (Exception ex)
             {
