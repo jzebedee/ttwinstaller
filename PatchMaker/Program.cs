@@ -24,11 +24,6 @@ namespace PatchMaker
         static void Main()
         {
             //BenchmarkHash.Run();
-            var x = new byte[0];
-            var y = new byte[100];
-            var m = new MemoryStream();
-            MakeDiff.Create(x, y, Diff.SIG_BSDIFF40, m);
-            Console.Write(m);
 
             if (!Debugger.IsAttached)
                 Debugger.Launch();
