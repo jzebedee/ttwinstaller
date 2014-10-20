@@ -2,9 +2,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Text;
-using TaleOfTwoWastelands.Patching.Murmur;
 
 namespace TaleOfTwoWastelands.Patching
 {
@@ -43,7 +40,7 @@ namespace TaleOfTwoWastelands.Patching
         {
             using (var writer = new BinaryWriter(outStream))
             {
-                writer.Write(this.Count);
+                writer.Write(Count);
                 foreach (var kvp in this)
                 {
                     writer.Write(kvp.Key);

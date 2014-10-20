@@ -1,28 +1,17 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.IO;
-using System.Security.Cryptography;
-using Microsoft.Win32;
 using System.Threading;
 using System.Security.Principal;
-using System.Diagnostics;
 using TaleOfTwoWastelands.ProgressTypes;
-using Microsoft;
-using System.Collections.Concurrent;
 
 namespace TaleOfTwoWastelands.UI
 {
     public partial class frm_Main : Form
     {
-        private CancellationTokenSource _install_cts = null;
-        private Task _install_task;
+        private CancellationTokenSource _installCts;
+        private Task _installTask;
         private Installer _install;
 
         public frm_Main()
@@ -58,8 +47,8 @@ namespace TaleOfTwoWastelands.UI
 
         private void frm_Main_FormClosed(object sender, FormClosedEventArgs e)
         {
-            if (_install_cts != null)
-                _install_cts.Dispose();
+            if (_installCts != null)
+                _installCts.Dispose();
             if (_install != null)
                 _install.Dispose();
         }
@@ -96,40 +85,42 @@ namespace TaleOfTwoWastelands.UI
 
         private void btn_Install_Click(object sender, EventArgs e)
         {
-            Action reset_install_btn = () =>
+            Action resetInstallBtn = () =>
             {
                 btn_Install.Text = "Install";
                 btn_Install.Enabled = true;
-                _install_cts.Dispose();
+                _installCts.Dispose();
             };
 
             if (btn_Install.Text == "Install")
             {
-                _install_cts = new CancellationTokenSource();
+                _installCts = new CancellationTokenSource();
 
                 btn_Install.Text = "Cancel";
-                _install_task = Task.Factory.StartNew(() => _install.Install(_install_cts.Token));
-                _install_task.ContinueWith((task) =>
+                _installTask = Task.Factory.StartNew(() => _install.Install(_installCts.Token));
+                _installTask.ContinueWith(task =>
                 {
                     if (btn_Install.InvokeRequired)
                     {
-                        btn_Install.Invoke(reset_install_btn);
+                        btn_Install.Invoke(resetInstallBtn);
                     }
                     else
-                        reset_install_btn();
+                        resetInstallBtn();
                 });
             }
             else
             {
                 btn_Install.Text = "Canceling...";
                 btn_Install.Enabled = false;
-                _install_cts.Cancel();
+                _installCts.Cancel();
             }
         }
 
         private void chkYou_CheckedChanged(object sender, EventArgs e)
         {
             var checkbox = (sender as CheckBox);
+            Debug.Assert(checkbox != null, "checkbox != null");
+
             if (!checkbox.Checked)
             {
                 checkbox.Checked = true;

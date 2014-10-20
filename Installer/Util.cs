@@ -3,9 +3,8 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Security.Cryptography;
-using TaleOfTwoWastelands.Patching;
-using TaleOfTwoWastelands.Patching.Murmur;
 using TaleOfTwoWastelands.ProgressTypes;
 using System.Text;
 
@@ -37,11 +36,11 @@ namespace TaleOfTwoWastelands
         {
             return BitConverter.ToString(md5).Replace("-", "");
         }
-        public static byte[] FromMD5String(string md5str)
+        public static byte[] FromMD5String(string md5Str)
         {
-            byte[] data = new byte[md5str.Length / 2];
+            byte[] data = new byte[md5Str.Length / 2];
             for (int i = 0; i < data.Length; i++)
-                data[i] = Convert.ToByte(md5str.Substring(i * 2, 2), 16);
+                data[i] = Convert.ToByte(md5Str.Substring(i * 2, 2), 16);
 
             return data;
         }
@@ -69,7 +68,7 @@ namespace TaleOfTwoWastelands
             Debug.Assert(File.Exists(path));
 
             using (var stream = File.OpenRead(path))
-                return (IDictionary<string, string>)new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter().Deserialize(stream);
+                return (IDictionary<string, string>)new BinaryFormatter().Deserialize(stream);
         }
 
         public static IEnumerable<Tuple<string, byte[]>> FindAlternateVersions(string file)
@@ -87,7 +86,7 @@ namespace TaleOfTwoWastelands
             return from other in Directory.EnumerateFiles(justDir, string.Join(".", split))
                    where other != file
                    let splitOther = Path.GetFileName(other).Split('.')
-                   select Tuple.Create(other, Util.FromMD5String(splitOther[splitOther.Length - 3]));
+                   select Tuple.Create(other, FromMD5String(splitOther[splitOther.Length - 3]));
         }
 #endif
         #endregion

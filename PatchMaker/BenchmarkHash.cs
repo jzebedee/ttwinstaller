@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Security.Cryptography;
+using ICSharpCode.SharpZipLib.Checksums;
+using TaleOfTwoWastelands.Patching.Murmur;
 
 namespace PatchMaker
 {
@@ -12,13 +13,13 @@ namespace PatchMaker
         internal static void Run()
         {
             const int iterations = 0x20000;
-            const int test_size = 0x10000;
+            const int testSize = 0x10000;
 
             List<long> timeMurmur = new List<long>(iterations);
             List<long> timeAdler = new List<long>(iterations);
             List<long> timeMd5 = new List<long>(iterations);
 
-            byte[] randBytes = new byte[test_size];
+            byte[] randBytes = new byte[testSize];
             var rnd = new Random();
 
             var watchMurmur = new Stopwatch();
@@ -32,7 +33,7 @@ namespace PatchMaker
                 rnd.NextBytes(randBytes);
 
                 {
-                    var murmur = TaleOfTwoWastelands.Patching.Murmur.Murmur128.CreateMurmur();
+                    var murmur = Murmur128.CreateMurmur();
                     watchMurmur.Restart();
                     murmur.ComputeHash(randBytes);
                     watchMurmur.Stop();
@@ -42,7 +43,7 @@ namespace PatchMaker
                 }
 
                 {
-                    var adler = new ICSharpCode.SharpZipLib.Checksums.Adler32();
+                    var adler = new Adler32();
                     watchAdler.Restart();
                     adler.Update(randBytes);
                     watchAdler.Stop();
@@ -52,7 +53,7 @@ namespace PatchMaker
                 }
 
                 {
-                    var md5 = System.Security.Cryptography.MD5.Create();
+                    var md5 = MD5.Create();
                     watchMd5.Restart();
                     md5.ComputeHash(randBytes);
                     watchMd5.Stop();

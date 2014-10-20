@@ -6,7 +6,6 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using BSAsharp;
-using BSAsharp.Extensions;
 using TaleOfTwoWastelands.Patching.Murmur;
 
 namespace TaleOfTwoWastelands.Patching
@@ -36,8 +35,8 @@ namespace TaleOfTwoWastelands.Patching
 
             SetContents(() =>
             {
-                using (var Hash = GetHash())
-                    return Hash.ComputeHash(data);
+                using (var hash = GetHash())
+                    return hash.ComputeHash(data);
             }, (uint)data.LongLength, type);
         }
         public FileValidation(Stream stream, ChecksumType type = ChecksumType.Murmur128)
@@ -49,8 +48,8 @@ namespace TaleOfTwoWastelands.Patching
             SetContents(() =>
             {
                 using (stream)
-                using (var Hash = GetHash())
-                    return Hash.ComputeHash(stream);
+                using (var hash = GetHash())
+                    return hash.ComputeHash(stream);
             }, (uint)stream.Length, type);
         }
         public FileValidation(byte[] checksum, uint filesize, ChecksumType type = ChecksumType.Murmur128)
@@ -70,7 +69,7 @@ namespace TaleOfTwoWastelands.Patching
         {
             Debug.Assert(typeByte != byte.MaxValue);
 
-            var type = (FileValidation.ChecksumType)typeByte;
+            var type = (ChecksumType)typeByte;
             var filesize = reader.ReadUInt32();
             var checksum = reader.ReadBytes(16);
 
@@ -148,8 +147,8 @@ namespace TaleOfTwoWastelands.Patching
         public static bool operator ==(FileValidation a, FileValidation b)
         {
             bool
-                nullA = object.ReferenceEquals(a, null),
-                nullB = object.ReferenceEquals(b, null);
+                nullA = ReferenceEquals(a, null),
+                nullB = ReferenceEquals(b, null);
             if (nullA || nullB)
             {
                 return nullA && nullB;

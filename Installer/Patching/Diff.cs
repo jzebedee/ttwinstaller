@@ -27,10 +27,7 @@
     POSSIBILITY OF SUCH DAMAGE.
 */
 using System;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
 using ICSharpCode.SharpZipLib.BZip2;
 using SevenZip;
 

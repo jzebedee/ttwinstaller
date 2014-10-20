@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Diagnostics;
 using System.IO;
-using System.Threading;
 using System.Threading.Tasks;
 using TaleOfTwoWastelands;
 using TaleOfTwoWastelands.Patching;
@@ -17,19 +16,24 @@ namespace PatchMaker
     class Program
     {
         const string
-            IN_DIR = "BuildDB",
-            OUT_DIR = "OutDB";
+            InDir = "BuildDB",
+            OutDir = "OutDB";
 
-        private static string dirTTWMain, dirTTWOptional, dirFO3Data;
+        private static string _dirTTWMain, _dirTTWOptional, _dirFO3Data;
 
-        static void Main(string[] args)
+        static void Main()
         {
             //BenchmarkHash.Run();
+            var x = new byte[0];
+            var y = new byte[100];
+            var m = new MemoryStream();
+            MakeDiff.Create(x, y, Diff.SIG_BSDIFF40, m);
+            Console.Write(m);
 
             if (!Debugger.IsAttached)
                 Debugger.Launch();
 
-            Console.WriteLine("Building {0} folder from {1} folder. Existing files are skipped. OK?", OUT_DIR, IN_DIR);
+            Console.WriteLine("Building {0} folder from {1} folder. Existing files are skipped. OK?", OutDir, InDir);
             Console.Write("y/n: ");
             var keyInfo = Console.ReadKey();
             switch (keyInfo.Key)
@@ -41,44 +45,46 @@ namespace PatchMaker
                     return;
             }
 
-            Directory.CreateDirectory(OUT_DIR);
+            Directory.CreateDirectory(OutDir);
 
-            dirTTWMain = Path.Combine(IN_DIR, Installer.MainDir);
-            dirTTWOptional = Path.Combine(IN_DIR, Installer.OptDir);
+            _dirTTWMain = Path.Combine(InDir, Installer.MainDir);
+            _dirTTWOptional = Path.Combine(InDir, Installer.OptDir);
 
             var bethKey = Installer.GetBethKey();
 
             var fo3Key = bethKey.CreateSubKey("Fallout3");
-            var Fallout3Path = fo3Key.GetValue("Installed Path", "").ToString();
-            dirFO3Data = Path.Combine(Fallout3Path, "Data");
+            Debug.Assert(fo3Key != null, "fo3Key != null");
+
+            var fallout3Path = fo3Key.GetValue("Installed Path", "").ToString();
+            _dirFO3Data = Path.Combine(fallout3Path, "Data");
 
             SevenZipCompressor.LzmaDictionarySize = 1024 * 1024 * 64; //64MiB, 7z 'Ultra'
 
-            Parallel.ForEach(Installer.BuildableBSAs, new ParallelOptions() { MaxDegreeOfParallelism = 2 }, kvpBsa => BuildBsaPatch(kvpBsa.Key, kvpBsa.Value));
+            Parallel.ForEach(Installer.BuildableBSAs, new ParallelOptions { MaxDegreeOfParallelism = 2 }, kvpBsa => BuildBsaPatch(kvpBsa.Key, kvpBsa.Value));
 
             var knownEsmVersions =
-                Directory.EnumerateFiles(Path.Combine(IN_DIR, "Versions"), "*.esm", SearchOption.AllDirectories)
-                .ToLookup(esm => Path.GetFileName(esm), esm => esm);
+                Directory.EnumerateFiles(Path.Combine(InDir, "Versions"), "*.esm", SearchOption.AllDirectories)
+                .ToLookup(Path.GetFileName, esm => esm);
 
-            Parallel.ForEach(Installer.CheckedESMs, new ParallelOptions() { MaxDegreeOfParallelism = 2 }, ESM => BuildMasterPatch(ESM, knownEsmVersions));
+            Parallel.ForEach(Installer.CheckedESMs, new ParallelOptions { MaxDegreeOfParallelism = 2 }, esm => BuildMasterPatch(esm, knownEsmVersions));
         }
 
         private static void BuildBsaPatch(string inBsaName, string outBsaName)
         {
             string outBSAFile = Path.ChangeExtension(outBsaName, ".bsa");
-            string outBSAPath = Path.Combine(dirTTWMain, outBSAFile);
+            string outBSAPath = Path.Combine(_dirTTWMain, outBSAFile);
 
             string inBSAFile = Path.ChangeExtension(inBsaName, ".bsa");
-            string inBSAPath = Path.Combine(dirFO3Data, inBSAFile);
+            string inBSAPath = Path.Combine(_dirFO3Data, inBSAFile);
 
             var renameDict = BuildRenameDict(outBsaName);
             Debug.Assert(renameDict != null);
 
-            var patPath = Path.Combine(OUT_DIR, Path.ChangeExtension(outBsaName, ".pat"));
+            var patPath = Path.Combine(OutDir, Path.ChangeExtension(outBsaName, ".pat"));
             if (File.Exists(patPath))
                 return;
 
-            var prefix = Path.Combine(IN_DIR, "TTW Patches", outBsaName);
+            var prefix = Path.Combine(InDir, "TTW Patches", outBsaName);
 
             using (var inBSA = new BSA(inBSAPath))
             using (var outBSA = new BSA(outBSAPath))
@@ -112,7 +118,7 @@ namespace PatchMaker
                     var newChk = join.patch;
 
                     var oldFilename = oldBsaFile.Filename;
-                    if (oldFilename.StartsWith(BSADiff.VOICE_PREFIX))
+                    if (oldFilename.StartsWith(BSADiff.VoicePrefix))
                     {
                         patchDict.Add(join.file, new Patch(newChk, null));
                         continue;
@@ -185,11 +191,11 @@ namespace PatchMaker
 
         private static IDictionary<string, string> BuildRenameDict(string bsaName)
         {
-            var dictPath = Path.Combine(IN_DIR, "TTW Patches", bsaName, "RenameFiles.dict");
+            var dictPath = Path.Combine(InDir, "TTW Patches", bsaName, "RenameFiles.dict");
             if (File.Exists(dictPath))
             {
                 var renameDict = Util.ReadOldDatabase(dictPath);
-                var newRenPath = Path.Combine(OUT_DIR, Path.ChangeExtension(bsaName, ".ren"));
+                var newRenPath = Path.Combine(OutDir, Path.ChangeExtension(bsaName, ".ren"));
                 if (!File.Exists(newRenPath))
                     using (var fileStream = File.OpenWrite(newRenPath))
                     using (var lzmaStream = new LzmaEncodeStream(fileStream))
@@ -209,17 +215,17 @@ namespace PatchMaker
             return new Dictionary<string, string>();
         }
 
-        private static void BuildMasterPatch(string ESM, ILookup<string, string> knownEsmVersions)
+        private static void BuildMasterPatch(string esm, ILookup<string, string> knownEsmVersions)
         {
-            var fixPath = Path.Combine(OUT_DIR, Path.ChangeExtension(ESM, ".pat"));
+            var fixPath = Path.Combine(OutDir, Path.ChangeExtension(esm, ".pat"));
             if (File.Exists(fixPath))
                 return;
 
-            var ttwESM = Path.Combine(dirTTWMain, ESM);
+            var ttwESM = Path.Combine(_dirTTWMain, esm);
             var ttwBytes = File.ReadAllBytes(ttwESM);
             var ttwChk = new FileValidation(ttwBytes);
 
-            var altVersions = knownEsmVersions[ESM].ToList();
+            var altVersions = knownEsmVersions[esm].ToList();
 
             var patches =
                 altVersions.Select(dataESM =>
@@ -243,7 +249,7 @@ namespace PatchMaker
                 .ToArray();
 
             var patchDict = new PatchDict(altVersions.Count);
-            patchDict.Add(ESM, new Patch(ttwChk, patches));
+            patchDict.Add(esm, new Patch(ttwChk, patches));
 
             using (var fixStream = File.OpenWrite(fixPath))
                 patchDict.WriteAll(fixStream);

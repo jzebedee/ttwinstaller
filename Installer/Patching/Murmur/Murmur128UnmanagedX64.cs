@@ -1,4 +1,4 @@
-﻿/// Copyright 2012 Darren Kopp
+﻿/*  Copyright 2012 Darren Kopp
 ///
 /// Licensed under the Apache License, Version 2.0 (the "License");
 /// you may not use this file except in compliance with the License.
@@ -11,11 +11,7 @@
 /// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 /// See the License for the specific language governing permissions and
 /// limitations under the License.
-
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+*/
 
 namespace TaleOfTwoWastelands.Patching.Murmur
 {
@@ -68,7 +64,7 @@ namespace TaleOfTwoWastelands.Patching.Murmur
             {
                 fixed (byte* d = &data[start])
                 {
-                    ulong* current = (ulong*)d;
+                    var current = (ulong*)d;
 
                     while (blocks-- > 0)
                     {
@@ -120,7 +116,7 @@ namespace TaleOfTwoWastelands.Patching.Murmur
 
         protected override byte[] HashFinal()
         {
-            ulong len = (ulong)Length;
+            var len = (ulong)Length;
             H1 ^= len; H2 ^= len;
 
             H1 += H2;
@@ -137,7 +133,7 @@ namespace TaleOfTwoWastelands.Patching.Murmur
             {
                 fixed (byte* h = result)
                 {
-                    ulong* r = (ulong*)h;
+                    var r = (ulong*)h;
 
                     r[0] = H1;
                     r[1] = H2;

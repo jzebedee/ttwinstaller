@@ -1,10 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Windows.Forms;
+using TaleOfTwoWastelands.UI;
 
 namespace TaleOfTwoWastelands
 {
@@ -25,7 +23,7 @@ namespace TaleOfTwoWastelands
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new UI.frm_Main());
+            Application.Run(new frm_Main());
         }
 
         static void SetupTraceListeners()

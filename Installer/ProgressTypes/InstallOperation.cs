@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading;
 
 namespace TaleOfTwoWastelands.ProgressTypes
@@ -64,8 +61,8 @@ namespace TaleOfTwoWastelands.ProgressTypes
 
         public InstallOperation(IProgress<InstallOperation> progress, CancellationToken? token = null)
         {
-            this._token = token;
-            this._progress = progress;
+            _token = token;
+            _progress = progress;
         }
 
         public int Step()

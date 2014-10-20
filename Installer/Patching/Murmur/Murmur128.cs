@@ -1,4 +1,4 @@
-﻿/// Copyright 2012 Darren Kopp
+﻿/*  Copyright 2012 Darren Kopp
 ///
 /// Licensed under the Apache License, Version 2.0 (the "License");
 /// you may not use this file except in compliance with the License.
@@ -11,24 +11,21 @@
 /// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 /// See the License for the specific language governing permissions and
 /// limitations under the License.
+*/
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Security.Cryptography;
-using System.Text;
 
 namespace TaleOfTwoWastelands.Patching.Murmur
 {
     public abstract class Murmur128 : HashAlgorithm
     {
-        private readonly uint _Seed;
+        private readonly uint _seed;
         protected Murmur128(uint seed)
         {
-            _Seed = seed;
+            _seed = seed;
         }
 
-        public uint Seed { get { return _Seed; } }
+        public uint Seed { get { return _seed; } }
 
         public static Murmur128 CreateMurmur()
         {

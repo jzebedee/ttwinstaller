@@ -2,15 +2,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.IO;
-using System.Security.Cryptography;
-using System.Windows.Forms;
 using System.Threading;
 using System.Diagnostics;
 using BSAsharp;
-using System.IO.MemoryMappedFiles;
 using TaleOfTwoWastelands.ProgressTypes;
 using SevenZip;
 using Patch = System.Tuple<TaleOfTwoWastelands.Patching.FileValidation, TaleOfTwoWastelands.Patching.PatchInfo[]>;
@@ -20,7 +16,7 @@ namespace TaleOfTwoWastelands.Patching
     using PatchJoin = Tuple<BSAFile, BSAFile, Patch>;
     public class BSADiff
     {
-        public const string VOICE_PREFIX = @"sound\voice";
+        public const string VoicePrefix = @"sound\voice";
 
         protected IProgress<string> ProgressDual { get; set; }
         protected IProgress<string> ProgressFile { get; set; }
@@ -38,12 +34,12 @@ namespace TaleOfTwoWastelands.Patching
             ProgressFile.Report('\t' + msg);
         }
 
-        public BSADiff(Installer parent, CancellationToken Token)
+        public BSADiff(Installer parent, CancellationToken token)
         {
-            this.ProgressDual = parent.ProgressDual;
-            this.ProgressFile = parent.ProgressFile;
-            this.ProgressMinorUI = parent.ProgressMinorOperation;
-            this.Token = Token;
+            ProgressDual = parent.ProgressDual;
+            ProgressFile = parent.ProgressFile;
+            ProgressMinorUI = parent.ProgressMinorOperation;
+            Token = token;
         }
 
         public bool PatchBSA(CompressionOptions bsaOptions, string oldBSA, string newBSA, bool simulate = false)
@@ -149,9 +145,7 @@ namespace TaleOfTwoWastelands.Patching
                 var allFiles = bsa.SelectMany(folder => folder).ToList();
                 try
                 {
-                    var opChk = new InstallOperation(ProgressMinorUI, Token);
-
-                    opChk.ItemsTotal = patchDict.Count;
+                    var opChk = new InstallOperation(ProgressMinorUI, Token) { ItemsTotal = patchDict.Count };
 
                     var joinedPatches = from patKvp in patchDict
                                         //if the join is not grouped, this will exclude missing files, and we can't find and fail on them
@@ -170,7 +164,7 @@ namespace TaleOfTwoWastelands.Patching
 #else
                         foreach (var join in joinedPatches)
 #endif
- HandleFile(opChk, join, patchDict)
+ HandleFile(opChk, join)
 #if PARALLEL
 )
 #endif
@@ -196,7 +190,9 @@ namespace TaleOfTwoWastelands.Patching
                     var notIncluded = allFiles.Where(file => !patchDict.ContainsKey(file.Filename));
                     var filesToRemove = new HashSet<BSAFile>(notIncluded);
 
-                    var filesRemoved = bsa.Sum(folder => folder.RemoveWhere(bsafile => filesToRemove.Contains(bsafile)));
+                    foreach (BSAFolder folder in bsa)
+                        folder.RemoveWhere(filesToRemove.Contains);
+
                     var emptyFolders = bsa.Where(folder => folder.Count == 0).ToList();
                     emptyFolders.ForEach(folder => bsa.Remove(folder));
                 }
@@ -223,7 +219,7 @@ namespace TaleOfTwoWastelands.Patching
             return true;
         }
 
-        private void HandleFile(InstallOperation opChk, PatchJoin join, PatchDict patchDict)
+        private void HandleFile(InstallOperation opChk, PatchJoin join)
         {
             try
             {
@@ -243,7 +239,7 @@ namespace TaleOfTwoWastelands.Patching
                 var newChk = patchTuple.Item1;
                 var patches = patchTuple.Item2;
 
-                if (filepath.StartsWith(VOICE_PREFIX) && (patches == null || patches.Length == 0))
+                if (filepath.StartsWith(VoicePrefix) && (patches == null || patches.Length == 0))
                 {
                     opChk.CurrentOperation = "Skipping " + filename;
                     //LogFile("Skipping voice file: " + filepath);
@@ -333,10 +329,9 @@ namespace TaleOfTwoWastelands.Patching
 
         public void RenameFiles(BSA bsa, IDictionary<string, string> renameDict)
         {
-            var opPrefix = "Renaming BSA files";
+            const string opPrefix = "Renaming BSA files";
 
-            var opRename = new InstallOperation(ProgressMinorUI, Token);
-            opRename.CurrentOperation = opPrefix;
+            var opRename = new InstallOperation(ProgressMinorUI, Token) { CurrentOperation = opPrefix };
 
             var renameFixes = CreateRenameQuery(bsa, renameDict);
             opRename.ItemsTotal = renameDict.Count;

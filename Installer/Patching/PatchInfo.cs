@@ -1,12 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Text;
-using ICSharpCode.SharpZipLib.BZip2;
-using SevenZip;
-using TaleOfTwoWastelands.Patching.Murmur;
 
 namespace TaleOfTwoWastelands.Patching
 {
@@ -23,13 +16,13 @@ namespace TaleOfTwoWastelands.Patching
         public PatchInfo(BinaryReader reader)
         {
             //reading a FV (metadata) now
-            this.Metadata = FileValidation.ReadFrom(reader);
+            Metadata = FileValidation.ReadFrom(reader);
 
             //reading data now
             var dataSize = reader.ReadUInt32();
             Debug.Assert((int)dataSize == dataSize);
             if (dataSize > 0)
-                this.Data = reader.ReadBytes((int)dataSize);
+                Data = reader.ReadBytes((int)dataSize);
         }
 
         public void WriteTo(BinaryWriter writer)
@@ -85,7 +78,7 @@ namespace TaleOfTwoWastelands.Patching
 #if LEGACY || DEBUG
         public static PatchInfo FromOldDiff(byte[] diffData, FileValidation oldChk)
         {
-            return new PatchInfo()
+            return new PatchInfo
             {
                 Metadata = oldChk,
                 Data = diffData

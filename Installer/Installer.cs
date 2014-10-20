@@ -3,16 +3,12 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Diagnostics;
 using BSAsharp;
 using TaleOfTwoWastelands.ProgressTypes;
 using TaleOfTwoWastelands.Patching;
-using Microsoft;
 using SevenZip;
 using System.Net;
 
@@ -71,18 +67,7 @@ namespace TaleOfTwoWastelands
             {"Zeta - Main", "Zeta - Main"},
             {"Zeta - Sounds", "Zeta - Sounds"},
         };
-        public static readonly Dictionary<string, CompressionOptions> BSAOptions = new Dictionary<string, CompressionOptions>
-        {
-            //example compression options
-            //{"Fallout - Sound", new CompressionOptions(FastStrategy)},
-            //{"Fallout - MenuVoices", new CompressionOptions(FastStrategy)},
-            //{"Fallout - Voices", new CompressionOptions(FastStrategy)},
-            //{"Anchorage - Sounds", new CompressionOptions(FastStrategy)},
-            //{"ThePitt - Sounds", new CompressionOptions(FastStrategy)},
-            //{"BrokenSteel - Sounds", new CompressionOptions(FastStrategy)},
-            //{"PointLookout - Sounds", new CompressionOptions(FastStrategy)},
-            //{"Zeta - Sounds", new CompressionOptions(FastStrategy)},
-        };
+        public static readonly Dictionary<string, CompressionOptions> BSAOptions = new Dictionary<string, CompressionOptions>();
         public static readonly CompressionOptions DefaultBSAOptions = new CompressionOptions
         {
             Strategy = GoodStrategy,
@@ -95,19 +80,19 @@ namespace TaleOfTwoWastelands
             }
         };
 
-        public static readonly string PatchDir = Path.Combine(Installer.AssetsDir, "TTW Data", "TTW Patches");
+        public static readonly string PatchDir = Path.Combine(AssetsDir, "TTW Data", "TTW Patches");
         #endregion
 
         #region Instance private
-        readonly string dirFO3Data, dirFNVData;
+        readonly string dirFO3Data, _dirFNVData;
 
-        private string dirTTWMain { get { return Path.Combine(TTWSavePath, MainDir); } }
-        private string dirTTWOptional { get { return Path.Combine(TTWSavePath, OptDir); } }
+        private string DirTTWMain { get { return Path.Combine(TTWSavePath, MainDir); } }
+        private string DirTTWOptional { get { return Path.Combine(TTWSavePath, OptDir); } }
 
         private CancellationTokenSource LinkedSource { get; set; }
         private CancellationToken Token { get; set; }
 
-        private BSADiff bsaDiff;
+        private BSADiff _bsaDiff;
         #endregion
 
         #region Instance public properties
@@ -159,7 +144,7 @@ namespace TaleOfTwoWastelands
 
             //create or retrieve FNV path
             FalloutNVPath = GetPathFromKey("FalloutNV");
-            dirFNVData = Path.Combine(FalloutNVPath, "Data");
+            _dirFNVData = Path.Combine(FalloutNVPath, "Data");
 
             //create or retrieve TTW path
             TTWSavePath = GetPathFromKey("TaleOfTwoWastelands");
@@ -203,22 +188,31 @@ namespace TaleOfTwoWastelands
                 Registry.LocalMachine.OpenSubKey(
                 //determine software reg path (depends on architecture)
                 Environment.Is64BitOperatingSystem ? "Software\\Wow6432Node" : "Software", RegistryKeyPermissionCheck.ReadWriteSubTree))
-                //create or retrieve BethSoft path
+            //create or retrieve BethSoft path
+            {
+                Debug.Assert(bethKey != null, "bethKey != null");
                 return bethKey.CreateSubKey("Bethesda Softworks", RegistryKeyPermissionCheck.ReadWriteSubTree);
+            }
         }
 
         private string GetPathFromKey(string keyName)
         {
             using (var bethKey = GetBethKey())
             using (var subKey = bethKey.CreateSubKey(keyName))
+            {
+                Debug.Assert(subKey != null, "subKey != null");
                 return subKey.GetValue("Installed Path", "").ToString();
+            }
         }
 
         private void SetPathFromKey(string keyName, string path)
         {
             using (var bethKey = GetBethKey())
             using (var subKey = bethKey.CreateSubKey(keyName))
+            {
+                Debug.Assert(subKey != null, "subKey != null");
                 subKey.SetValue("Installed Path", path, RegistryValueKind.String);
+            }
         }
 
         public void Fallout3Prompt(FileDialog open, bool manual = false)
@@ -243,9 +237,9 @@ namespace TaleOfTwoWastelands
         public void Install(CancellationToken inToken)
         {
             LinkedSource = CancellationTokenSource.CreateLinkedTokenSource(inToken);
-            this.Token = LinkedSource.Token;
+            Token = LinkedSource.Token;
 
-            bsaDiff = new BSADiff(this, Token);
+            _bsaDiff = new BSADiff(this, Token);
 
             var opProg = new InstallOperation(ProgressMajorOperation, Token) { ItemsTotal = 7 + BuildableBSAs.Count + CheckedESMs.Length };
             try
@@ -318,8 +312,8 @@ namespace TaleOfTwoWastelands
                     var ttwArchive = "TaleOfTwoWastelands.bsa";
                     opProg.CurrentOperation = "Copying " + ttwArchive;
 
-                    if (!File.Exists(Path.Combine(dirTTWMain, ttwArchive)))
-                        File.Copy(Path.Combine(AssetsDir, "TTW Data", ttwArchive), Path.Combine(dirTTWMain, ttwArchive));
+                    if (!File.Exists(Path.Combine(DirTTWMain, ttwArchive)))
+                        File.Copy(Path.Combine(AssetsDir, "TTW Data", ttwArchive), Path.Combine(DirTTWMain, ttwArchive));
                 }
                 finally
                 {
@@ -394,7 +388,7 @@ namespace TaleOfTwoWastelands
 
         private void BuildBSAs(InstallOperation opProg)
         {
-            foreach (var KVP in BuildableBSAs)
+            foreach (var kvp in BuildableBSAs)
             {
                 //inBSA - KVP.Key
                 //outBSA - KVP.Value
@@ -402,11 +396,11 @@ namespace TaleOfTwoWastelands
                 DialogResult buildResult;
                 try
                 {
-                    opProg.CurrentOperation = "Building " + Path.GetFileName(KVP.Value);
+                    opProg.CurrentOperation = "Building " + Path.GetFileName(kvp.Value);
                     do
                     {
-                        CompressionOptions bsaOptions = null;
-                        if (BSAOptions.TryGetValue(KVP.Key, out bsaOptions))
+                        CompressionOptions bsaOptions;
+                        if (BSAOptions.TryGetValue(kvp.Key, out bsaOptions))
                         {
                             if (bsaOptions.ExtensionCompressionLevel.Count == 0)
                                 bsaOptions.ExtensionCompressionLevel = DefaultBSAOptions.ExtensionCompressionLevel;
@@ -418,7 +412,7 @@ namespace TaleOfTwoWastelands
                             bsaOptions = DefaultBSAOptions;
                         }
 
-                        buildResult = BuildBSA(bsaOptions, KVP.Key, KVP.Value);
+                        buildResult = BuildBSA(bsaOptions, kvp.Key, kvp.Value);
                     } while (!Token.IsCancellationRequested && buildResult == DialogResult.Retry);
                 }
                 finally
@@ -441,10 +435,10 @@ namespace TaleOfTwoWastelands
             var songsPath = Path.Combine("sound", "songs");
 
             bool skipSongs = false, skipSFX = false;
-            if (Directory.Exists(Path.Combine(dirTTWMain, songsPath)))
+            if (Directory.Exists(Path.Combine(DirTTWMain, songsPath)))
                 skipSongs = ShowSkipDialog("Fallout 3 songs");
 
-            var outBsaPath = Path.Combine(dirTTWOptional, "Fallout3 Sound Effects", "TaleOfTwoWastelands - SFX.bsa");
+            var outBsaPath = Path.Combine(DirTTWOptional, "Fallout3 Sound Effects", "TaleOfTwoWastelands - SFX.bsa");
             if (File.Exists(outBsaPath))
                 skipSFX = ShowSkipDialog("Fallout 3 sound effects");
 
@@ -458,7 +452,7 @@ namespace TaleOfTwoWastelands
                 if (!skipSongs)
                 {
                     LogDisplay("Extracting songs");
-                    ExtractBSA(ProgressFile, Token, inBsa.Where(folder => folder.Path.StartsWith(songsPath)), dirTTWMain, skipSongs, "Fallout - Sound");
+                    ExtractBSA(ProgressFile, Token, inBsa.Where(folder => folder.Path.StartsWith(songsPath)), DirTTWMain, skipSongs, "Fallout - Sound");
                 }
 
                 if (!skipSFX)
@@ -494,7 +488,7 @@ namespace TaleOfTwoWastelands
 
         private void BuildVoice()
         {
-            var outBsaPath = Path.Combine(dirTTWOptional, "Fallout3 Player Voice", "TaleOfTwoWastelands - PlayerVoice.bsa");
+            var outBsaPath = Path.Combine(DirTTWOptional, "Fallout3 Player Voice", "TaleOfTwoWastelands - PlayerVoice.bsa");
             if (File.Exists(outBsaPath))
                 return;
 
@@ -517,12 +511,12 @@ namespace TaleOfTwoWastelands
 
         private bool PatchMasters(InstallOperation opProg)
         {
-            foreach (var ESM in CheckedESMs)
+            foreach (var esm in CheckedESMs)
                 try
                 {
-                    opProg.CurrentOperation = "Patching " + ESM;
+                    opProg.CurrentOperation = "Patching " + esm;
 
-                    if (Token.IsCancellationRequested || !PatchMaster(ESM))
+                    if (Token.IsCancellationRequested || !PatchMaster(esm))
                         return false;
                 }
                 finally
@@ -538,8 +532,8 @@ namespace TaleOfTwoWastelands
             LogFile("Building FOMODs.");
             LogDisplay("Building FOMODs...");
             LogDisplay("This can take some time.");
-            BuildFOMOD(dirTTWMain, Path.Combine(TTWSavePath, MainFOMOD));
-            BuildFOMOD(dirTTWOptional, Path.Combine(TTWSavePath, OptFOMOD));
+            BuildFOMOD(DirTTWMain, Path.Combine(TTWSavePath, MainFOMOD));
+            BuildFOMOD(DirTTWOptional, Path.Combine(TTWSavePath, OptFOMOD));
             LogFile("\tDone.");
             LogDisplay("\tFOMODs built.");
         }
@@ -548,7 +542,7 @@ namespace TaleOfTwoWastelands
         {
             var opFomod = new InstallOperation(ProgressMinorOperation, Token);
 
-            var compressor = new SevenZipCompressor()
+            var compressor = new SevenZipCompressor
             {
                 ArchiveFormat = OutArchiveFormat.SevenZip,
                 CompressionLevel = CompressionLevel.Fast,
@@ -573,7 +567,7 @@ namespace TaleOfTwoWastelands
             LogDual("Copying " + name + "...");
             foreach (var line in File.ReadLines(path))
             {
-                var ttwLinePath = Path.Combine(dirTTWMain, line);
+                var ttwLinePath = Path.Combine(DirTTWMain, line);
                 var foLinePath = Path.Combine(dirFO3Data, line);
 
                 var newDirectory = Path.GetDirectoryName(ttwLinePath);
@@ -613,37 +607,34 @@ namespace TaleOfTwoWastelands
                 return newChk == existingChk;
         }
 
-        private bool PatchMaster(string ESM)
+        private bool PatchMaster(string esm)
         {
-            LogDual("Patching " + ESM + "...");
+            LogDual("Patching " + esm + "...");
 
-            var patchPath = Path.Combine(PatchDir, Path.ChangeExtension(ESM, ".pat"));
+            var patchPath = Path.Combine(PatchDir, Path.ChangeExtension(esm, ".pat"));
             if (File.Exists(patchPath))
             {
                 var patchDict = new PatchDict(patchPath);
 
-                Debug.Assert(patchDict.ContainsKey(ESM));
-                var patch = patchDict[ESM];
+                Debug.Assert(patchDict.ContainsKey(esm));
+                var patch = patchDict[esm];
                 var patches = patch.Item2;
                 var newChk = patch.Item1;
 
-                var finalPath = Path.Combine(dirTTWMain, ESM);
-                bool finalExists;
-                if ((finalExists = File.Exists(finalPath)))
+                var finalPath = Path.Combine(DirTTWMain, esm);
+                if (File.Exists(finalPath))
                 {
-                    LogDual("\t" + ESM + " already exists");
+                    LogDual("\t" + esm + " already exists");
                     if (CheckExisting(finalPath, newChk))
                     {
-                        LogDual("\t" + ESM + " is up to date");
+                        LogDual("\t" + esm + " is up to date");
                         return true;
                     }
-                    else
-                    {
-                        LogDual("\t" + ESM + " is out of date");
-                    }
+
+                    LogDual("\t" + esm + " is out of date");
                 }
 
-                var dataPath = Path.Combine(dirFO3Data, ESM);
+                var dataPath = Path.Combine(dirFO3Data, esm);
                 //TODO: change to a user-friendly condition and message
                 Trace.Assert(File.Exists(dataPath));
 
@@ -655,8 +646,8 @@ namespace TaleOfTwoWastelands
                     var matchPatch = patches.SingleOrDefault(p => p.Metadata == dataChk);
                     if (matchPatch == null)
                     {
-                        LogDisplay("\tA patch for your version of " + ESM + " could not be found");
-                        LogFile("\tA patch for " + ESM + " version " + dataChk + " could not be found");
+                        LogDisplay("\tA patch for your version of " + esm + " could not be found");
+                        LogFile("\tA patch for " + esm + " version " + dataChk + " could not be found");
                     }
                     else
                     {
@@ -671,18 +662,16 @@ namespace TaleOfTwoWastelands
                                 LogDual("\tPatch successful");
                                 return true;
                             }
-                            else
-                            {
-                                LogFile("\tPatch failed - " + outputChk);
-                            }
+
+                            LogFile("\tPatch failed - " + outputChk);
                         }
                     }
                 }
             }
             else
-                LogDual("\t" + ESM + " patch is missing from " + PatchDir);
+                LogDual("\t" + esm + " patch is missing from " + PatchDir);
 
-            Fail("Your version of " + ESM + " cannot be patched. This is abnormal.");
+            Fail("Your version of " + esm + " cannot be patched. This is abnormal.");
 
             return false;
         }
@@ -690,17 +679,17 @@ namespace TaleOfTwoWastelands
         private DialogResult BuildBSA(CompressionOptions bsaOptions, string inBSA, string outBSA)
         {
             string outBSAFile = Path.ChangeExtension(outBSA, ".bsa");
-            string outBSAPath = Path.Combine(dirTTWMain, outBSAFile);
+            string outBSAPath = Path.Combine(DirTTWMain, outBSAFile);
 
             if (File.Exists(outBSAPath))
             {
                 switch (MessageBox.Show(outBSAFile + " already exists. Rebuild?", "File Already Exists", MessageBoxButtons.YesNo))
                 {
-                    case System.Windows.Forms.DialogResult.Yes:
+                    case DialogResult.Yes:
                         File.Delete(outBSAPath);
                         LogDual("Rebuilding " + outBSA);
                         break;
-                    case System.Windows.Forms.DialogResult.No:
+                    case DialogResult.No:
                         LogDual(outBSA + " has already been built. Skipping.");
                         return DialogResult.No;
                 }
@@ -721,7 +710,7 @@ namespace TaleOfTwoWastelands
             {
                 watch.Start();
 #endif
-                patchSuccess = bsaDiff.PatchBSA(bsaOptions, inBSAPath, outBSAPath);
+                patchSuccess = _bsaDiff.PatchBSA(bsaOptions, inBSAPath, outBSAPath);
                 if (!patchSuccess)
                     ProgressDual.Report(string.Format("Patching BSA {0} failed", inBSA));
 #if DEBUG
@@ -737,20 +726,20 @@ namespace TaleOfTwoWastelands
             {
                 switch (MessageBox.Show("Errors occurred while patching " + inBSA, "Error Warning", MessageBoxButtons.AbortRetryIgnore))
                 {
-                    case System.Windows.Forms.DialogResult.Abort:   //Quit install
+                    case DialogResult.Abort:   //Quit install
                         Fail();
-                        return System.Windows.Forms.DialogResult.Abort;
-                    case System.Windows.Forms.DialogResult.Retry:   //Start over from scratch
+                        return DialogResult.Abort;
+                    case DialogResult.Retry:   //Start over from scratch
                         LogDual("Retrying build.");
-                        return System.Windows.Forms.DialogResult.Retry;
-                    case System.Windows.Forms.DialogResult.Ignore:  //Ignore errors and move on
+                        return DialogResult.Retry;
+                    case DialogResult.Ignore:  //Ignore errors and move on
                         LogDual("Ignoring errors.");
-                        return System.Windows.Forms.DialogResult.Ignore;
+                        return DialogResult.Ignore;
                 }
             }
 
             LogDual("Build successful.");
-            return System.Windows.Forms.DialogResult.OK;
+            return DialogResult.OK;
         }
 
         private bool CheckNVSE()
@@ -908,12 +897,10 @@ Would you like to install NVSE?", "NVSE missing", MessageBoxButtons.YesNoCancel)
 
                     return path;
                 }
-                else
+
+                if (MessageBox.Show(string.Format("You cannot continue without indicating the location of {0}.", name), "Error", MessageBoxButtons.RetryCancel) == DialogResult.Cancel)
                 {
-                    if (MessageBox.Show(string.Format("You cannot continue without indicating the location of {0}.", name), "Error", MessageBoxButtons.RetryCancel) == DialogResult.Cancel)
-                    {
-                        break;
-                    }
+                    break;
                 }
             }
             while (dlgResult != DialogResult.OK);
@@ -943,6 +930,7 @@ Would you like to install NVSE?", "NVSE missing", MessageBoxButtons.YesNoCancel)
                     progress.Report("Extracted " + file.Filename);
                 }
             }
+            // ReSharper disable once ConstantNullCoalescingCondition
             progress.Report("Extract from " + bsaName ?? bsaOutputDir.Replace(Path.GetDirectoryName(bsaOutputDir), "").TrimEnd(Path.DirectorySeparatorChar) + " done!");
         }
 
@@ -953,13 +941,13 @@ Would you like to install NVSE?", "NVSE missing", MessageBoxButtons.YesNoCancel)
 
             LogDual("Checking for required files...");
 
-            foreach (var ESM in CheckedESMs)
+            foreach (var esm in CheckedESMs)
             {
-                var ttwESM = Path.Combine(dirTTWMain, ESM);
-                var dataESM = Path.Combine(dirFO3Data, ESM);
+                var ttwESM = Path.Combine(DirTTWMain, esm);
+                var dataESM = Path.Combine(dirFO3Data, esm);
                 if (!File.Exists(ttwESM) && !File.Exists(dataESM))
                 {
-                    var errMsg = string.Format(errFileNotFound, ESM);
+                    var errMsg = string.Format(errFileNotFound, esm);
 
                     LogDual(errMsg);
 
@@ -967,13 +955,13 @@ Would you like to install NVSE?", "NVSE missing", MessageBoxButtons.YesNoCancel)
                 }
             }
 
-            foreach (var KVP in CheckedBSAs)
+            foreach (var kvp in CheckedBSAs)
             {
                 //Key = TTW BSA
                 //Value = string[] of FO3 sub-BSAs
-                if (!File.Exists(KVP.Key))
+                if (!File.Exists(kvp.Key))
                 {
-                    foreach (var subBSA in KVP.Value)
+                    foreach (var subBSA in kvp.Value)
                     {
                         var pathedSubBSA = Path.Combine(dirFO3Data, subBSA);
                         if (!File.Exists(pathedSubBSA))
