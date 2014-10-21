@@ -37,7 +37,7 @@ namespace TaleOfTwoWastelands
             var logFilepath = Path.Combine(LogDirectory, logFilename);
 
             Trace.AutoFlush = true;
-            Trace.Listeners.Add(new FinalizedLogTraceListener(logFilepath));
+            Trace.Listeners.Add(new TextWriterTraceListener(new FinalizedTextWriter(logFilepath)));
         }
 
         static void Application_ThreadException(object sender, System.Threading.ThreadExceptionEventArgs e)
