@@ -34,7 +34,6 @@ namespace TaleOfTwoWastelands
             var logFilepath = Path.Combine(LogDirectory, logFilename);
 
             Trace.AutoFlush = true;
-            Trace.Listeners.Add(new FinalizedLogTraceListener(logFilepath));
         }
 
         static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)

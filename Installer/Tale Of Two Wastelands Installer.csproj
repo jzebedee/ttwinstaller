@@ -78,7 +78,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="FinalizedLogTraceListener.cs" />
     <Compile Include="Patching\Diff.cs" />
     <Compile Include="Patching\BSADiff.cs" />
     <Compile Include="Patching\Extensions.cs" />
