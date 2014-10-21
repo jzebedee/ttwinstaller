@@ -124,19 +124,20 @@ namespace TaleOfTwoWastelands
 
         public Installer(IProgress<string> progressLog, IProgress<InstallOperation> uiMinor, IProgress<InstallOperation> uiMajor, OpenFileDialog openDialog, SaveFileDialog saveDialog)
         {
-            ProgressFile = new Progress<string>(msg => LogFile(msg));
+            ProgressFile = new Progress<string>(LogFile);
 
             ProgressLog = progressLog;
 
-            ProgressDual = new Progress<string>(msg => LogDual(msg));
+            ProgressDual = new Progress<string>(LogDual);
 
             ProgressMinorOperation = uiMinor;
             ProgressMajorOperation = uiMajor;
 
+            LogFile("Version " + Application.ProductVersion);
             if (Environment.Is64BitOperatingSystem)
-                LogFile("\t64-bit architecture found.");
+                LogFile("64-bit architecture found.");
             else
-                LogFile("\t32-bit architecture found.");
+                LogFile("32-bit architecture found.");
 
             //create or retrieve FO3 path
             Fallout3Path = GetPathFromKey("Fallout3");
@@ -365,7 +366,7 @@ namespace TaleOfTwoWastelands
             catch (OperationCanceledException)
             {
                 //intentionally cancelled - swallow exception
-                LogFile("Install was cancelled.");
+                LogDual("Install was cancelled.");
             }
             catch (Exception ex)
             {

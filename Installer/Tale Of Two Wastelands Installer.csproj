@@ -78,6 +78,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FinalizedTextWriter.cs" />
     <Compile Include="Patching\Diff.cs" />
     <Compile Include="Patching\BSADiff.cs" />
     <Compile Include="Patching\Extensions.cs" />

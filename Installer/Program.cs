@@ -2,7 +2,6 @@
 using System.Diagnostics;
 using System.IO;
 using System.Windows.Forms;
-using TaleOfTwoWastelands.UI;
 
 namespace TaleOfTwoWastelands
 {
@@ -18,12 +17,13 @@ namespace TaleOfTwoWastelands
         {
             SetupTraceListeners();
 
-            Application.SetUnhandledExceptionMode(UnhandledExceptionMode.ThrowException);
+            Application.ThreadException += Application_ThreadException;
+            Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new frm_Main());
+            Application.Run(new UI.frm_Main());
         }
 
         static void SetupTraceListeners()
@@ -34,12 +34,24 @@ namespace TaleOfTwoWastelands
             var logFilepath = Path.Combine(LogDirectory, logFilename);
 
             Trace.AutoFlush = true;
+            Trace.Listeners.Add(new TextWriterTraceListener(new FinalizedTextWriter(logFilepath)));
+        }
+
+        static void Application_ThreadException(object sender, System.Threading.ThreadExceptionEventArgs e)
+        {
+            HandleCrashException(e.Exception);
         }
 
         static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
-            var ex = (Exception)e.ExceptionObject;
-            Trace.WriteLine("An uncaught exception occurred: " + ex);
+            HandleCrashException((Exception)e.ExceptionObject);
+        }
+
+        static void HandleCrashException(Exception e)
+        {
+            Trace.WriteLine("An uncaught exception occurred: " + e);
+            MessageBox.Show("An uncaught exception occurred and the program will now exit. Please submit a crash report with your installation log.");
+            Environment.Exit(1);
         }
     }
 }
