@@ -25,7 +25,7 @@ namespace TaleOfTwoWastelands.UI
             VerifyElevation();
 
             //Progress<T> maintains SynchronizationContext
-            var progressLog = new Progress<string>(s => UpdateLog(s));
+            var progressLog = new Progress<string>(UpdateLog);
             var uiMinor = new Progress<InstallOperation>(m => UpdateProgressBar(m, prgCurrent));
             var uiMajor = new Progress<InstallOperation>(m => UpdateProgressBar(m, prgOverall));
             _install = new Installer(progressLog, uiMinor, uiMajor, dlg_FindGame, dlg_SaveTTW);
@@ -37,12 +37,15 @@ namespace TaleOfTwoWastelands.UI
 
         private void VerifyElevation()
         {
-            bool elevated = new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator);
-            if (!elevated)
-            {
-                MessageBox.Show(Application.ProductName + " must be run as Administrator.");
-                Close();
-            }
+            var identity = WindowsIdentity.GetCurrent();
+            Debug.Assert(identity != null, "identity != null");
+
+            var principal = new WindowsPrincipal(identity);
+            if (principal.IsInRole(WindowsBuiltInRole.Administrator))
+                return;
+
+            MessageBox.Show(Application.ProductName + " must be run as Administrator.");
+            Environment.Exit(2);
         }
 
         private void frm_Main_FormClosed(object sender, FormClosedEventArgs e)
