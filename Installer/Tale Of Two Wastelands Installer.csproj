@@ -80,6 +80,7 @@
   <ItemGroup>
     <Compile Include="FinalizedTextWriter.cs" />
     <Compile Include="Install\FOMOD.cs" />
+    <Compile Include="Install\NVSE.cs" />
     <Compile Include="Log.cs" />
     <Compile Include="Patching\Diff.cs" />
     <Compile Include="Patching\BSADiff.cs" />

@@ -7,9 +7,24 @@ namespace TaleOfTwoWastelands.Install
 {
     internal static class FOMOD
     {
+        private const string
+            MainFOMOD = "TaleOfTwoWastelands_Main.fomod",
+            OptFOMOD = "TaleOfTwoWastelands_Options.fomod";
+
         static FOMOD()
         {
             SevenZipCompressor.SetLibraryPath(Path.Combine(Installer.AssetsDir, "7Zip", "7z" + (Environment.Is64BitProcess ? "64.dll" : ".dll")));
+        }
+
+        public static void BuildAll(InstallStatus status, string mainBuildFolder, string optBuildFolder, string saveFolder)
+        {
+            Log.File("Building FOMODs.");
+            Log.Display("Building FOMODs...");
+            Log.Display("This can take some time.");
+            Build(status, mainBuildFolder, Path.Combine(saveFolder, MainFOMOD));
+            Build(status, optBuildFolder, Path.Combine(saveFolder, OptFOMOD));
+            Log.File("\tDone.");
+            Log.Display("\tFOMODs built.");
         }
 
         public static void Build(InstallStatus status, string path, string fomod)

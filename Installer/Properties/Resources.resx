@@ -149,4 +149,9 @@ Would like the installer to automatically build FOMODs?</value>
   <data name="UncaughtExceptionMessage" xml:space="preserve">
     <value>An uncaught exception occurred and the program will now exit. Please submit a crash report with your installation log.</value>
   </data>
+  <data name="NVSE_InstallPrompt" xml:space="preserve">
+    <value>New Vegas Script Extender (NVSE) was not found, but is required to play A Tale of Two Wastelands.
+
+Would you like to install NVSE?</value>
+  </data>
 </root>

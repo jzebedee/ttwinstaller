@@ -22,12 +22,7 @@ namespace TaleOfTwoWastelands
         public const string
             MainDir = "Main Files",
             OptDir = "Optional Files",
-            AssetsDir = "resources",
-            MainFOMOD = "TaleOfTwoWastelands_Main.fomod",
-            OptFOMOD = "TaleOfTwoWastelands_Options.fomod",
-            NvseFile = "nvse_loader.exe",
-            NvseLink = @"http://nvse.silverlock.org/",
-            NvseSearch = @"http://nvse.silverlock.org/download/*.7z";
+            AssetsDir = "resources";
 
         public const CompressionStrategy FastStrategy = CompressionStrategy.Unsafe | CompressionStrategy.Speed;
         public const CompressionStrategy GoodStrategy = CompressionStrategy.Unsafe | CompressionStrategy.Size;
@@ -109,6 +104,8 @@ namespace TaleOfTwoWastelands
         private CancellationToken Token { get; set; }
 
         private BSADiff _bsaDiff;
+        private NVSE _nvse;
+
         private readonly Prompts _prompts;
         #endregion
 
@@ -141,6 +138,7 @@ namespace TaleOfTwoWastelands
 
             _prompts.PromptPaths();
             _bsaDiff = new BSADiff(this, Token);
+            _nvse = new NVSE(_prompts.FalloutNVPath);
 
             var opProg = new InstallStatus(ProgressMajorOperation, Token) { ItemsTotal = 7 + BuildableBSAs.Count + CheckedESMs.Length };
             try
@@ -149,7 +147,7 @@ namespace TaleOfTwoWastelands
                 {
                     opProg.CurrentOperation = "Checking for required files";
 
-                    if (CheckFiles() && CheckNVSE())
+                    if (CheckFiles())
                     {
                         Log.File("All files found.");
                         Log.Display("All files found. Proceeding with installation.");
@@ -159,6 +157,26 @@ namespace TaleOfTwoWastelands
                         Log.File("Missing files detected. Aborting install.");
                         Log.Display("The above files were not found. Make sure your Fallout 3 location is accurate and try again.\nInstallation failed.");
                         return;
+                    }
+
+                    if (!_nvse.Check())
+                    {
+                        string err = null;
+                        //true : should download, continue install
+                        //false: should not download, continue install
+                        //null : should not download, abort install
+                        switch (_nvse.Prompt())
+                        {
+                            case true:
+                                if (_nvse.Install(out err))
+                                    break;
+                                goto default;
+                            case false:
+                                break;
+                            default:
+                                Fail(err);
+                                return;
+                        }
                     }
                 }
                 finally
@@ -270,8 +288,8 @@ namespace TaleOfTwoWastelands
             }
             catch (Exception ex)
             {
-                Log.File(ex.Message);
-                Log.Display(ex.Message);
+                Log.File(ex.ToString());
+                Fail("An error interrupted the install!");
                 MessageBox.Show("An error occurred while installing:\n" + ex.Message, "Exception");
             }
         }
@@ -430,15 +448,8 @@ namespace TaleOfTwoWastelands
 
         private void BuildFOMODs()
         {
-            var opFomod = new InstallStatus(ProgressMinorOperation, Token);
-
-            Log.File("Building FOMODs.");
-            Log.Display("Building FOMODs...");
-            Log.Display("This can take some time.");
-            FOMOD.Build(opFomod, DirTTWMain, Path.Combine(_prompts.TTWSavePath, MainFOMOD));
-            FOMOD.Build(opFomod, DirTTWOptional, Path.Combine(_prompts.TTWSavePath, OptFOMOD));
-            Log.File("\tDone.");
-            Log.Display("\tFOMODs built.");
+            var status = new InstallStatus(ProgressMinorOperation, Token);
+            FOMOD.BuildAll(status, DirTTWMain, DirTTWOptional, _prompts.TTWSavePath);
         }
 
         private void FalloutLineCopy(string name, string path)
@@ -620,98 +631,6 @@ namespace TaleOfTwoWastelands
 
             Log.Dual("Build successful.");
             return DialogResult.OK;
-        }
-
-        private bool CheckNVSE()
-        {
-            var nvseLoader = Path.Combine(_prompts.FalloutNVPath, NvseFile);
-            if (!File.Exists(nvseLoader))
-            {
-                Log.File("NVSE missing");
-
-                var dlgResult = MessageBox.Show(@"New Vegas Script Extender (NVSE) was not found, but is required to play A Tale of Two Wastelands.
-
-Would you like to install NVSE?", "NVSE missing", MessageBoxButtons.YesNoCancel);
-
-                switch (dlgResult)
-                {
-                    case DialogResult.Yes:
-                        return InstallNVSE(_prompts.FalloutNVPath);
-                    case DialogResult.No:
-                        Log.Dual("Proceeding without NVSE.");
-                        Log.Display("NVSE must be installed before playing!");
-                        return true;
-                    case DialogResult.Cancel:
-                        Log.File("Install cancelled due to NVSE requirement");
-                        Fail();
-                        return false;
-                }
-            }
-            else Log.File("NVSE found");
-
-            return true;
-        }
-
-        //where's my async?
-        private bool InstallNVSE(string dlPath)
-        {
-            using (var wc = new WebClient())
-            {
-                Log.File("Requesting NVSE page at " + NvseLink);
-
-                string dlLink;
-                using (var resStream = wc.OpenRead(NvseLink))
-                {
-                    if (!Util.PatternSearch(resStream, NvseSearch, out dlLink))
-                    {
-                        Fail("Failed to download NVSE.");
-                        return false;
-                    }
-                }
-
-                Log.File("Parsed NVSE link: " + dlLink.Truncate(100));
-
-                var archiveName = Path.GetFileName(dlLink);
-                var tmpPath = Path.Combine(Path.GetTempPath(), archiveName);
-                wc.DownloadFile(dlLink, tmpPath);
-
-                using (var lzExtract = new SevenZipExtractor(tmpPath))
-                {
-                    if (!lzExtract.Check())
-                    {
-                        Fail(archiveName + " is an invalid 7z archive.");
-                        return false;
-                    }
-
-                    var wantedFiles = (from file in lzExtract.ArchiveFileNames
-                                       let filename = Path.GetFileName(file)
-                                       let ext = Path.GetExtension(filename).ToUpperInvariant()
-                                       where ext == ".EXE" || ext == ".DLL"
-                                       select new { file, filename }).ToArray();
-
-                    foreach (var a in wantedFiles)
-                    {
-                        var savePath = Path.Combine(dlPath, a.filename);
-                        Log.File("Extracting " + a.filename);
-
-                        using (var fsStream = File.OpenWrite(savePath))
-                        {
-                            try
-                            {
-                                lzExtract.ExtractFile(a.file, fsStream);
-                            }
-                            catch
-                            {
-                                Fail("Failed to extract NVSE.");
-                                throw;
-                            }
-                        }
-                    }
-                }
-            }
-
-            Log.Dual("NVSE was installed successfully.");
-            return true;
         }
 
         private void Fail(string msg = null)

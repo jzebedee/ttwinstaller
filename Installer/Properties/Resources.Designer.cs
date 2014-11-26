@@ -117,6 +117,17 @@ namespace TaleOfTwoWastelands.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to New Vegas Script Extender (NVSE) was not found, but is required to play A Tale of Two Wastelands.
+        ///
+        ///Would you like to install NVSE?.
+        /// </summary>
+        internal static string NVSE_InstallPrompt {
+            get {
+                return ResourceManager.GetString("NVSE_InstallPrompt", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to FOMM.
         /// </summary>
         internal static string SuggestedModManager {
