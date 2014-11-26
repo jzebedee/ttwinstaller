@@ -14,7 +14,7 @@ using System.Net;
 
 namespace TaleOfTwoWastelands
 {
-    public class Installer : IDisposable
+    public class Installer
     {
         #region Set-once fields (statics and constants)
         public const string
@@ -151,22 +151,6 @@ namespace TaleOfTwoWastelands
             TTWSavePath = GetPathFromKey("TaleOfTwoWastelands");
 
             PromptPaths(openDialog, saveDialog);
-        }
-        ~Installer()
-        {
-            Dispose(false);
-        }
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-        protected virtual void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-            }
         }
 
         private void LogDisplay(string s)

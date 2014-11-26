@@ -48,14 +48,6 @@ namespace TaleOfTwoWastelands.UI
             Environment.Exit(2);
         }
 
-        private void frm_Main_FormClosed(object sender, FormClosedEventArgs e)
-        {
-            if (_installCts != null)
-                _installCts.Dispose();
-            if (_install != null)
-                _install.Dispose();
-        }
-
         private void UpdateProgressBar(InstallOperation opProg, TextProgressBar bar)
         {
             bar.Maximum = opProg.ItemsTotal;

@@ -296,7 +296,6 @@
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "frm_Main";
             this.Text = "Tale Of Two Wastelands Installer";
-            this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.frm_Main_FormClosed);
             this.Load += new System.EventHandler(this.frm_Main_Load);
             this.tbl_Main.ResumeLayout(false);
             this.tbl_Main.PerformLayout();
