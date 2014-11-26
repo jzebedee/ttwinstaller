@@ -10,6 +10,7 @@ using TaleOfTwoWastelands.ProgressTypes;
 using TaleOfTwoWastelands.Patching;
 using SevenZip;
 using System.Net;
+using TaleOfTwoWastelands.Properties;
 
 namespace TaleOfTwoWastelands
 {
@@ -114,14 +115,14 @@ namespace TaleOfTwoWastelands
         /// <summary>
         /// Provides progress updates for minor operations
         /// </summary>
-        public IProgress<InstallOperation> ProgressMinorOperation { get; private set; }
+        public IProgress<InstallStatus> ProgressMinorOperation { get; private set; }
         /// <summary>
         /// Provides progress updates for major operations
         /// </summary>
-        public IProgress<InstallOperation> ProgressMajorOperation { get; private set; }
+        public IProgress<InstallStatus> ProgressMajorOperation { get; private set; }
         #endregion
 
-        public Installer(IProgress<string> progressLog, IProgress<InstallOperation> uiMinor, IProgress<InstallOperation> uiMajor, OpenFileDialog openDialog, SaveFileDialog saveDialog)
+        public Installer(IProgress<string> progressLog, IProgress<InstallStatus> uiMinor, IProgress<InstallStatus> uiMajor, OpenFileDialog openDialog, SaveFileDialog saveDialog)
         {
             ProgressFile = new Progress<string>(LogFile);
 
@@ -192,7 +193,7 @@ namespace TaleOfTwoWastelands
 
             _bsaDiff = new BSADiff(this, Token);
 
-            var opProg = new InstallOperation(ProgressMajorOperation, Token) { ItemsTotal = 7 + BuildableBSAs.Count + CheckedESMs.Length };
+            var opProg = new InstallStatus(ProgressMajorOperation, Token) { ItemsTotal = 7 + BuildableBSAs.Count + CheckedESMs.Length };
             try
             {
                 try
@@ -260,7 +261,7 @@ namespace TaleOfTwoWastelands
 
                 try
                 {
-                    var ttwArchive = "TaleOfTwoWastelands.bsa";
+                    const string ttwArchive = "TaleOfTwoWastelands.bsa";
                     opProg.CurrentOperation = "Copying " + ttwArchive;
 
                     if (!File.Exists(Path.Combine(DirTTWMain, ttwArchive)))
@@ -292,7 +293,7 @@ namespace TaleOfTwoWastelands
                     opProg.Step();
                 }
 
-                if (MessageBox.Show("Tale of Two Wastelands is easiest to install via a mod manager (such as Nexus Mod Manager). Manual installation is possible but not suggested.\n\nWould like the installer to automatically build FOMODs?", "Build FOMODs?", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                if (MessageBox.Show(string.Format(Resources.BuildFOMODsPrompt, Resources.TTW, Resources.SuggestedModManager), Resources.BuildFOMODsQuestion, MessageBoxButtons.YesNo) == DialogResult.Yes)
                 {
                     //+1 (opt)
                     try
@@ -311,7 +312,7 @@ namespace TaleOfTwoWastelands
                 opProg.Finish();
 
                 LogDisplay("Install completed successfully.");
-                MessageBox.Show("Tale of Two Wastelands has been installed successfully.");
+                MessageBox.Show(string.Format(Resources.InstalledSuccessfully, Resources.TTW));
             }
             catch (OperationCanceledException)
             {
@@ -337,7 +338,7 @@ namespace TaleOfTwoWastelands
             }
         }
 
-        private void BuildBSAs(InstallOperation opProg)
+        private void BuildBSAs(InstallStatus opProg)
         {
             foreach (var kvp in BuildableBSAs)
             {
@@ -460,7 +461,7 @@ namespace TaleOfTwoWastelands
             }
         }
 
-        private bool PatchMasters(InstallOperation opProg)
+        private bool PatchMasters(InstallStatus opProg)
         {
             foreach (var esm in CheckedESMs)
                 try
@@ -491,7 +492,7 @@ namespace TaleOfTwoWastelands
 
         private void BuildFOMOD(string path, string fomod)
         {
-            var opFomod = new InstallOperation(ProgressMinorOperation, Token);
+            var opFomod = new InstallStatus(ProgressMinorOperation, Token);
 
             var compressor = new SevenZipCompressor
             {

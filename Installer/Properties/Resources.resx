@@ -119,8 +119,25 @@
   </resheader>
   <data name="MustBeElevated" xml:space="preserve">
     <value>{0} must be run as Administrator.</value>
+    <comment>{0} = TTW</comment>
   </data>
   <data name="TTW" xml:space="preserve">
     <value>Tale of Two Wastelands</value>
+  </data>
+  <data name="BuildFOMODsPrompt" xml:space="preserve">
+    <value>{0} is easiest to install via a mod manager like {1}. Manual installation is possible but not suggested.
+
+Would like the installer to automatically build FOMODs?</value>
+    <comment>{0} = TTW, {1} = SuggestedModManager</comment>
+  </data>
+  <data name="SuggestedModManager" xml:space="preserve">
+    <value>FOMM</value>
+  </data>
+  <data name="BuildFOMODsQuestion" xml:space="preserve">
+    <value>Build FOMODs?</value>
+  </data>
+  <data name="InstalledSuccessfully" xml:space="preserve">
+    <value>{0} has been installed successfully.</value>
+    <comment>{0} = TTW</comment>
   </data>
 </root>

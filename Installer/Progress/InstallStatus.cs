@@ -3,10 +3,10 @@ using System.Threading;
 
 namespace TaleOfTwoWastelands.ProgressTypes
 {
-    public class InstallOperation
+    public class InstallStatus
     {
-        private readonly CancellationToken? _token;
-        private readonly IProgress<InstallOperation> _progress;
+        private readonly CancellationToken _token;
+        private readonly IProgress<InstallStatus> _progress;
 
         private int _itemsDone;
         public int ItemsDone
@@ -59,9 +59,9 @@ namespace TaleOfTwoWastelands.ProgressTypes
             }
         }
 
-        public InstallOperation(IProgress<InstallOperation> progress, CancellationToken? token = null)
+        public InstallStatus(IProgress<InstallStatus> progress, CancellationToken? token = null)
         {
-            _token = token;
+            _token = token ?? CancellationToken.None;
             _progress = progress;
         }
 
@@ -85,9 +85,7 @@ namespace TaleOfTwoWastelands.ProgressTypes
 
         private void Update()
         {
-            if (_token.HasValue)
-                _token.Value.ThrowIfCancellationRequested();
-
+            _token.ThrowIfCancellationRequested();
             _progress.Report(this);
         }
     }

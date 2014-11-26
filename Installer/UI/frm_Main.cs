@@ -25,8 +25,8 @@ namespace TaleOfTwoWastelands.UI
 
             //Progress<T> maintains SynchronizationContext
             var progressLog = new Progress<string>(UpdateLog);
-            var uiMinor = new Progress<InstallOperation>(m => UpdateProgressBar(m, prgCurrent));
-            var uiMajor = new Progress<InstallOperation>(m => UpdateProgressBar(m, prgOverall));
+            var uiMinor = new Progress<InstallStatus>(m => UpdateProgressBar(m, prgCurrent));
+            var uiMajor = new Progress<InstallStatus>(m => UpdateProgressBar(m, prgOverall));
             _install = new Installer(progressLog, uiMinor, uiMajor, dlg_FindGame, dlg_SaveTTW);
 
             txt_FO3Location.Text = _install.Fallout3Path;
@@ -34,7 +34,7 @@ namespace TaleOfTwoWastelands.UI
             txt_TTWLocation.Text = _install.TTWSavePath;
         }
 
-        private void UpdateProgressBar(InstallOperation opProg, TextProgressBar bar)
+        private void UpdateProgressBar(InstallStatus opProg, TextProgressBar bar)
         {
             bar.Maximum = opProg.ItemsTotal;
             bar.Value = opProg.ItemsDone;

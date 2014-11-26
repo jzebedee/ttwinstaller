@@ -20,9 +20,9 @@ namespace TaleOfTwoWastelands.Patching
 
         protected IProgress<string> ProgressDual { get; set; }
         protected IProgress<string> ProgressFile { get; set; }
-        protected IProgress<InstallOperation> ProgressMinorUI { get; set; }
+        protected IProgress<InstallStatus> ProgressMinorUI { get; set; }
         protected CancellationToken Token { get; set; }
-        protected InstallOperation Op { get; set; }
+        protected InstallStatus Op { get; set; }
 
         private void Log(string msg)
         {
@@ -44,7 +44,7 @@ namespace TaleOfTwoWastelands.Patching
 
         public bool PatchBSA(CompressionOptions bsaOptions, string oldBSA, string newBSA, bool simulate = false)
         {
-            Op = new InstallOperation(ProgressMinorUI, Token) { ItemsTotal = 7 };
+            Op = new InstallStatus(ProgressMinorUI, Token) { ItemsTotal = 7 };
 
             var outBsaFilename = Path.GetFileNameWithoutExtension(newBSA);
 
@@ -145,7 +145,7 @@ namespace TaleOfTwoWastelands.Patching
                 var allFiles = bsa.SelectMany(folder => folder).ToList();
                 try
                 {
-                    var opChk = new InstallOperation(ProgressMinorUI, Token) { ItemsTotal = patchDict.Count };
+                    var opChk = new InstallStatus(ProgressMinorUI, Token) { ItemsTotal = patchDict.Count };
 
                     var joinedPatches = from patKvp in patchDict
                                         //if the join is not grouped, this will exclude missing files, and we can't find and fail on them
@@ -219,7 +219,7 @@ namespace TaleOfTwoWastelands.Patching
             return true;
         }
 
-        private void HandleFile(InstallOperation opChk, PatchJoin join)
+        private void HandleFile(InstallStatus opChk, PatchJoin join)
         {
             try
             {
@@ -331,7 +331,7 @@ namespace TaleOfTwoWastelands.Patching
         {
             const string opPrefix = "Renaming BSA files";
 
-            var opRename = new InstallOperation(ProgressMinorUI, Token) { CurrentOperation = opPrefix };
+            var opRename = new InstallStatus(ProgressMinorUI, Token) { CurrentOperation = opPrefix };
 
             var renameFixes = CreateRenameQuery(bsa, renameDict);
             opRename.ItemsTotal = renameDict.Count;

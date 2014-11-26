@@ -9,6 +9,9 @@
 //------------------------------------------------------------------------------
 
 namespace TaleOfTwoWastelands.Properties {
+    using System;
+    
+    
     /// <summary>
     ///   A strongly-typed resource class, for looking up localized strings, etc.
     /// </summary>
@@ -58,11 +61,49 @@ namespace TaleOfTwoWastelands.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to {0} is easiest to install via a mod manager like {1}. Manual installation is possible but not suggested.
+        ///
+        ///Would like the installer to automatically build FOMODs?.
+        /// </summary>
+        internal static string BuildFOMODsPrompt {
+            get {
+                return ResourceManager.GetString("BuildFOMODsPrompt", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Build FOMODs?.
+        /// </summary>
+        internal static string BuildFOMODsQuestion {
+            get {
+                return ResourceManager.GetString("BuildFOMODsQuestion", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0} has been installed successfully..
+        /// </summary>
+        internal static string InstalledSuccessfully {
+            get {
+                return ResourceManager.GetString("InstalledSuccessfully", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to {0} must be run as Administrator..
         /// </summary>
         internal static string MustBeElevated {
             get {
                 return ResourceManager.GetString("MustBeElevated", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to FOMM.
+        /// </summary>
+        internal static string SuggestedModManager {
+            get {
+                return ResourceManager.GetString("SuggestedModManager", resourceCulture);
             }
         }
         
