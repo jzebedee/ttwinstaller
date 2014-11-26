@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
+﻿using System.IO;
 using System.Windows.Forms;
-using SevenZip;
 using TaleOfTwoWastelands.Properties;
 
 namespace TaleOfTwoWastelands.UI
@@ -80,10 +75,6 @@ namespace TaleOfTwoWastelands.UI
             }
 
             return null;
-
-            if (MessageBox.Show(string.Format("You cannot continue without indicating the location of {0}.", name), "Error", MessageBoxButtons.RetryCancel) == DialogResult.Cancel)
-            {
-            }
         }
 
         public string Fallout3Prompt(bool manual = false)

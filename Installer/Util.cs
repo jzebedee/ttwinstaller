@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Security.Cryptography;
-using TaleOfTwoWastelands.ProgressTypes;
 using System.Text;
 
 namespace TaleOfTwoWastelands
