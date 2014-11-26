@@ -31,6 +31,8 @@ namespace TaleOfTwoWastelands
         public static IProgress<string> DisplayMessage { get; set; }
         public static void Display(string msg, params object[] args)
         {
+            Debug.Assert(DisplayMessage != null, "shouldn't call Display before setting DisplayMessage");
+
             var displayProg = DisplayMessage;
             if (displayProg != null)
             {
