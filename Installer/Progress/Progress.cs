@@ -3,7 +3,7 @@ using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Threading;
 
-namespace TaleOfTwoWastelands.ProgressTypes
+namespace TaleOfTwoWastelands.Progress
 {
     public interface IProgress<in T>
     {
@@ -62,8 +62,8 @@ namespace TaleOfTwoWastelands.ProgressTypes
             m_handler = handler;
         }
 
-        [SerializableAttribute]
-        [ComVisibleAttribute(true)]
+        [Serializable]
+        [ComVisible(true)]
         public delegate void GenericEventHandler<P>(Object sender, P e);
 
         /// <summary>Raised for each reported progress value.</summary>

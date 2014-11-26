@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading;
 
-namespace TaleOfTwoWastelands.ProgressTypes
+namespace TaleOfTwoWastelands.Progress
 {
     public class InstallStatus
     {

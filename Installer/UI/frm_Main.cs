@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Threading;
-using TaleOfTwoWastelands.ProgressTypes;
+using TaleOfTwoWastelands.Progress;
 using TaleOfTwoWastelands.Properties;
 
 namespace TaleOfTwoWastelands.UI
@@ -72,16 +72,16 @@ namespace TaleOfTwoWastelands.UI
         {
             Action resetInstallBtn = () =>
             {
-                btn_Install.Text = "Install";
+                btn_Install.Text = Resources.Install;
                 btn_Install.Enabled = true;
                 _installCts.Dispose();
             };
 
-            if (btn_Install.Text == "Install")
+            if (btn_Install.Text == Resources.Install)
             {
                 _installCts = new CancellationTokenSource();
 
-                btn_Install.Text = "Cancel";
+                btn_Install.Text = Resources.Cancel;
                 _installTask = Task.Factory.StartNew(() => _install.Install(_installCts.Token));
                 _installTask.ContinueWith(task =>
                 {
@@ -95,7 +95,7 @@ namespace TaleOfTwoWastelands.UI
             }
             else
             {
-                btn_Install.Text = "Canceling...";
+                btn_Install.Text = Resources.CancelingWait;
                 btn_Install.Enabled = false;
                 _installCts.Cancel();
             }
@@ -109,7 +109,7 @@ namespace TaleOfTwoWastelands.UI
             if (!checkbox.Checked)
             {
                 checkbox.Checked = true;
-                MessageBox.Show("Impossible");
+                MessageBox.Show(Resources.RightSaidFred);
             }
         }
     }

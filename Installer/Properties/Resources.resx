@@ -180,4 +180,16 @@ Would you like to install NVSE?</value>
     <value>{0} already exist. Would you like to overwrite them?</value>
     <comment>{0} = description</comment>
   </data>
+  <data name="Install" xml:space="preserve">
+    <value>Install</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="CancelingWait" xml:space="preserve">
+    <value>Canceling...</value>
+  </data>
+  <data name="RightSaidFred" xml:space="preserve">
+    <value>Impossible</value>
+  </data>
 </root>

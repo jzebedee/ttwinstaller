@@ -7,7 +7,7 @@ using System.IO;
 using System.Threading;
 using System.Diagnostics;
 using BSAsharp;
-using TaleOfTwoWastelands.ProgressTypes;
+using TaleOfTwoWastelands.Progress;
 using SevenZip;
 using Patch = System.Tuple<TaleOfTwoWastelands.Patching.FileValidation, TaleOfTwoWastelands.Patching.PatchInfo[]>;
 

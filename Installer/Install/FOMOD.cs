@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 using SevenZip;
-using TaleOfTwoWastelands.ProgressTypes;
+using TaleOfTwoWastelands.Progress;
 
 namespace TaleOfTwoWastelands.Install
 {

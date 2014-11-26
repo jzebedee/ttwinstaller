@@ -90,6 +90,24 @@ namespace TaleOfTwoWastelands.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Cancel.
+        /// </summary>
+        internal static string Cancel {
+            get {
+                return ResourceManager.GetString("Cancel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Canceling....
+        /// </summary>
+        internal static string CancelingWait {
+            get {
+                return ResourceManager.GetString("CancelingWait", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Error.
         /// </summary>
         internal static string Error {
@@ -145,6 +163,15 @@ namespace TaleOfTwoWastelands.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Install.
+        /// </summary>
+        internal static string Install {
+            get {
+                return ResourceManager.GetString("Install", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to {0} has been installed successfully..
         /// </summary>
         internal static string InstalledSuccessfully {
@@ -188,6 +215,15 @@ namespace TaleOfTwoWastelands.Properties {
         internal static string RebuildPrompt {
             get {
                 return ResourceManager.GetString("RebuildPrompt", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Impossible.
+        /// </summary>
+        internal static string RightSaidFred {
+            get {
+                return ResourceManager.GetString("RightSaidFred", resourceCulture);
             }
         }
         
