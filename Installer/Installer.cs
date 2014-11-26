@@ -9,8 +9,6 @@ using BSAsharp;
 using TaleOfTwoWastelands.Install;
 using TaleOfTwoWastelands.ProgressTypes;
 using TaleOfTwoWastelands.Patching;
-using SevenZip;
-using System.Net;
 using TaleOfTwoWastelands.Properties;
 using TaleOfTwoWastelands.UI;
 
