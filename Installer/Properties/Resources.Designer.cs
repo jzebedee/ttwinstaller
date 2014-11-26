@@ -61,6 +61,15 @@ namespace TaleOfTwoWastelands.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to {0} already exist. Would you like to overwrite them?.
+        /// </summary>
+        internal static string AlreadyExistOverwritePrompt {
+            get {
+                return ResourceManager.GetString("AlreadyExistOverwritePrompt", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to {0} is easiest to install via a mod manager like {1}. Manual installation is possible but not suggested.
         ///
         ///Would like the installer to automatically build FOMODs?.
@@ -81,6 +90,34 @@ namespace TaleOfTwoWastelands.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Error.
+        /// </summary>
+        internal static string Error {
+            get {
+                return ResourceManager.GetString("Error", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to An error occurred while installing:
+        ///{0}.
+        /// </summary>
+        internal static string ErrorWhileInstalling {
+            get {
+                return ResourceManager.GetString("ErrorWhileInstalling", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Errors occurred while patching {0}.
+        /// </summary>
+        internal static string ErrorWhilePatching {
+            get {
+                return ResourceManager.GetString("ErrorWhilePatching", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Fallout 3.
         /// </summary>
         internal static string Fallout3 {
@@ -95,6 +132,15 @@ namespace TaleOfTwoWastelands.Properties {
         internal static string FalloutNewVegas {
             get {
                 return ResourceManager.GetString("FalloutNewVegas", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to File Already Exists.
+        /// </summary>
+        internal static string FileAlreadyExists {
+            get {
+                return ResourceManager.GetString("FileAlreadyExists", resourceCulture);
             }
         }
         
@@ -124,6 +170,24 @@ namespace TaleOfTwoWastelands.Properties {
         internal static string NVSE_InstallPrompt {
             get {
                 return ResourceManager.GetString("NVSE_InstallPrompt", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Overwrite Files.
+        /// </summary>
+        internal static string OverwriteFiles {
+            get {
+                return ResourceManager.GetString("OverwriteFiles", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0} already exists. Rebuild?.
+        /// </summary>
+        internal static string RebuildPrompt {
+            get {
+                return ResourceManager.GetString("RebuildPrompt", resourceCulture);
             }
         }
         

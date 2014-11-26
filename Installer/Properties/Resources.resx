@@ -154,4 +154,30 @@ Would like the installer to automatically build FOMODs?</value>
 
 Would you like to install NVSE?</value>
   </data>
+  <data name="ErrorWhilePatching" xml:space="preserve">
+    <value>Errors occurred while patching {0}</value>
+    <comment>{0} = BSA name</comment>
+  </data>
+  <data name="Error" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="RebuildPrompt" xml:space="preserve">
+    <value>{0} already exists. Rebuild?</value>
+    <comment>{0} = out BSA filename</comment>
+  </data>
+  <data name="FileAlreadyExists" xml:space="preserve">
+    <value>File Already Exists</value>
+  </data>
+  <data name="ErrorWhileInstalling" xml:space="preserve">
+    <value>An error occurred while installing:
+{0}</value>
+    <comment>{0} = ex.Message</comment>
+  </data>
+  <data name="OverwriteFiles" xml:space="preserve">
+    <value>Overwrite Files</value>
+  </data>
+  <data name="AlreadyExistOverwritePrompt" xml:space="preserve">
+    <value>{0} already exist. Would you like to overwrite them?</value>
+    <comment>{0} = description</comment>
+  </data>
 </root>

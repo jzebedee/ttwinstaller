@@ -288,13 +288,13 @@ namespace TaleOfTwoWastelands
             {
                 Log.File(ex.ToString());
                 Fail("An error interrupted the install!");
-                MessageBox.Show("An error occurred while installing:\n" + ex.Message, "Exception");
+                MessageBox.Show(string.Format(Resources.ErrorWhileInstalling, ex.Message), Resources.Error);
             }
         }
 
         private bool ShowSkipDialog(string description)
         {
-            switch (MessageBox.Show(description + " already exist. Would you like to overwrite them?", "Overwrite Files", MessageBoxButtons.YesNo))
+            switch (MessageBox.Show(string.Format(Resources.AlreadyExistOverwritePrompt, description), Resources.OverwriteFiles, MessageBoxButtons.YesNo))
             {
                 case DialogResult.Yes:
                     return false;
@@ -572,7 +572,7 @@ namespace TaleOfTwoWastelands
 
             if (File.Exists(outBSAPath))
             {
-                switch (MessageBox.Show(outBSAFile + " already exists. Rebuild?", "File Already Exists", MessageBoxButtons.YesNo))
+                switch (MessageBox.Show(string.Format(Resources.RebuildPrompt, outBSAFile), Resources.FileAlreadyExists, MessageBoxButtons.YesNo))
                 {
                     case DialogResult.Yes:
                         File.Delete(outBSAPath);
@@ -613,7 +613,7 @@ namespace TaleOfTwoWastelands
 
             if (!patchSuccess)
             {
-                switch (MessageBox.Show("Errors occurred while patching " + inBSA, "Error Warning", MessageBoxButtons.AbortRetryIgnore))
+                switch (MessageBox.Show(string.Format(Resources.ErrorWhilePatching, inBSA), Resources.Error, MessageBoxButtons.AbortRetryIgnore))
                 {
                     case DialogResult.Abort:   //Quit install
                         Fail();
