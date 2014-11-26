@@ -1,5 +1,4 @@
-﻿using Microsoft.Win32;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -140,15 +139,15 @@ namespace TaleOfTwoWastelands
                 LogFile("32-bit architecture found.");
 
             //create or retrieve FO3 path
-            Fallout3Path = GetPathFromKey("Fallout3");
+            Fallout3Path = RegistryHelper.GetPathFromKey("Fallout3");
             dirFO3Data = Path.Combine(Fallout3Path, "Data");
 
             //create or retrieve FNV path
-            FalloutNVPath = GetPathFromKey("FalloutNV");
+            FalloutNVPath = RegistryHelper.GetPathFromKey("FalloutNV");
             _dirFNVData = Path.Combine(FalloutNVPath, "Data");
 
             //create or retrieve TTW path
-            TTWSavePath = GetPathFromKey("TaleOfTwoWastelands");
+            TTWSavePath = RegistryHelper.GetPathFromKey("TaleOfTwoWastelands");
 
             PromptPaths(openDialog, saveDialog);
         }
@@ -165,39 +164,6 @@ namespace TaleOfTwoWastelands
         {
             LogDisplay(s);
             LogFile(s);
-        }
-
-        public static RegistryKey GetBethKey()
-        {
-            using (var bethKey =
-                Registry.LocalMachine.OpenSubKey(
-                //determine software reg path (depends on architecture)
-                Environment.Is64BitOperatingSystem ? "Software\\Wow6432Node" : "Software", RegistryKeyPermissionCheck.ReadWriteSubTree))
-            //create or retrieve BethSoft path
-            {
-                Debug.Assert(bethKey != null, "bethKey != null");
-                return bethKey.CreateSubKey("Bethesda Softworks", RegistryKeyPermissionCheck.ReadWriteSubTree);
-            }
-        }
-
-        private string GetPathFromKey(string keyName)
-        {
-            using (var bethKey = GetBethKey())
-            using (var subKey = bethKey.CreateSubKey(keyName))
-            {
-                Debug.Assert(subKey != null, "subKey != null");
-                return subKey.GetValue("Installed Path", "").ToString();
-            }
-        }
-
-        private void SetPathFromKey(string keyName, string path)
-        {
-            using (var bethKey = GetBethKey())
-            using (var subKey = bethKey.CreateSubKey(keyName))
-            {
-                Debug.Assert(subKey != null, "subKey != null");
-                subKey.SetValue("Installed Path", path, RegistryValueKind.String);
-            }
         }
 
         public void Fallout3Prompt(FileDialog open, bool manual = false)
@@ -878,7 +844,7 @@ Would you like to install NVSE?", "NVSE missing", MessageBoxButtons.YesNoCancel)
                     else
                         LogFile("User selected: " + path);
 
-                    SetPathFromKey(keyName, path);
+                    RegistryHelper.SetPathFromKey(keyName, path);
 
                     return path;
                 }

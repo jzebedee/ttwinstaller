@@ -89,6 +89,7 @@
     <Compile Include="Patching\FileValidation.cs" />
     <Compile Include="ProgressTypes\InstallOperation.cs" />
     <Compile Include="ProgressTypes\Progress.cs" Condition="!$(TargetFrameworkVersion.Contains('v4.5'))" />
+    <Compile Include="RegistryHelper.cs" />
     <Compile Include="UI\frm_Main.cs">
       <SubType>Form</SubType>
     </Compile>

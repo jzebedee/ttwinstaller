@@ -3,8 +3,8 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Threading;
-using System.Security.Principal;
 using TaleOfTwoWastelands.ProgressTypes;
+using TaleOfTwoWastelands.Properties;
 
 namespace TaleOfTwoWastelands.UI
 {
@@ -21,8 +21,7 @@ namespace TaleOfTwoWastelands.UI
 
         private void frm_Main_Load(object sender, EventArgs e)
         {
-            //verify we are running as administrator
-            VerifyElevation();
+            Trace.Assert(Program.IsElevated, string.Format(Resources.MustBeElevated, Resources.TTW));
 
             //Progress<T> maintains SynchronizationContext
             var progressLog = new Progress<string>(UpdateLog);
@@ -33,19 +32,6 @@ namespace TaleOfTwoWastelands.UI
             txt_FO3Location.Text = _install.Fallout3Path;
             txt_FNVLocation.Text = _install.FalloutNVPath;
             txt_TTWLocation.Text = _install.TTWSavePath;
-        }
-
-        private void VerifyElevation()
-        {
-            var identity = WindowsIdentity.GetCurrent();
-            Debug.Assert(identity != null, "identity != null");
-
-            var principal = new WindowsPrincipal(identity);
-            if (principal.IsInRole(WindowsBuiltInRole.Administrator))
-                return;
-
-            MessageBox.Show(Application.ProductName + " must be run as Administrator.");
-            Environment.Exit(2);
         }
 
         private void UpdateProgressBar(InstallOperation opProg, TextProgressBar bar)

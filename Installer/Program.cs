@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Security.Principal;
 using System.Windows.Forms;
 
 namespace TaleOfTwoWastelands
@@ -8,6 +9,17 @@ namespace TaleOfTwoWastelands
     static class Program
     {
         public static readonly string LogDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "My Games", "TaleOfTwoWastelands");
+
+        public static readonly bool IsElevated = VerifyElevation();
+
+        private static bool VerifyElevation()
+        {
+            var identity = WindowsIdentity.GetCurrent();
+            Debug.Assert(identity != null, "identity != null");
+
+            var principal = new WindowsPrincipal(identity);
+            return principal.IsInRole(WindowsBuiltInRole.Administrator);
+        }
 
         /// <summary>
         /// The main entry point for the application.

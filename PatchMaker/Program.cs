@@ -45,7 +45,7 @@ namespace PatchMaker
             _dirTTWMain = Path.Combine(InDir, Installer.MainDir);
             _dirTTWOptional = Path.Combine(InDir, Installer.OptDir);
 
-            var bethKey = Installer.GetBethKey();
+            var bethKey = RegistryHelper.GetBethKey();
 
             var fo3Key = bethKey.CreateSubKey("Fallout3");
             Debug.Assert(fo3Key != null, "fo3Key != null");
