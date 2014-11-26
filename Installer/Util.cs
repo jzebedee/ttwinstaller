@@ -144,7 +144,7 @@ namespace TaleOfTwoWastelands
             return found;
         }
 
-        public static void CopyFolder(string inFolder, string destFolder, IProgress<string> log)
+        public static void CopyFolder(string inFolder, string destFolder)
         {
             Directory.CreateDirectory(destFolder);
 
@@ -153,6 +153,7 @@ namespace TaleOfTwoWastelands
                 var justFolder = folder.Replace(inFolder, "").TrimStart(Path.DirectorySeparatorChar);
                 Directory.CreateDirectory(Path.Combine(destFolder, justFolder));
             }
+
             foreach (string file in Directory.EnumerateFiles(inFolder, "*", SearchOption.AllDirectories))
             {
                 var justFile = file.Replace(inFolder, "").TrimStart(Path.DirectorySeparatorChar);
@@ -163,8 +164,8 @@ namespace TaleOfTwoWastelands
                 }
                 catch (UnauthorizedAccessException error)
                 {
-                    if (log != null)
-                        log.Report("ERROR: " + file.Replace(inFolder, "") + " did not copy successfully due to: Unauthorized Access Exception " + error.Source + ".");
+                    Log.Dual("ERROR: " + file.Replace(inFolder, "") + " did not copy successfully");
+                    Log.File(error.ToString());
                 }
             }
         }

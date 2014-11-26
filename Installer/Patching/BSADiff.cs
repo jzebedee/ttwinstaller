@@ -18,26 +18,12 @@ namespace TaleOfTwoWastelands.Patching
     {
         public const string VoicePrefix = @"sound\voice";
 
-        protected IProgress<string> ProgressDual { get; set; }
-        protected IProgress<string> ProgressFile { get; set; }
         protected IProgress<InstallStatus> ProgressMinorUI { get; set; }
         protected CancellationToken Token { get; set; }
         protected InstallStatus Op { get; set; }
 
-        private void Log(string msg)
-        {
-            ProgressDual.Report('\t' + msg);
-        }
-
-        private void LogFile(string msg)
-        {
-            ProgressFile.Report('\t' + msg);
-        }
-
         public BSADiff(Installer parent, CancellationToken token)
         {
-            ProgressDual = parent.ProgressDual;
-            ProgressFile = parent.ProgressFile;
             ProgressMinorUI = parent.ProgressMinorOperation;
             Token = token;
         }
@@ -112,7 +98,7 @@ namespace TaleOfTwoWastelands.Patching
                 }
                 else
                 {
-                    Log("\tNo patch database is available for: " + oldBSA);
+                    Log.Dual("\tNo patch database is available for: " + oldBSA);
                     return false;
                 }
 #endif
@@ -132,8 +118,8 @@ namespace TaleOfTwoWastelands.Patching
                     {
                         foreach (var kvp in renameDict)
                         {
-                            Log("File not found: " + kvp.Value);
-                            Log("\tCannot create: " + kvp.Key);
+                            Log.Dual("File not found: " + kvp.Value);
+                            Log.Dual("\tCannot create: " + kvp.Key);
                         }
                     }
                 }
@@ -231,7 +217,7 @@ namespace TaleOfTwoWastelands.Patching
 
                 if (oldFile == null)
                 {
-                    Log("ERROR: File not found: " + filepath);
+                    Log.Dual("ERROR: File not found: " + filepath);
                     return;
                 }
 
@@ -242,7 +228,7 @@ namespace TaleOfTwoWastelands.Patching
                 if (filepath.StartsWith(VoicePrefix) && (patches == null || patches.Length == 0))
                 {
                     opChk.CurrentOperation = "Skipping " + filename;
-                    //LogFile("Skipping voice file: " + filepath);
+                    //Log.File("Skipping voice file: " + filepath);
                     return;
                 }
 
@@ -281,15 +267,15 @@ namespace TaleOfTwoWastelands.Patching
                             if (PatchBsaFile(newFile, patchInfo, newChk))
                                 return;
                             else
-                                Log("ERROR: Patching " + filepath + " failed");
+                                Log.Dual("ERROR: Patching " + filepath + " failed");
                         }
 
                         using (var patChk = FileValidation.FromBSAFile(newFile, newChk.Type))
                             if (newChk != patChk)
                             {
                                 //no patch exists for the file
-                                Log("WARNING: File is of an unexpected version: " + newFile.Filename + " - " + patChk);
-                                Log("This file cannot be patched. Errors may occur.");
+                                Log.Dual("WARNING: File is of an unexpected version: " + newFile.Filename + " - " + patChk);
+                                Log.Dual("This file cannot be patched. Errors may occur.");
                             }
                     }
             }
@@ -372,7 +358,7 @@ namespace TaleOfTwoWastelands.Patching
                 }
                 else
                 {
-                    LogFile("ERROR: Patching " + bsaFile.Filename + " has failed - " + outputChk);
+                    Log.File("ERROR: Patching " + bsaFile.Filename + " has failed - " + outputChk);
                     return false;
                 }
         }

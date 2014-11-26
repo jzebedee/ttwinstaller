@@ -140,4 +140,13 @@ Would like the installer to automatically build FOMODs?</value>
     <value>{0} has been installed successfully.</value>
     <comment>{0} = TTW</comment>
   </data>
+  <data name="Fallout3" xml:space="preserve">
+    <value>Fallout 3</value>
+  </data>
+  <data name="FalloutNewVegas" xml:space="preserve">
+    <value>Fallout New Vegas</value>
+  </data>
+  <data name="UncaughtExceptionMessage" xml:space="preserve">
+    <value>An uncaught exception occurred and the program will now exit. Please submit a crash report with your installation log.</value>
+  </data>
 </root>

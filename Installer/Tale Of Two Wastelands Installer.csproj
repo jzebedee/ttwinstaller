@@ -79,6 +79,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="FinalizedTextWriter.cs" />
+    <Compile Include="Install\FOMOD.cs" />
+    <Compile Include="Log.cs" />
     <Compile Include="Patching\Diff.cs" />
     <Compile Include="Patching\BSADiff.cs" />
     <Compile Include="Patching\Extensions.cs" />
@@ -87,8 +89,8 @@
     <Compile Include="Patching\PatchDict.cs" />
     <Compile Include="Patching\PatchInfo.cs" />
     <Compile Include="Patching\FileValidation.cs" />
-    <Compile Include="ProgressTypes\InstallOperation.cs" />
-    <Compile Include="ProgressTypes\Progress.cs" Condition="!$(TargetFrameworkVersion.Contains('v4.5'))" />
+    <Compile Include="Progress\InstallStatus.cs" />
+    <Compile Include="Progress\Progress.cs" Condition="!$(TargetFrameworkVersion.Contains('v4.5'))" />
     <Compile Include="RegistryHelper.cs" />
     <Compile Include="UI\frm_Main.cs">
       <SubType>Form</SubType>
@@ -99,6 +101,7 @@
     <Compile Include="Installer.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="UI\Prompts.cs" />
     <Compile Include="UI\TextProgressBar.cs">
       <SubType>Component</SubType>
     </Compile>

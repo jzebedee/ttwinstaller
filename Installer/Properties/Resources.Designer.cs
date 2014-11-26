@@ -81,6 +81,24 @@ namespace TaleOfTwoWastelands.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Fallout 3.
+        /// </summary>
+        internal static string Fallout3 {
+            get {
+                return ResourceManager.GetString("Fallout3", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Fallout New Vegas.
+        /// </summary>
+        internal static string FalloutNewVegas {
+            get {
+                return ResourceManager.GetString("FalloutNewVegas", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to {0} has been installed successfully..
         /// </summary>
         internal static string InstalledSuccessfully {
@@ -113,6 +131,15 @@ namespace TaleOfTwoWastelands.Properties {
         internal static string TTW {
             get {
                 return ResourceManager.GetString("TTW", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to An uncaught exception occurred and the program will now exit. Please submit a crash report with your installation log..
+        /// </summary>
+        internal static string UncaughtExceptionMessage {
+            get {
+                return ResourceManager.GetString("UncaughtExceptionMessage", resourceCulture);
             }
         }
     }

@@ -8,6 +8,11 @@ namespace TaleOfTwoWastelands.ProgressTypes
         private readonly CancellationToken _token;
         private readonly IProgress<InstallStatus> _progress;
 
+        public CancellationToken Token
+        {
+            get { return _token; }
+        }
+
         private int _itemsDone;
         public int ItemsDone
         {

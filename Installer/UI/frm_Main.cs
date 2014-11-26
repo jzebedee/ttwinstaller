@@ -13,6 +13,7 @@ namespace TaleOfTwoWastelands.UI
         private CancellationTokenSource _installCts;
         private Task _installTask;
         private Installer _install;
+        private Prompts _prompts;
 
         public frm_Main()
         {
@@ -24,14 +25,16 @@ namespace TaleOfTwoWastelands.UI
             Trace.Assert(Program.IsElevated, string.Format(Resources.MustBeElevated, Resources.TTW));
 
             //Progress<T> maintains SynchronizationContext
-            var progressLog = new Progress<string>(UpdateLog);
+            Log.DisplayMessage = new Progress<string>(UpdateLog);
             var uiMinor = new Progress<InstallStatus>(m => UpdateProgressBar(m, prgCurrent));
             var uiMajor = new Progress<InstallStatus>(m => UpdateProgressBar(m, prgOverall));
-            _install = new Installer(progressLog, uiMinor, uiMajor, dlg_FindGame, dlg_SaveTTW);
 
-            txt_FO3Location.Text = _install.Fallout3Path;
-            txt_FNVLocation.Text = _install.FalloutNVPath;
-            txt_TTWLocation.Text = _install.TTWSavePath;
+            _prompts = new Prompts(dlg_FindGame, dlg_SaveTTW);
+            _install = new Installer(uiMinor, uiMajor, _prompts);
+
+            txt_FO3Location.Text = _prompts.Fallout3Path;
+            txt_FNVLocation.Text = _prompts.FalloutNVPath;
+            txt_TTWLocation.Text = _prompts.TTWSavePath;
         }
 
         private void UpdateProgressBar(InstallStatus opProg, TextProgressBar bar)
@@ -43,25 +46,26 @@ namespace TaleOfTwoWastelands.UI
 
         private void UpdateLog(string msg)
         {
-            txt_Progress.AppendText("[" + DateTime.Now + "]\t" + msg + Environment.NewLine);
+            txt_Progress.AppendText(msg);
+            txt_Progress.AppendText(Environment.NewLine);
         }
 
         private void btn_FO3Browse_Click(object sender, EventArgs e)
         {
-            _install.Fallout3Prompt(dlg_FindGame, true);
-            txt_FO3Location.Text = _install.Fallout3Path;
+            _prompts.Fallout3Prompt(true);
+            txt_FO3Location.Text = _prompts.Fallout3Path;
         }
 
         private void btn_FNVBrowse_Click(object sender, EventArgs e)
         {
-            _install.FalloutNVPrompt(dlg_FindGame, true);
-            txt_FNVLocation.Text = _install.FalloutNVPath;
+            _prompts.FalloutNVPrompt(true);
+            txt_FNVLocation.Text = _prompts.FalloutNVPath;
         }
 
         private void btn_TTWBrowse_Click(object sender, EventArgs e)
         {
-            _install.TTWPrompt(dlg_SaveTTW, true);
-            txt_TTWLocation.Text = _install.TTWSavePath;
+            _prompts.TTWPrompt(true);
+            txt_TTWLocation.Text = _prompts.TTWSavePath;
         }
 
         private void btn_Install_Click(object sender, EventArgs e)
