@@ -11,6 +11,8 @@ using TaleOfTwoWastelands.Progress;
 using TaleOfTwoWastelands.Patching;
 using TaleOfTwoWastelands.Properties;
 using TaleOfTwoWastelands.UI;
+using BSA = BSAsharp.BSA;
+using BSATools = TaleOfTwoWastelands.Install.BSA;
 
 namespace TaleOfTwoWastelands
 {
@@ -21,9 +23,6 @@ namespace TaleOfTwoWastelands
             MainDir = "Main Files",
             OptDir = "Optional Files",
             AssetsDir = "resources";
-
-        public const CompressionStrategy FastStrategy = CompressionStrategy.Unsafe | CompressionStrategy.Speed;
-        public const CompressionStrategy GoodStrategy = CompressionStrategy.Unsafe | CompressionStrategy.Size;
 
         public static readonly string[] CheckedESMs = { "Fallout3.esm", "Anchorage.esm", "ThePitt.esm", "BrokenSteel.esm", "PointLookout.esm", "Zeta.esm" };
         public static readonly Dictionary<string, string> VoicePaths = new Dictionary<string, string> {
@@ -61,18 +60,6 @@ namespace TaleOfTwoWastelands
             {"PointLookout - Sounds", "PointLookout - Sounds"},
             {"Zeta - Main", "Zeta - Main"},
             {"Zeta - Sounds", "Zeta - Sounds"},
-        };
-        public static readonly Dictionary<string, CompressionOptions> BSAOptions = new Dictionary<string, CompressionOptions>();
-        public static readonly CompressionOptions DefaultBSAOptions = new CompressionOptions
-        {
-            Strategy = GoodStrategy,
-            ExtensionCompressionLevel = new Dictionary<string, int>
-            {
-                {".ogg", -1},
-                {".wav", -1},
-                {".mp3", -1},
-                {".lip", -1},
-            }
         };
 
         public static readonly string PatchDir = Path.Combine(AssetsDir, "TTW Data", "TTW Patches");
@@ -135,7 +122,7 @@ namespace TaleOfTwoWastelands
             Token = LinkedSource.Token;
 
             _prompts.PromptPaths();
-            _bsaDiff = new BSADiff(this, Token);
+            _bsaDiff = new BSADiff(ProgressMinorOperation, Token);
             _nvse = new NVSE(_prompts.FalloutNVPath);
 
             var opProg = new InstallStatus(ProgressMajorOperation, Token) { ItemsTotal = 7 + BuildableBSAs.Count + CheckedESMs.Length };
@@ -307,41 +294,41 @@ namespace TaleOfTwoWastelands
         {
             foreach (var kvp in BuildableBSAs)
             {
+                if (Token.IsCancellationRequested)
+                    return;
+
                 //inBSA - KVP.Key
                 //outBSA - KVP.Value
+                var outBSA = kvp.Value;
+                string outBSAFile = Path.ChangeExtension(kvp.Value, ".bsa");
+                string outBSAPath = Path.Combine(DirTTWMain, outBSAFile);
 
-                DialogResult buildResult;
+                var inBSA = kvp.Key;
+                string inBSAFile = Path.ChangeExtension(kvp.Key, ".bsa");
+                string inBSAPath = Path.Combine(DirFO3Data, inBSAFile);
+
+                BSATools.BuildResult buildResult;
                 try
                 {
-                    opProg.CurrentOperation = "Building " + Path.GetFileName(kvp.Value);
+                    opProg.CurrentOperation = "Building " + outBSA;
+
+                    if (!BSATools.BuildPrompt(outBSA, outBSAPath))
+                        continue;
+
                     do
                     {
-                        CompressionOptions bsaOptions;
-                        if (BSAOptions.TryGetValue(kvp.Key, out bsaOptions))
-                        {
-                            if (bsaOptions.ExtensionCompressionLevel.Count == 0)
-                                bsaOptions.ExtensionCompressionLevel = DefaultBSAOptions.ExtensionCompressionLevel;
-                            if (bsaOptions.Strategy == CompressionStrategy.Safe)
-                                bsaOptions.Strategy = DefaultBSAOptions.Strategy;
-                        }
-                        else
-                        {
-                            bsaOptions = DefaultBSAOptions;
-                        }
-
-                        buildResult = BuildBSA(bsaOptions, kvp.Key, kvp.Value);
-                    } while (!Token.IsCancellationRequested && buildResult == DialogResult.Retry);
+                        buildResult = BSATools.Patch(_bsaDiff, BSATools.GetOptionsOrDefault(inBSA), inBSAFile, inBSAPath, outBSAPath);
+                    } while (!Token.IsCancellationRequested && buildResult == BSATools.BuildResult.Retry);
                 }
                 finally
                 {
                     opProg.Step();
                 }
 
-                if (buildResult == DialogResult.Abort)
+                if (buildResult == BSATools.BuildResult.Abort)
+                {
                     LinkedSource.Cancel();
-
-                if (Token.IsCancellationRequested)
-                    return;
+                }
             }
         }
 
@@ -369,37 +356,37 @@ namespace TaleOfTwoWastelands
                 if (!skipSongs)
                 {
                     Log.Display("Extracting songs");
-                    ExtractBSA(Token, inBsa.Where(folder => folder.Path.StartsWith(songsPath)), DirTTWMain, skipSongs, "Fallout - Sound");
+                    BSATools.Extract(Token, inBsa.Where(folder => folder.Path.StartsWith(songsPath)), "Fallout - Sound", DirTTWMain, false);
                 }
 
-                if (!skipSFX)
+                if (skipSFX)
+                    return;
+
+                Log.Display("Building optional TaleOfTwoWastelands - SFX.bsa...");
+
+                var fxuiPath = Path.Combine("sound", "fx", "ui");
+
+                var includedFilenames = new HashSet<string>(File.ReadLines(Path.Combine(AssetsDir, "TTW Data", "TTW_SFXCopy.txt")));
+
+                var includedGroups =
+                    from folder in inBsa.Where(folder => folder.Path.StartsWith(fxuiPath))
+                    from file in folder
+                    where includedFilenames.Contains(file.Filename)
+                    group file by folder;
+
+                foreach (var group in includedGroups)
                 {
-                    Log.Display("Building optional TaleOfTwoWastelands - SFX.bsa...");
+                    //make folder only include files that matched includedFilenames
+                    @group.Key.IntersectWith(@group);
 
-                    var fxuiPath = Path.Combine("sound", "fx", "ui");
-
-                    var includedFilenames = new HashSet<string>(File.ReadLines(Path.Combine(AssetsDir, "TTW Data", "TTW_SFXCopy.txt")));
-
-                    var includedGroups =
-                        from folder in inBsa.Where(folder => folder.Path.StartsWith(fxuiPath))
-                        from file in folder
-                        where includedFilenames.Contains(file.Filename)
-                        group file by folder;
-
-                    foreach (var group in includedGroups)
-                    {
-                        //make folder only include files that matched includedFilenames
-                        group.Key.IntersectWith(group);
-
-                        //add folders back into output BSA
-                        outBsa.Add(group.Key);
-                    }
-
-                    Log.File("Building TaleOfTwoWastelands - SFX.bsa.");
-                    outBsa.Save(outBsaPath);
-
-                    Log.Display("\tDone");
+                    //add folders back into output BSA
+                    outBsa.Add(@group.Key);
                 }
+
+                Log.File("Building TaleOfTwoWastelands - SFX.bsa.");
+                outBsa.Save(outBsaPath);
+
+                Log.Display("\tDone");
             }
         }
 
@@ -565,103 +552,11 @@ namespace TaleOfTwoWastelands
             return false;
         }
 
-        private DialogResult BuildBSA(CompressionOptions bsaOptions, string inBSA, string outBSA)
-        {
-            string outBSAFile = Path.ChangeExtension(outBSA, ".bsa");
-            string outBSAPath = Path.Combine(DirTTWMain, outBSAFile);
-
-            if (File.Exists(outBSAPath))
-            {
-                switch (MessageBox.Show(string.Format(Resources.RebuildPrompt, outBSAFile), Resources.FileAlreadyExists, MessageBoxButtons.YesNo))
-                {
-                    case DialogResult.Yes:
-                        File.Delete(outBSAPath);
-                        Log.Dual("Rebuilding " + outBSA);
-                        break;
-                    case DialogResult.No:
-                        Log.Dual(outBSA + " has already been built. Skipping.");
-                        return DialogResult.No;
-                }
-            }
-            else
-            {
-                Log.Dual("Building " + outBSA);
-            }
-
-            string inBSAFile = Path.ChangeExtension(inBSA, ".bsa");
-            string inBSAPath = Path.Combine(DirFO3Data, inBSAFile);
-
-            bool patchSuccess;
-
-#if DEBUG
-            var watch = new Stopwatch();
-            try
-            {
-                watch.Start();
-#endif
-                patchSuccess = _bsaDiff.PatchBSA(bsaOptions, inBSAPath, outBSAPath);
-                if (!patchSuccess)
-                    Log.Dual("Patching BSA {0} failed", inBSA);
-#if DEBUG
-            }
-            finally
-            {
-                watch.Stop();
-                Debug.WriteLine("PatchBSA for {0} finished in {1}", inBSA, watch.Elapsed);
-            }
-#endif
-
-            if (!patchSuccess)
-            {
-                switch (MessageBox.Show(string.Format(Resources.ErrorWhilePatching, inBSA), Resources.Error, MessageBoxButtons.AbortRetryIgnore))
-                {
-                    case DialogResult.Abort:   //Quit install
-                        Fail();
-                        return DialogResult.Abort;
-                    case DialogResult.Retry:   //Start over from scratch
-                        Log.Dual("Retrying build.");
-                        return DialogResult.Retry;
-                    case DialogResult.Ignore:  //Ignore errors and move on
-                        Log.Dual("Ignoring errors.");
-                        return DialogResult.Ignore;
-                }
-            }
-
-            Log.Dual("Build successful.");
-            return DialogResult.OK;
-        }
-
         private void Fail(string msg = null)
         {
             if (msg != null)
                 Log.Dual(msg);
             Log.Dual("Install aborted.");
-        }
-
-        public static void ExtractBSA(CancellationToken token, IEnumerable<BSAFolder> folders, string bsaOutputDir, bool skipExisting, string bsaName = null)
-        {
-            foreach (var folder in folders)
-            {
-                Directory.CreateDirectory(Path.Combine(bsaOutputDir, folder.Path));
-                Log.File("Created " + folder.Path);
-
-                foreach (var file in folder)
-                {
-                    token.ThrowIfCancellationRequested();
-
-                    var filePath = Path.Combine(bsaOutputDir, file.Filename);
-                    if (File.Exists(filePath) && skipExisting)
-                    {
-                        Log.File("Skipped (already exists) " + file.Filename);
-                        continue;
-                    }
-
-                    File.WriteAllBytes(filePath, file.GetContents(true));
-                    Log.File("Extracted " + file.Filename);
-                }
-            }
-            // ReSharper disable once ConstantNullCoalescingCondition
-            Log.File("Extract from " + bsaName ?? bsaOutputDir.Replace(Path.GetDirectoryName(bsaOutputDir), "").TrimEnd(Path.DirectorySeparatorChar) + " done!");
         }
 
         private bool CheckFiles()

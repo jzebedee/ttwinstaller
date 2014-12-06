@@ -79,6 +79,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="FinalizedTextWriter.cs" />
+    <Compile Include="Install\BSA.cs" />
     <Compile Include="Install\FOMOD.cs" />
     <Compile Include="Install\NVSE.cs" />
     <Compile Include="Log.cs" />

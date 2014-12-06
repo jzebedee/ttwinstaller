@@ -94,7 +94,6 @@
             // prgOverall
             // 
             this.prgOverall.CustomText = null;
-            this.prgOverall.DisplayStyle = TaleOfTwoWastelands.UI.ProgressBarDisplayText.CustomText;
             this.prgOverall.Dock = System.Windows.Forms.DockStyle.Fill;
             this.prgOverall.Location = new System.Drawing.Point(255, 534);
             this.prgOverall.Name = "prgOverall";
@@ -256,7 +255,6 @@
             // prgCurrent
             // 
             this.prgCurrent.CustomText = null;
-            this.prgCurrent.DisplayStyle = TaleOfTwoWastelands.UI.ProgressBarDisplayText.CustomText;
             this.prgCurrent.Dock = System.Windows.Forms.DockStyle.Fill;
             this.prgCurrent.Location = new System.Drawing.Point(255, 504);
             this.prgCurrent.Name = "prgCurrent";

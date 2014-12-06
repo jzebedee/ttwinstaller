@@ -58,16 +58,14 @@ namespace TaleOfTwoWastelands.Patching
                         SetCompressionLevel();
                         return new LzmaEncodeStream(stream);
                     }
-                    else
-                        return new LzmaDecodeStream(stream);
+                    return new LzmaDecodeStream(stream);
                 case SIG_NONONONO:
                     //TOFIX: this does not guarantee wrapping
                     return stream;
                 case SIG_BSDIFF40:
                     if (output)
                         return new BZip2OutputStream(stream) { IsStreamOwner = false };
-                    else
-                        return new BZip2InputStream(stream);
+                    return new BZip2InputStream(stream);
                 default:
                     throw new ArgumentException("unknown encoding type");
             }
