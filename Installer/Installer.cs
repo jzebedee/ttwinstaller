@@ -11,6 +11,7 @@ using TaleOfTwoWastelands.ProgressTypes;
 using TaleOfTwoWastelands.Patching;
 using SevenZip;
 using System.Net;
+using TaleOfTwoWastelands.Properties;
 
 namespace TaleOfTwoWastelands
 {
@@ -198,21 +199,15 @@ namespace TaleOfTwoWastelands
 
         private string GetPathFromKey(string keyName)
         {
+            var settingsPath = (string)Settings.Default[keyName];
+            if (!string.IsNullOrEmpty(settingsPath))
+                return settingsPath;
+
             using (var bethKey = GetBethKey())
             using (var subKey = bethKey.CreateSubKey(keyName))
             {
                 Debug.Assert(subKey != null, "subKey != null");
                 return subKey.GetValue("Installed Path", "").ToString();
-            }
-        }
-
-        private void SetPathFromKey(string keyName, string path)
-        {
-            using (var bethKey = GetBethKey())
-            using (var subKey = bethKey.CreateSubKey(keyName))
-            {
-                Debug.Assert(subKey != null, "subKey != null");
-                subKey.SetValue("Installed Path", path, RegistryValueKind.String);
             }
         }
 
@@ -894,7 +889,8 @@ Would you like to install NVSE?", "NVSE missing", MessageBoxButtons.YesNoCancel)
                     else
                         LogFile("User selected: " + path);
 
-                    SetPathFromKey(keyName, path);
+                    Settings.Default[keyName] = path;
+                    Settings.Default.Save();
 
                     return path;
                 }
