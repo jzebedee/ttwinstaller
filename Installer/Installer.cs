@@ -18,16 +18,6 @@ namespace TaleOfTwoWastelands
     public class Installer : IDisposable
     {
         #region Set-once fields (statics and constants)
-        public const string
-            MainDir = "Main Files",
-            OptDir = "Optional Files",
-            AssetsDir = "resources",
-            MainFOMOD = "TaleOfTwoWastelands_Main.fomod",
-            OptFOMOD = "TaleOfTwoWastelands_Options.fomod",
-            NvseFile = "nvse_loader.exe",
-            NvseLink = @"http://nvse.silverlock.org/",
-            NvseSearch = @"http://nvse.silverlock.org/download/*.7z";
-
         public const CompressionStrategy FastStrategy = CompressionStrategy.Unsafe | CompressionStrategy.Speed;
         public const CompressionStrategy GoodStrategy = CompressionStrategy.Unsafe | CompressionStrategy.Size;
 
@@ -81,14 +71,14 @@ namespace TaleOfTwoWastelands
             }
         };
 
-        public static readonly string PatchDir = Path.Combine(AssetsDir, "TTW Data", "TTW Patches");
+        public static readonly string PatchDir = Path.Combine(Resources.AssetsDir, "TTW Data", "TTW Patches");
         #endregion
 
         #region Instance private
         readonly string dirFO3Data, _dirFNVData;
 
-        private string DirTTWMain { get { return Path.Combine(TTWSavePath, MainDir); } }
-        private string DirTTWOptional { get { return Path.Combine(TTWSavePath, OptDir); } }
+        private string DirTTWMain { get { return Path.Combine(TTWSavePath, Resources.MainDir); } }
+        private string DirTTWOptional { get { return Path.Combine(TTWSavePath, Resources.OptDir); } }
 
         private CancellationTokenSource LinkedSource { get; set; }
         private CancellationToken Token { get; set; }
@@ -268,7 +258,7 @@ namespace TaleOfTwoWastelands
                     opProg.CurrentOperation = curOp;
 
                     LogFile(curOp);
-                    Util.CopyFolder(Path.Combine(AssetsDir, "TTW Data", "TTW Files"), TTWSavePath, ProgressFile);
+                    Util.CopyFolder(Path.Combine(Resources.AssetsDir, "TTW Data", "TTW Files"), TTWSavePath, ProgressFile);
                 }
                 finally
                 {
@@ -309,7 +299,7 @@ namespace TaleOfTwoWastelands
                     opProg.CurrentOperation = "Copying " + ttwArchive;
 
                     if (!File.Exists(Path.Combine(DirTTWMain, ttwArchive)))
-                        File.Copy(Path.Combine(AssetsDir, "TTW Data", ttwArchive), Path.Combine(DirTTWMain, ttwArchive));
+                        File.Copy(Path.Combine(Resources.AssetsDir, "TTW Data", ttwArchive), Path.Combine(DirTTWMain, ttwArchive));
                 }
                 finally
                 {
@@ -329,11 +319,11 @@ namespace TaleOfTwoWastelands
                         opB = "Fallout3 video files";
 
                     opProg.CurrentOperation = prefix + opA;
-                    FalloutLineCopy(opA, Path.Combine(AssetsDir, "TTW Data", "FO3_MusicCopy.txt"));
+                    FalloutLineCopy(opA, Path.Combine(Resources.AssetsDir, "TTW Data", "FO3_MusicCopy.txt"));
                     opProg.Step();
 
                     opProg.CurrentOperation = prefix + opB;
-                    FalloutLineCopy(opB, Path.Combine(AssetsDir, "TTW Data", "FO3_VideoCopy.txt"));
+                    FalloutLineCopy(opB, Path.Combine(Resources.AssetsDir, "TTW Data", "FO3_VideoCopy.txt"));
                     opProg.Step();
                 }
 
@@ -457,7 +447,7 @@ namespace TaleOfTwoWastelands
 
                     var fxuiPath = Path.Combine("sound", "fx", "ui");
 
-                    var includedFilenames = new HashSet<string>(File.ReadLines(Path.Combine(AssetsDir, "TTW Data", "TTW_SFXCopy.txt")));
+                    var includedFilenames = new HashSet<string>(File.ReadLines(Path.Combine(Resources.AssetsDir, "TTW Data", "TTW_SFXCopy.txt")));
 
                     var includedGroups =
                         from folder in inBsa.Where(folder => folder.Path.StartsWith(fxuiPath))
@@ -528,8 +518,8 @@ namespace TaleOfTwoWastelands
             LogFile("Building FOMODs.");
             LogDisplay("Building FOMODs...");
             LogDisplay("This can take some time.");
-            BuildFOMOD(DirTTWMain, Path.Combine(TTWSavePath, MainFOMOD));
-            BuildFOMOD(DirTTWOptional, Path.Combine(TTWSavePath, OptFOMOD));
+            BuildFOMOD(DirTTWMain, Path.Combine(TTWSavePath, Resources.MainFOMOD));
+            BuildFOMOD(DirTTWOptional, Path.Combine(TTWSavePath, Resources.OptFOMOD));
             LogFile("\tDone.");
             LogDisplay("\tFOMODs built.");
         }
@@ -740,7 +730,7 @@ namespace TaleOfTwoWastelands
 
         private bool CheckNVSE()
         {
-            var nvseLoader = Path.Combine(FalloutNVPath, NvseFile);
+            var nvseLoader = Path.Combine(FalloutNVPath, Resources.NvseFile);
             if (!File.Exists(nvseLoader))
             {
                 LogFile("NVSE missing");
@@ -773,12 +763,12 @@ Would you like to install NVSE?", "NVSE missing", MessageBoxButtons.YesNoCancel)
         {
             using (var wc = new WebClient())
             {
-                LogFile("Requesting NVSE page at " + NvseLink);
+                LogFile("Requesting NVSE page at " + Resources.NvseLink);
 
                 string dlLink;
-                using (var resStream = wc.OpenRead(NvseLink))
+                using (var resStream = wc.OpenRead(Resources.NvseLink))
                 {
-                    if (!Util.PatternSearch(resStream, NvseSearch, out dlLink))
+                    if (!Util.PatternSearch(resStream, Resources.NvseSearchPattern, out dlLink))
                     {
                         Fail("Failed to download NVSE.");
                         return false;
@@ -839,7 +829,7 @@ Would you like to install NVSE?", "NVSE missing", MessageBoxButtons.YesNoCancel)
 
         private void PromptPaths(FileDialog open, FileDialog save)
         {
-            SevenZipCompressor.SetLibraryPath(Path.Combine(AssetsDir, "7Zip", "7z" + (Environment.Is64BitProcess ? "64.dll" : ".dll")));
+            SevenZipCompressor.SetLibraryPath(Path.Combine(Resources.AssetsDir, "7Zip", "7z" + (Environment.Is64BitProcess ? "64.dll" : ".dll")));
 
             LogFile("Looking for Fallout3.exe");
             if (File.Exists(Path.Combine(Fallout3Path, "Fallout3.exe")))
