@@ -192,4 +192,28 @@ Would you like to install NVSE?</value>
   <data name="RightSaidFred" xml:space="preserve">
     <value>Impossible</value>
   </data>
+  <data name="AssetsDir" xml:space="preserve">
+    <value>resources</value>
+  </data>
+  <data name="MainDir" xml:space="preserve">
+    <value>Main Files</value>
+  </data>
+  <data name="MainFOMOD" xml:space="preserve">
+    <value>TaleOfTwoWastelands_Main.fomod</value>
+  </data>
+  <data name="NvseFile" xml:space="preserve">
+    <value>nvse_loader.exe</value>
+  </data>
+  <data name="NvseLink" xml:space="preserve">
+    <value>http://nvse.silverlock.org/</value>
+  </data>
+  <data name="NvseSearchPattern" xml:space="preserve">
+    <value>http://nvse.silverlock.org/download/*.7z</value>
+  </data>
+  <data name="OptDir" xml:space="preserve">
+    <value>Optional Files</value>
+  </data>
+  <data name="OptFOMOD" xml:space="preserve">
+    <value>TaleOfTwoWastelands_Options.fomod</value>
+  </data>
 </root>

@@ -42,8 +42,8 @@ namespace PatchMaker
 
             Directory.CreateDirectory(OutDir);
 
-            _dirTTWMain = Path.Combine(InDir, Installer.MainDir);
-            _dirTTWOptional = Path.Combine(InDir, Installer.OptDir);
+            _dirTTWMain = Path.Combine(InDir, "Main Files");
+            _dirTTWOptional = Path.Combine(InDir, "Optional Files");
 
             var bethKey = RegistryHelper.GetBethKey();
 

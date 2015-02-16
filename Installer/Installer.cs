@@ -18,11 +18,9 @@ namespace TaleOfTwoWastelands
 {
     public class Installer
     {
-        #region Public set-once fields (statics and constants)
-        public const string
-            MainDir = "Main Files",
-            OptDir = "Optional Files",
-            AssetsDir = "resources";
+        #region Set-once fields (statics and constants)
+        public const CompressionStrategy FastStrategy = CompressionStrategy.Unsafe | CompressionStrategy.Speed;
+        public const CompressionStrategy GoodStrategy = CompressionStrategy.Unsafe | CompressionStrategy.Size;
 
         public static readonly string[] CheckedESMs = { "Fallout3.esm", "Anchorage.esm", "ThePitt.esm", "BrokenSteel.esm", "PointLookout.esm", "Zeta.esm" };
         public static readonly Dictionary<string, string> VoicePaths = new Dictionary<string, string> {
@@ -62,7 +60,7 @@ namespace TaleOfTwoWastelands
             {"Zeta - Sounds", "Zeta - Sounds"},
         };
 
-        public static readonly string PatchDir = Path.Combine(AssetsDir, "TTW Data", "TTW Patches");
+        public static readonly string PatchDir = Path.Combine(Resources.AssetsDir, "TTW Data", "TTW Patches");
         #endregion
 
         #region Instance private
@@ -161,7 +159,7 @@ namespace TaleOfTwoWastelands
                             default:
                                 Fail(err);
                                 return;
-                        }
+                }
                     }
                 }
                 finally
@@ -176,7 +174,7 @@ namespace TaleOfTwoWastelands
                     opProg.CurrentOperation = curOp;
 
                     Log.File(curOp);
-                    Util.CopyFolder(Path.Combine(AssetsDir, "TTW Data", "TTW Files"), _prompts.TTWSavePath);
+                    Util.CopyFolder(Path.Combine(Resources.AssetsDir, "TTW Data", "TTW Files"), _prompts.TTWSavePath);
                 }
                 finally
                 {
@@ -217,7 +215,7 @@ namespace TaleOfTwoWastelands
                     opProg.CurrentOperation = "Copying " + ttwArchive;
 
                     if (!File.Exists(Path.Combine(DirTTWMain, ttwArchive)))
-                        File.Copy(Path.Combine(AssetsDir, "TTW Data", ttwArchive), Path.Combine(DirTTWMain, ttwArchive));
+                        File.Copy(Path.Combine(Resources.AssetsDir, "TTW Data", ttwArchive), Path.Combine(DirTTWMain, ttwArchive));
                 }
                 finally
                 {
@@ -237,11 +235,11 @@ namespace TaleOfTwoWastelands
                         opB = "Fallout3 video files";
 
                     opProg.CurrentOperation = prefix + opA;
-                    FalloutLineCopy(opA, Path.Combine(AssetsDir, "TTW Data", "FO3_MusicCopy.txt"));
+                    FalloutLineCopy(opA, Path.Combine(Resources.AssetsDir, "TTW Data", "FO3_MusicCopy.txt"));
                     opProg.Step();
 
                     opProg.CurrentOperation = prefix + opB;
-                    FalloutLineCopy(opB, Path.Combine(AssetsDir, "TTW Data", "FO3_VideoCopy.txt"));
+                    FalloutLineCopy(opB, Path.Combine(Resources.AssetsDir, "TTW Data", "FO3_VideoCopy.txt"));
                     opProg.Step();
                 }
 
@@ -319,7 +317,7 @@ namespace TaleOfTwoWastelands
                     {
                         buildResult = BSATools.Patch(_bsaDiff, BSATools.GetOptionsOrDefault(inBSA), inBSAFile, inBSAPath, outBSAPath);
                     } while (!Token.IsCancellationRequested && buildResult == BSATools.BuildResult.Retry);
-                }
+                        }
                 finally
                 {
                     opProg.Step();
@@ -328,8 +326,8 @@ namespace TaleOfTwoWastelands
                 if (buildResult == BSATools.BuildResult.Abort)
                 {
                     LinkedSource.Cancel();
-                }
             }
+        }
         }
 
         private void BuildSFX()
@@ -364,31 +362,31 @@ namespace TaleOfTwoWastelands
 
                 Log.Display("Building optional TaleOfTwoWastelands - SFX.bsa...");
 
-                var fxuiPath = Path.Combine("sound", "fx", "ui");
+                    var fxuiPath = Path.Combine("sound", "fx", "ui");
 
-                var includedFilenames = new HashSet<string>(File.ReadLines(Path.Combine(AssetsDir, "TTW Data", "TTW_SFXCopy.txt")));
+                    var includedFilenames = new HashSet<string>(File.ReadLines(Path.Combine(Resources.AssetsDir, "TTW Data", "TTW_SFXCopy.txt")));
 
-                var includedGroups =
-                    from folder in inBsa.Where(folder => folder.Path.StartsWith(fxuiPath))
-                    from file in folder
-                    where includedFilenames.Contains(file.Filename)
-                    group file by folder;
+                    var includedGroups =
+                        from folder in inBsa.Where(folder => folder.Path.StartsWith(fxuiPath))
+                        from file in folder
+                        where includedFilenames.Contains(file.Filename)
+                        group file by folder;
 
-                foreach (var group in includedGroups)
-                {
-                    //make folder only include files that matched includedFilenames
+                    foreach (var group in includedGroups)
+                    {
+                        //make folder only include files that matched includedFilenames
                     @group.Key.IntersectWith(@group);
 
-                    //add folders back into output BSA
+                        //add folders back into output BSA
                     outBsa.Add(@group.Key);
-                }
+                    }
 
                 Log.File("Building TaleOfTwoWastelands - SFX.bsa.");
-                outBsa.Save(outBsaPath);
+                    outBsa.Save(outBsaPath);
 
                 Log.Display("\tDone");
+                }
             }
-        }
 
         private void BuildVoice()
         {
@@ -549,8 +547,8 @@ namespace TaleOfTwoWastelands
 
             Fail("Your version of " + esm + " cannot be patched. This is abnormal.");
 
-            return false;
-        }
+                        return false;
+                    }
 
         private void Fail(string msg = null)
         {
