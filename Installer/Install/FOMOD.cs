@@ -2,6 +2,7 @@
 using System.IO;
 using SevenZip;
 using TaleOfTwoWastelands.Progress;
+using TaleOfTwoWastelands.Properties;
 
 namespace TaleOfTwoWastelands.Install
 {
@@ -13,7 +14,7 @@ namespace TaleOfTwoWastelands.Install
 
         static FOMOD()
         {
-            SevenZipCompressor.SetLibraryPath(Path.Combine(Installer.AssetsDir, "7Zip", "7z" + (Environment.Is64BitProcess ? "64.dll" : ".dll")));
+            SevenZipCompressor.SetLibraryPath(Path.Combine(Resources.AssetsDir, "7Zip", "7z" + (Environment.Is64BitProcess ? "64.dll" : ".dll")));
         }
 
         public static void BuildAll(InstallStatus status, string mainBuildFolder, string optBuildFolder, string saveFolder)

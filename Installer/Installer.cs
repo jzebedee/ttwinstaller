@@ -75,12 +75,12 @@ namespace TaleOfTwoWastelands
 
         private string DirTTWMain
         {
-            get { return Path.Combine(_prompts.TTWSavePath, MainDir); }
+            get { return Path.Combine(_prompts.TTWSavePath, Resources.MainDir); }
         }
 
         private string DirTTWOptional
         {
-            get { return Path.Combine(_prompts.TTWSavePath, OptDir); }
+            get { return Path.Combine(_prompts.TTWSavePath, Resources.OptDir); }
         }
 
         private CancellationTokenSource LinkedSource { get; set; }
