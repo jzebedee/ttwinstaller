@@ -62,6 +62,10 @@
     <Reference Include="ICSharpCode.SharpZipLib">
       <HintPath>..\packages\SharpZipLib.0.86.0\lib\20\ICSharpCode.SharpZipLib.dll</HintPath>
     </Reference>
+    <Reference Include="Newtonsoft.Json, Version=7.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\Newtonsoft.Json.7.0.1-beta1\lib\net40\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="SevenZipSharp">
       <HintPath>..\packages\SevenZipSharp.0.64\lib\SevenZipSharp.dll</HintPath>
     </Reference>
@@ -102,11 +106,17 @@
     <Compile Include="Patching\FileValidation.cs" />
     <Compile Include="Progress\InstallStatus.cs" />
     <Compile Include="Progress\Progress.cs" Condition="!$(TargetFrameworkVersion.Contains('v4.5'))" />
-    <Compile Include="RegistryHelper.cs" />
-    <Compile Include="Properties\Resources.Designer.cs">
+    <Compile Include="Properties\Game.cs" />
+    <Compile Include="Properties\Game.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
-      <DependentUpon>Resources.resx</DependentUpon>
+      <DependentUpon>Game.resx</DependentUpon>
+    </Compile>
+    <Compile Include="RegistryHelper.cs" />
+    <Compile Include="Properties\Localization.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Localization.resx</DependentUpon>
     </Compile>
     <Compile Include="UI\frm_Main.cs">
       <SubType>Form</SubType>
@@ -123,13 +133,17 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Util.cs" />
+    <EmbeddedResource Include="Properties\Game.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Game.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
     <EmbeddedResource Include="UI\frm_Main.resx">
       <DependentUpon>frm_Main.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Properties\Resources.resx">
+    <EmbeddedResource Include="Properties\Localization.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <SubType>Designer</SubType>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <LastGenOutput>Localization.Designer.cs</LastGenOutput>
     </EmbeddedResource>
     <None Include="app.manifest" />
     <None Include="packages.config">

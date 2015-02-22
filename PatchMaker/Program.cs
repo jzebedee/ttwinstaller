@@ -11,9 +11,10 @@ using BSAsharp;
 
 namespace PatchMaker
 {
-    using Patch = Tuple<FileValidation, PatchInfo[]>;
+	using TaleOfTwoWastelands.Properties;
+	using Patch = Tuple<FileValidation, PatchInfo[]>;
 
-    class Program
+	class Program
     {
         const string
             InDir = "BuildDB",
@@ -55,13 +56,13 @@ namespace PatchMaker
 
             SevenZipCompressor.LzmaDictionarySize = 1024 * 1024 * 64; //64MiB, 7z 'Ultra'
 
-            Parallel.ForEach(Installer.BuildableBSAs, new ParallelOptions { MaxDegreeOfParallelism = 2 }, kvpBsa => BuildBsaPatch(kvpBsa.Key, kvpBsa.Value));
+            Parallel.ForEach(Game.BuildableBSAs, new ParallelOptions { MaxDegreeOfParallelism = 2 }, kvpBsa => BuildBsaPatch(kvpBsa.Key, kvpBsa.Value));
 
             var knownEsmVersions =
                 Directory.EnumerateFiles(Path.Combine(InDir, "Versions"), "*.esm", SearchOption.AllDirectories)
                 .ToLookup(Path.GetFileName, esm => esm);
 
-            Parallel.ForEach(Installer.CheckedESMs, new ParallelOptions { MaxDegreeOfParallelism = 2 }, esm => BuildMasterPatch(esm, knownEsmVersions));
+            Parallel.ForEach(Game.CheckedESMs, new ParallelOptions { MaxDegreeOfParallelism = 2 }, esm => BuildMasterPatch(esm, knownEsmVersions));
         }
 
         private static void BuildBsaPatch(string inBsaName, string outBsaName)

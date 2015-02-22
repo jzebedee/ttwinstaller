@@ -83,16 +83,16 @@ namespace TaleOfTwoWastelands.UI
         {
             Action resetInstallBtn = () =>
             {
-                btn_Install.Text = Resources.Install;
+                btn_Install.Text = Localization.Install;
                 btn_Install.Enabled = true;
                 _installCts.Dispose();
             };
 
-            if (btn_Install.Text == Resources.Install)
+            if (btn_Install.Text == Localization.Install)
             {
                 _installCts = new CancellationTokenSource();
 
-                btn_Install.Text = Resources.Cancel;
+                btn_Install.Text = Localization.Cancel;
                 _installTask = Task.Factory.StartNew(() => _install.Install(_installCts.Token));
                 _installTask.ContinueWith(task =>
                 {
@@ -106,7 +106,7 @@ namespace TaleOfTwoWastelands.UI
             }
             else
             {
-                btn_Install.Text = Resources.CancelingWait;
+                btn_Install.Text = Localization.CancelingWait;
                 btn_Install.Enabled = false;
                 _installCts.Cancel();
             }
@@ -120,7 +120,7 @@ namespace TaleOfTwoWastelands.UI
             if (!checkbox.Checked)
             {
                 checkbox.Checked = true;
-                MessageBox.Show(Resources.RightSaidFred);
+                MessageBox.Show(Localization.RightSaidFred);
             }
         }
     }

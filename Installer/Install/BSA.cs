@@ -53,7 +53,7 @@ namespace TaleOfTwoWastelands.Install
 
             Log.File("BSA \"{0}\" does not exist", bsaPath);
 
-            var promptResult = MessageBox.Show(String.Format(Resources.RebuildPrompt, bsaName), Resources.FileAlreadyExists, MessageBoxButtons.YesNo);
+            var promptResult = MessageBox.Show(String.Format(Localization.RebuildPrompt, bsaName), Localization.FileAlreadyExists, MessageBoxButtons.YesNo);
             switch (promptResult)
             {
                 case DialogResult.Yes:
@@ -79,7 +79,7 @@ namespace TaleOfTwoWastelands.Install
 
         private BuildResult ErrorPrompt(string bsaFile)
         {
-            var promptResult = MessageBox.Show(String.Format(Resources.ErrorWhilePatching, bsaFile), Resources.Error, MessageBoxButtons.AbortRetryIgnore);
+            var promptResult = MessageBox.Show(String.Format(Localization.ErrorWhilePatching, bsaFile), Localization.Error, MessageBoxButtons.AbortRetryIgnore);
             switch (promptResult)
             {
                 //case DialogResult.Abort: //Quit install

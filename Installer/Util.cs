@@ -173,7 +173,7 @@ namespace TaleOfTwoWastelands
 
         public static void AssertElevated()
         {
-            Trace.Assert(Program.IsElevated, string.Format(Resources.MustBeElevated, Resources.TTW));
+            Trace.Assert(Program.IsElevated, string.Format(Localization.MustBeElevated, Localization.TTW));
         }
     }
 }

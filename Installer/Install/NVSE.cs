@@ -20,7 +20,7 @@ namespace TaleOfTwoWastelands.Install
 
         public bool Check()
         {
-            var nvseLoader = Path.Combine(_fnvPath, Resources.NvseFile);
+            var nvseLoader = Path.Combine(_fnvPath, Localization.NvseFile);
             if (File.Exists(nvseLoader))
             {
                 Log.File("NVSE found");
@@ -33,7 +33,7 @@ namespace TaleOfTwoWastelands.Install
 
         public bool? Prompt()
         {
-            var dlgResult = MessageBox.Show(Resources.NVSE_InstallPrompt, "NVSE missing", MessageBoxButtons.YesNoCancel);
+            var dlgResult = MessageBox.Show(Localization.NVSE_InstallPrompt, "NVSE missing", MessageBoxButtons.YesNoCancel);
             switch (dlgResult)
             {
                 case DialogResult.Yes:
@@ -57,12 +57,12 @@ namespace TaleOfTwoWastelands.Install
 
             using (var wc = new WebClient())
             {
-                Log.File("Requesting NVSE page at " + Resources.NvseLink);
+                Log.File("Requesting NVSE page at " + Localization.NvseLink);
 
                 string dlLink;
-                using (var resStream = wc.OpenRead(Resources.NvseLink))
+                using (var resStream = wc.OpenRead(Localization.NvseLink))
                 {
-                    if (!Util.PatternSearch(resStream, Resources.NvseSearchPattern, out dlLink))
+                    if (!Util.PatternSearch(resStream, Localization.NvseSearchPattern, out dlLink))
                     {
                         err = "Failed to download NVSE.";
                         return false;

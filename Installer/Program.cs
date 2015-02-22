@@ -63,7 +63,7 @@ namespace TaleOfTwoWastelands
         static void HandleCrashException(Exception e)
         {
             Trace.WriteLine("An uncaught exception occurred: " + e);
-            MessageBox.Show(Resources.UncaughtExceptionMessage);
+            MessageBox.Show(Localization.UncaughtExceptionMessage);
             Environment.Exit(1);
         }
     }

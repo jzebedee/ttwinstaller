@@ -14,51 +14,14 @@ using TaleOfTwoWastelands.Properties;
 using TaleOfTwoWastelands.UI;
 using BSA = BSAsharp.BSA;
 using BSATools = TaleOfTwoWastelands.Install.BSA;
+using Newtonsoft.Json;
 
 namespace TaleOfTwoWastelands
 {
     public class Installer : IInstaller
     {
         #region Set-once fields (statics and constants)
-        public static readonly string[] CheckedESMs = { "Fallout3.esm", "Anchorage.esm", "ThePitt.esm", "BrokenSteel.esm", "PointLookout.esm", "Zeta.esm" };
-        public static readonly Dictionary<string, string> VoicePaths = new Dictionary<string, string> {
-            {Path.Combine("sound", "voice", "fallout3.esm", "playervoicemale"), Path.Combine("PlayerVoice", "sound", "voice", "falloutnv.esm", "playervoicemale")},
-            {Path.Combine("sound", "voice", "fallout3.esm", "playervoicefemale"), Path.Combine("PlayerVoice", "sound", "voice", "falloutnv.esm", "playervoicefemale")}
-        };
-        public static readonly Dictionary<string, string[]> CheckedBSAs = new Dictionary<string, string[]> {
-            {"Fallout3 - Main.bsa", new[] {"Fallout - Meshes.bsa", "Fallout - Misc.bsa", "Fallout - Textures.bsa"}},
-            {"Fallout3 - Sounds.bsa", new[] {"Fallout - MenuVoices.bsa", "Fallout - Sound.bsa", "Fallout - Voices.bsa"}},
-            {"Fallout3 - DLC.bsa",
-                new[] {
-                    "Anchorage - Main.bsa", "Anchorage - Sounds.bsa",
-                    "ThePitt - Main.bsa", "ThePitt - Sounds.bsa",
-                    "BrokenSteel - Main.bsa", "BrokenSteel - Sounds.bsa",
-                    "PointLookout - Main.bsa", "PointLookout - Sounds.bsa",
-                    "Zeta - Main.bsa", "Zeta - Sounds.bsa"
-                }
-            }
-        };
-        public static readonly Dictionary<string, string> BuildableBSAs = new Dictionary<string, string>
-        {
-            {"Fallout - Meshes", "Fallout3 - Meshes"},
-            {"Fallout - Misc", "Fallout3 - Misc"},
-            {"Fallout - Sound", "Fallout3 - Sound"},
-            {"Fallout - Textures", "Fallout3 - Textures"},
-            {"Fallout - MenuVoices", "Fallout3 - MenuVoices"},
-            {"Fallout - Voices", "Fallout3 - Voices"},
-            {"Anchorage - Main", "Anchorage - Main"},
-            {"Anchorage - Sounds", "Anchorage - Sounds"},
-            {"ThePitt - Main", "ThePitt - Main"},
-            {"ThePitt - Sounds", "ThePitt - Sounds"},
-            {"BrokenSteel - Main", "BrokenSteel - Main"},
-            {"BrokenSteel - Sounds", "BrokenSteel - Sounds"},
-            {"PointLookout - Main", "PointLookout - Main"},
-            {"PointLookout - Sounds", "PointLookout - Sounds"},
-            {"Zeta - Main", "Zeta - Main"},
-            {"Zeta - Sounds", "Zeta - Sounds"},
-        };
-
-        public static readonly string PatchDir = Path.Combine(Resources.AssetsDir, "TTW Data", "TTW Patches");
+        public static readonly string PatchDir = Path.Combine(Localization.AssetsDir, "TTW Data", "TTW Patches");
         #endregion
 
         #region Instance private
@@ -73,12 +36,12 @@ namespace TaleOfTwoWastelands
 
         private string DirTTWMain
         {
-            get { return Path.Combine(Prompts.TTWSavePath, Resources.MainDir); }
+            get { return Path.Combine(Prompts.TTWSavePath, Localization.MainDir); }
         }
 
         private string DirTTWOptional
         {
-            get { return Path.Combine(Prompts.TTWSavePath, Resources.OptDir); }
+            get { return Path.Combine(Prompts.TTWSavePath, Localization.OptDir); }
         }
 
         private CancellationTokenSource LinkedSource { get; set; }
@@ -126,7 +89,7 @@ namespace TaleOfTwoWastelands
                 .With("FNVPath").EqualTo(Prompts.FalloutNVPath)
                 .GetInstance<NVSE>();
 
-            var opProg = new InstallStatus(ProgressMajorOperation, Token) { ItemsTotal = 7 + BuildableBSAs.Count + CheckedESMs.Length };
+            var opProg = new InstallStatus(ProgressMajorOperation, Token) { ItemsTotal = 7 + Game.BuildableBSAs.Count + Game.CheckedESMs.Length };
             try
             {
                 try
@@ -179,7 +142,7 @@ namespace TaleOfTwoWastelands
                     Log.File(curOp);
 
                     string
-                        srcFolder = Path.Combine(Resources.AssetsDir, "TTW Data", "TTW Files"),
+                        srcFolder = Path.Combine(Localization.AssetsDir, "TTW Data", "TTW Files"),
                         tarFolder = Prompts.TTWSavePath;
 
                     Util.CopyFolder(srcFolder, tarFolder);
@@ -223,7 +186,7 @@ namespace TaleOfTwoWastelands
                     opProg.CurrentOperation = "Copying " + ttwArchive;
 
                     if (!File.Exists(Path.Combine(DirTTWMain, ttwArchive)))
-                        File.Copy(Path.Combine(Resources.AssetsDir, "TTW Data", ttwArchive), Path.Combine(DirTTWMain, ttwArchive));
+                        File.Copy(Path.Combine(Localization.AssetsDir, "TTW Data", ttwArchive), Path.Combine(DirTTWMain, ttwArchive));
                 }
                 finally
                 {
@@ -243,15 +206,15 @@ namespace TaleOfTwoWastelands
                         opB = "Fallout3 video files";
 
                     opProg.CurrentOperation = prefix + opA;
-                    FalloutLineCopy(opA, Path.Combine(Resources.AssetsDir, "TTW Data", "FO3_MusicCopy.txt"));
+                    FalloutLineCopy(opA, Path.Combine(Localization.AssetsDir, "TTW Data", "FO3_MusicCopy.txt"));
                     opProg.Step();
 
                     opProg.CurrentOperation = prefix + opB;
-                    FalloutLineCopy(opB, Path.Combine(Resources.AssetsDir, "TTW Data", "FO3_VideoCopy.txt"));
+                    FalloutLineCopy(opB, Path.Combine(Localization.AssetsDir, "TTW Data", "FO3_VideoCopy.txt"));
                     opProg.Step();
                 }
 
-                if (MessageBox.Show(string.Format(Resources.BuildFOMODsPrompt, Resources.TTW, Resources.SuggestedModManager), Resources.BuildFOMODsQuestion, MessageBoxButtons.YesNo) == DialogResult.Yes)
+                if (MessageBox.Show(string.Format(Localization.BuildFOMODsPrompt, Localization.TTW, Localization.SuggestedModManager), Localization.BuildFOMODsQuestion, MessageBoxButtons.YesNo) == DialogResult.Yes)
                 {
                     //+1 (opt)
                     try
@@ -270,7 +233,7 @@ namespace TaleOfTwoWastelands
                 opProg.Finish();
 
                 Log.Display("Install completed successfully.");
-                MessageBox.Show(string.Format(Resources.InstalledSuccessfully, Resources.TTW));
+                MessageBox.Show(string.Format(Localization.InstalledSuccessfully, Localization.TTW));
             }
             catch (OperationCanceledException)
             {
@@ -281,13 +244,13 @@ namespace TaleOfTwoWastelands
             {
                 Log.File(ex.ToString());
                 Fail("An error interrupted the install!");
-                MessageBox.Show(string.Format(Resources.ErrorWhileInstalling, ex.Message), Resources.Error);
+                MessageBox.Show(string.Format(Localization.ErrorWhileInstalling, ex.Message), Localization.Error);
             }
         }
 
         private bool ShowSkipDialog(string description)
         {
-            switch (MessageBox.Show(string.Format(Resources.AlreadyExistOverwritePrompt, description), Resources.OverwriteFiles, MessageBoxButtons.YesNo))
+            switch (MessageBox.Show(string.Format(Localization.AlreadyExistOverwritePrompt, description), Localization.OverwriteFiles, MessageBoxButtons.YesNo))
             {
                 case DialogResult.Yes:
                     return false;
@@ -298,7 +261,7 @@ namespace TaleOfTwoWastelands
 
         private void BuildBSAs(InstallStatus opProg)
         {
-            foreach (var kvp in BuildableBSAs)
+            foreach (var kvp in Game.BuildableBSAs)
             {
                 if (Token.IsCancellationRequested)
                     return;
@@ -376,7 +339,7 @@ namespace TaleOfTwoWastelands
 
                 var fxuiPath = Path.Combine("sound", "fx", "ui");
 
-                var includedFilenames = new HashSet<string>(File.ReadLines(Path.Combine(Resources.AssetsDir, "TTW Data", "TTW_SFXCopy.txt")));
+                var includedFilenames = new HashSet<string>(File.ReadLines(Path.Combine(Localization.AssetsDir, "TTW Data", "TTW_SFXCopy.txt")));
 
                 var includedGroups =
                     from folder in inBsa.Where(folder => folder.Path.StartsWith(fxuiPath))
@@ -413,8 +376,8 @@ namespace TaleOfTwoWastelands
                 outBsa = new BSA(inBsa.Settings))
             {
                 var includedFolders = inBsa
-                    .Where(folder => VoicePaths.ContainsKey(folder.Path))
-                    .Select(folder => new BSAFolder(VoicePaths[folder.Path], folder));
+                    .Where(folder => Game.VoicePaths.ContainsKey(folder.Path))
+                    .Select(folder => new BSAFolder(Game.VoicePaths[folder.Path], folder));
 
                 foreach (var folder in includedFolders)
                     outBsa.Add(folder);
@@ -425,7 +388,7 @@ namespace TaleOfTwoWastelands
 
         private bool PatchMasters(InstallStatus opProg)
         {
-            foreach (var esm in CheckedESMs)
+            foreach (var esm in Game.CheckedESMs)
                 try
                 {
                     opProg.CurrentOperation = "Patching " + esm;
@@ -578,7 +541,7 @@ namespace TaleOfTwoWastelands
 
             Log.Dual("Checking for required files...");
 
-            foreach (var esm in CheckedESMs)
+            foreach (var esm in Game.CheckedESMs)
             {
                 var ttwESM = Path.Combine(DirTTWMain, esm);
                 var dataESM = Path.Combine(DirFO3Data, esm);
@@ -592,7 +555,7 @@ namespace TaleOfTwoWastelands
                 }
             }
 
-            foreach (var kvp in CheckedBSAs)
+            foreach (var kvp in Game.CheckedBSAs)
             {
                 //Key = TTW BSA
                 //Value = string[] of FO3 sub-BSAs

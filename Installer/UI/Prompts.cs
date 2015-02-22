@@ -83,15 +83,15 @@ namespace TaleOfTwoWastelands.UI
         public string Fallout3Prompt(bool manual = false)
         {
             openDialog.FilterIndex = 1;
-            openDialog.Title = Resources.Fallout3;
-            return FindByUserPrompt(openDialog, Resources.Fallout3, "Fallout3", manual);
+            openDialog.Title = Localization.Fallout3;
+            return FindByUserPrompt(openDialog, Localization.Fallout3, "Fallout3", manual);
         }
 
         public string FalloutNVPrompt(bool manual = false)
         {
             openDialog.FilterIndex = 2;
-            openDialog.Title = Resources.FalloutNewVegas;
-            return FindByUserPrompt(openDialog, Resources.FalloutNewVegas, "FalloutNV", manual);
+            openDialog.Title = Localization.FalloutNewVegas;
+            return FindByUserPrompt(openDialog, Localization.FalloutNewVegas, "FalloutNV", manual);
         }
 
         public string TTWPrompt(bool manual = false)
