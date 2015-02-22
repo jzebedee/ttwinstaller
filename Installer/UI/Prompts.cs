@@ -4,16 +4,19 @@ using TaleOfTwoWastelands.Properties;
 
 namespace TaleOfTwoWastelands.UI
 {
-    public class Prompts
+    public class Prompts : IPrompts
     {
         private readonly FileDialog openDialog, saveDialog;
+        private readonly ILog Log;
 
         public string Fallout3Path { get; private set; }
         public string FalloutNVPath { get; private set; }
         public string TTWSavePath { get; private set; }
 
-        internal Prompts(OpenFileDialog openDialog, SaveFileDialog saveDialog)
+        public Prompts(OpenFileDialog openDialog, SaveFileDialog saveDialog, ILog log)
         {
+            Log = log;
+
             this.openDialog = openDialog;
             this.saveDialog = saveDialog;
 

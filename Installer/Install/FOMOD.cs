@@ -6,24 +6,23 @@ using TaleOfTwoWastelands.Properties;
 
 namespace TaleOfTwoWastelands.Install
 {
-    internal static class FOMOD
+    internal class FOMOD
     {
-        private const string
-            MainFOMOD = "TaleOfTwoWastelands_Main.fomod",
-            OptFOMOD = "TaleOfTwoWastelands_Options.fomod";
+        private readonly ILog Log;
 
-        static FOMOD()
+        internal FOMOD(ILog log)
         {
+            Log = log;
             SevenZipCompressor.SetLibraryPath(Path.Combine(Resources.AssetsDir, "7Zip", "7z" + (Environment.Is64BitProcess ? "64.dll" : ".dll")));
         }
 
-        public static void BuildAll(InstallStatus status, string mainBuildFolder, string optBuildFolder, string saveFolder)
+        public void BuildAll(InstallStatus status, string mainBuildFolder, string optBuildFolder, string saveFolder)
         {
             Log.File("Building FOMODs.");
             Log.Display("Building FOMODs...");
             Log.Display("This can take some time.");
-            Build(status, mainBuildFolder, Path.Combine(saveFolder, MainFOMOD));
-            Build(status, optBuildFolder, Path.Combine(saveFolder, OptFOMOD));
+            Build(status, mainBuildFolder, Path.Combine(saveFolder, Resources.MainFOMOD));
+            Build(status, optBuildFolder, Path.Combine(saveFolder, Resources.OptFOMOD));
             Log.File("\tDone.");
             Log.Display("\tFOMODs built.");
         }

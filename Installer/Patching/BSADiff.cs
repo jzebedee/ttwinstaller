@@ -22,8 +22,11 @@ namespace TaleOfTwoWastelands.Patching
         protected CancellationToken Token { get; set; }
         protected InstallStatus Op { get; set; }
 
-        public BSADiff(IProgress<InstallStatus> progress, CancellationToken token)
+        private readonly ILog Log;
+
+        public BSADiff(IProgress<InstallStatus> progress, CancellationToken token, ILog log)
         {
+            Log = log;
             Progress = progress;
             Token = token;
         }

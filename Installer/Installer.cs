@@ -6,6 +6,7 @@ using System.Threading;
 using System.Windows.Forms;
 using System.Diagnostics;
 using BSAsharp;
+using StructureMap;
 using TaleOfTwoWastelands.Install;
 using TaleOfTwoWastelands.Progress;
 using TaleOfTwoWastelands.Patching;
@@ -16,12 +17,9 @@ using BSATools = TaleOfTwoWastelands.Install.BSA;
 
 namespace TaleOfTwoWastelands
 {
-    public class Installer
+    public class Installer : IInstaller
     {
         #region Set-once fields (statics and constants)
-        public const CompressionStrategy FastStrategy = CompressionStrategy.Unsafe | CompressionStrategy.Speed;
-        public const CompressionStrategy GoodStrategy = CompressionStrategy.Unsafe | CompressionStrategy.Size;
-
         public static readonly string[] CheckedESMs = { "Fallout3.esm", "Anchorage.esm", "ThePitt.esm", "BrokenSteel.esm", "PointLookout.esm", "Zeta.esm" };
         public static readonly Dictionary<string, string> VoicePaths = new Dictionary<string, string> {
             {Path.Combine("sound", "voice", "fallout3.esm", "playervoicemale"), Path.Combine("PlayerVoice", "sound", "voice", "falloutnv.esm", "playervoicemale")},
@@ -66,21 +64,21 @@ namespace TaleOfTwoWastelands
         #region Instance private
         private string DirFO3Data
         {
-            get { return Path.Combine(_prompts.Fallout3Path, "Data"); }
+            get { return Path.Combine(Prompts.Fallout3Path, "Data"); }
         }
         private string DirFNVData
         {
-            get { return Path.Combine(_prompts.FalloutNVPath, "Data"); }
+            get { return Path.Combine(Prompts.FalloutNVPath, "Data"); }
         }
 
         private string DirTTWMain
         {
-            get { return Path.Combine(_prompts.TTWSavePath, Resources.MainDir); }
+            get { return Path.Combine(Prompts.TTWSavePath, Resources.MainDir); }
         }
 
         private string DirTTWOptional
         {
-            get { return Path.Combine(_prompts.TTWSavePath, Resources.OptDir); }
+            get { return Path.Combine(Prompts.TTWSavePath, Resources.OptDir); }
         }
 
         private CancellationTokenSource LinkedSource { get; set; }
@@ -89,26 +87,25 @@ namespace TaleOfTwoWastelands
         private BSADiff _bsaDiff;
         private NVSE _nvse;
 
-        private readonly Prompts _prompts;
+        private readonly ILog Log;
+        private readonly IPrompts Prompts;
         #endregion
 
         #region Instance public properties
         /// <summary>
         /// Provides progress updates for minor operations
         /// </summary>
-        public IProgress<InstallStatus> ProgressMinorOperation { get; private set; }
+        public IProgress<InstallStatus> ProgressMinorOperation { get; set; }
         /// <summary>
         /// Provides progress updates for major operations
         /// </summary>
-        public IProgress<InstallStatus> ProgressMajorOperation { get; private set; }
+        public IProgress<InstallStatus> ProgressMajorOperation { get; set; }
         #endregion
 
-        public Installer(IProgress<InstallStatus> uiMinor, IProgress<InstallStatus> uiMajor, Prompts prompts)
+        public Installer(ILog log, IPrompts prompts)
         {
-            ProgressMinorOperation = uiMinor;
-            ProgressMajorOperation = uiMajor;
-
-            _prompts = prompts;
+            Log = log;
+            Prompts = prompts;
 
             Log.File("Version {0}", Application.ProductVersion);
             Log.File("{0}-bit architecture found.", Environment.Is64BitOperatingSystem ? "64" : "32");
@@ -119,9 +116,15 @@ namespace TaleOfTwoWastelands
             LinkedSource = CancellationTokenSource.CreateLinkedTokenSource(inToken);
             Token = LinkedSource.Token;
 
-            _prompts.PromptPaths();
-            _bsaDiff = new BSADiff(ProgressMinorOperation, Token);
-            _nvse = new NVSE(_prompts.FalloutNVPath);
+            Prompts.PromptPaths();
+
+            _bsaDiff = DependencyRegistry.Container
+                .With("progress").EqualTo(ProgressMinorOperation)
+                .With("token").EqualTo(Token)
+                .GetInstance<BSADiff>();
+            _nvse = DependencyRegistry.Container
+                .With("FNVPath").EqualTo(Prompts.FalloutNVPath)
+                .GetInstance<NVSE>();
 
             var opProg = new InstallStatus(ProgressMajorOperation, Token) { ItemsTotal = 7 + BuildableBSAs.Count + CheckedESMs.Length };
             try
@@ -159,7 +162,7 @@ namespace TaleOfTwoWastelands
                             default:
                                 Fail(err);
                                 return;
-                }
+                        }
                     }
                 }
                 finally
@@ -174,7 +177,12 @@ namespace TaleOfTwoWastelands
                     opProg.CurrentOperation = curOp;
 
                     Log.File(curOp);
-                    Util.CopyFolder(Path.Combine(Resources.AssetsDir, "TTW Data", "TTW Files"), _prompts.TTWSavePath);
+
+                    string
+                        srcFolder = Path.Combine(Resources.AssetsDir, "TTW Data", "TTW Files"),
+                        tarFolder = Prompts.TTWSavePath;
+
+                    Util.CopyFolder(srcFolder, tarFolder);
                 }
                 finally
                 {
@@ -310,14 +318,16 @@ namespace TaleOfTwoWastelands
                 {
                     opProg.CurrentOperation = "Building " + outBSA;
 
-                    if (!BSATools.BuildPrompt(outBSA, outBSAPath))
+                    var bsaTools = DependencyRegistry.Container.GetInstance<BSATools>();
+
+                    if (!bsaTools.BuildPrompt(outBSA, outBSAPath))
                         continue;
 
                     do
                     {
-                        buildResult = BSATools.Patch(_bsaDiff, BSATools.GetOptionsOrDefault(inBSA), inBSAFile, inBSAPath, outBSAPath);
+                        buildResult = bsaTools.Patch(_bsaDiff, bsaTools.GetOptionsOrDefault(inBSA), inBSAFile, inBSAPath, outBSAPath);
                     } while (!Token.IsCancellationRequested && buildResult == BSATools.BuildResult.Retry);
-                        }
+                }
                 finally
                 {
                     opProg.Step();
@@ -326,8 +336,8 @@ namespace TaleOfTwoWastelands
                 if (buildResult == BSATools.BuildResult.Abort)
                 {
                     LinkedSource.Cancel();
+                }
             }
-        }
         }
 
         private void BuildSFX()
@@ -347,6 +357,8 @@ namespace TaleOfTwoWastelands
             if (skipSongs && skipSFX)
                 return;
 
+            var bsaTools = DependencyRegistry.Container.GetInstance<BSATools>();
+
             using (BSA
                inBsa = new BSA(fo3BsaPath),
                outBsa = new BSA(inBsa.Settings))
@@ -354,7 +366,7 @@ namespace TaleOfTwoWastelands
                 if (!skipSongs)
                 {
                     Log.Display("Extracting songs");
-                    BSATools.Extract(Token, inBsa.Where(folder => folder.Path.StartsWith(songsPath)), "Fallout - Sound", DirTTWMain, false);
+                    bsaTools.Extract(Token, inBsa.Where(folder => folder.Path.StartsWith(songsPath)), "Fallout - Sound", DirTTWMain, false);
                 }
 
                 if (skipSFX)
@@ -362,31 +374,31 @@ namespace TaleOfTwoWastelands
 
                 Log.Display("Building optional TaleOfTwoWastelands - SFX.bsa...");
 
-                    var fxuiPath = Path.Combine("sound", "fx", "ui");
+                var fxuiPath = Path.Combine("sound", "fx", "ui");
 
-                    var includedFilenames = new HashSet<string>(File.ReadLines(Path.Combine(Resources.AssetsDir, "TTW Data", "TTW_SFXCopy.txt")));
+                var includedFilenames = new HashSet<string>(File.ReadLines(Path.Combine(Resources.AssetsDir, "TTW Data", "TTW_SFXCopy.txt")));
 
-                    var includedGroups =
-                        from folder in inBsa.Where(folder => folder.Path.StartsWith(fxuiPath))
-                        from file in folder
-                        where includedFilenames.Contains(file.Filename)
-                        group file by folder;
+                var includedGroups =
+                    from folder in inBsa.Where(folder => folder.Path.StartsWith(fxuiPath))
+                    from file in folder
+                    where includedFilenames.Contains(file.Filename)
+                    group file by folder;
 
-                    foreach (var group in includedGroups)
-                    {
-                        //make folder only include files that matched includedFilenames
+                foreach (var group in includedGroups)
+                {
+                    //make folder only include files that matched includedFilenames
                     @group.Key.IntersectWith(@group);
 
-                        //add folders back into output BSA
+                    //add folders back into output BSA
                     outBsa.Add(@group.Key);
-                    }
+                }
 
                 Log.File("Building TaleOfTwoWastelands - SFX.bsa.");
-                    outBsa.Save(outBsaPath);
+                outBsa.Save(outBsaPath);
 
                 Log.Display("\tDone");
-                }
             }
+        }
 
         private void BuildVoice()
         {
@@ -432,7 +444,9 @@ namespace TaleOfTwoWastelands
         private void BuildFOMODs()
         {
             var status = new InstallStatus(ProgressMinorOperation, Token);
-            FOMOD.BuildAll(status, DirTTWMain, DirTTWOptional, _prompts.TTWSavePath);
+
+            var fomod = DependencyRegistry.Container.GetInstance<FOMOD>();
+            fomod.BuildAll(status, DirTTWMain, DirTTWOptional, Prompts.TTWSavePath);
         }
 
         private void FalloutLineCopy(string name, string path)
@@ -547,8 +561,8 @@ namespace TaleOfTwoWastelands
 
             Fail("Your version of " + esm + " cannot be patched. This is abnormal.");
 
-                        return false;
-                    }
+            return false;
+        }
 
         private void Fail(string msg = null)
         {

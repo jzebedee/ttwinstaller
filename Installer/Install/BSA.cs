@@ -10,7 +10,7 @@ using TaleOfTwoWastelands.Properties;
 
 namespace TaleOfTwoWastelands.Install
 {
-    public static class BSA
+    public class BSA
     {
         public enum BuildResult
         {
@@ -39,7 +39,14 @@ namespace TaleOfTwoWastelands.Install
             }
         };
 
-        private static bool OverwritePrompt(string bsaName, string bsaPath)
+        private readonly ILog Log;
+
+        public BSA(ILog log)
+        {
+            Log = log;
+        }
+
+        private bool OverwritePrompt(string bsaName, string bsaPath)
         {
             if (!File.Exists(bsaPath))
                 return true;
@@ -61,7 +68,7 @@ namespace TaleOfTwoWastelands.Install
             return false;
         }
 
-        public static bool BuildPrompt(string bsaName, string bsaPath)
+        public bool BuildPrompt(string bsaName, string bsaPath)
         {
             if (!OverwritePrompt(bsaName, bsaPath))
                 return false;
@@ -70,7 +77,7 @@ namespace TaleOfTwoWastelands.Install
             return true;
         }
 
-        private static BuildResult ErrorPrompt(string bsaFile)
+        private BuildResult ErrorPrompt(string bsaFile)
         {
             var promptResult = MessageBox.Show(String.Format(Resources.ErrorWhilePatching, bsaFile), Resources.Error, MessageBoxButtons.AbortRetryIgnore);
             switch (promptResult)
@@ -87,7 +94,7 @@ namespace TaleOfTwoWastelands.Install
             return BuildResult.Abort;
         }
 
-        public static CompressionOptions GetOptionsOrDefault(string inBsa)
+        public CompressionOptions GetOptionsOrDefault(string inBsa)
         {
             CompressionOptions bsaOptions;
             if (BSAOptions.TryGetValue(inBsa, out bsaOptions))
@@ -101,7 +108,7 @@ namespace TaleOfTwoWastelands.Install
             return bsaOptions ?? DefaultBSAOptions;
         }
 
-        public static BuildResult Patch(BSADiff diff, CompressionOptions options, string inBsaFile, string inBsaPath, string outBsaPath)
+        public BuildResult Patch(BSADiff diff, CompressionOptions options, string inBsaFile, string inBsaPath, string outBsaPath)
         {
             bool patchSuccess;
 
@@ -132,7 +139,7 @@ namespace TaleOfTwoWastelands.Install
             return ErrorPrompt(inBsaFile);
         }
 
-        public static void Extract(CancellationToken token, IEnumerable<BSAFolder> folders, string outBsa, string outBsaPath, bool skipExisting)
+        public void Extract(CancellationToken token, IEnumerable<BSAFolder> folders, string outBsa, string outBsaPath, bool skipExisting)
         {
             foreach (var folder in folders)
             {

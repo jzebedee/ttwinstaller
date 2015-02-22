@@ -6,6 +6,7 @@ using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Security.Cryptography;
 using System.Text;
+using TaleOfTwoWastelands.Properties;
 
 namespace TaleOfTwoWastelands
 {
@@ -163,10 +164,16 @@ namespace TaleOfTwoWastelands
                 }
                 catch (UnauthorizedAccessException error)
                 {
+                    var Log = DependencyRegistry.Container.GetInstance<ILog>();
                     Log.Dual("ERROR: " + file.Replace(inFolder, "") + " did not copy successfully");
                     Log.File(error.ToString());
                 }
             }
+        }
+
+        public static void AssertElevated()
+        {
+            Trace.Assert(Program.IsElevated, string.Format(Resources.MustBeElevated, Resources.TTW));
         }
     }
 }

@@ -9,20 +9,18 @@ namespace TaleOfTwoWastelands.Install
 {
     internal class NVSE
     {
-        private const string
-            NvseFile = "nvse_loader.exe",
-            NvseLink = @"http://nvse.silverlock.org/",
-            NvseSearch = @"http://nvse.silverlock.org/download/*.7z";
-
         private readonly string _fnvPath;
-        public NVSE(string FNVPath)
+        private readonly ILog Log;
+
+        public NVSE(string FNVPath, ILog log)
         {
+            Log = log;
             _fnvPath = FNVPath;
         }
 
         public bool Check()
         {
-            var nvseLoader = Path.Combine(_fnvPath, NvseFile);
+            var nvseLoader = Path.Combine(_fnvPath, Resources.NvseFile);
             if (File.Exists(nvseLoader))
             {
                 Log.File("NVSE found");
@@ -59,12 +57,12 @@ namespace TaleOfTwoWastelands.Install
 
             using (var wc = new WebClient())
             {
-                Log.File("Requesting NVSE page at " + NvseLink);
+                Log.File("Requesting NVSE page at " + Resources.NvseLink);
 
                 string dlLink;
-                using (var resStream = wc.OpenRead(NvseLink))
+                using (var resStream = wc.OpenRead(Resources.NvseLink))
                 {
-                    if (!Util.PatternSearch(resStream, NvseSearch, out dlLink))
+                    if (!Util.PatternSearch(resStream, Resources.NvseSearchPattern, out dlLink))
                     {
                         err = "Failed to download NVSE.";
                         return false;

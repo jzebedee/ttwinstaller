@@ -5,6 +5,7 @@ using System.Windows.Forms;
 using System.Threading;
 using TaleOfTwoWastelands.Progress;
 using TaleOfTwoWastelands.Properties;
+using StructureMap;
 
 namespace TaleOfTwoWastelands.UI
 {
@@ -12,8 +13,10 @@ namespace TaleOfTwoWastelands.UI
     {
         private CancellationTokenSource _installCts;
         private Task _installTask;
-        private Installer _install;
-        private Prompts _prompts;
+
+        private ILog Log;
+        private IInstaller _install;
+        private IPrompts _prompts;
 
         public frm_Main()
         {
@@ -22,15 +25,23 @@ namespace TaleOfTwoWastelands.UI
 
         private void frm_Main_Load(object sender, EventArgs e)
         {
-            Trace.Assert(Program.IsElevated, string.Format(Resources.MustBeElevated, Resources.TTW));
+            Util.AssertElevated();
+
+            Log = DependencyRegistry.Container.GetInstance<ILog>();
+
+            _prompts = DependencyRegistry.Container
+                .With("openDialog").EqualTo(dlg_FindGame)
+                .With("saveDialog").EqualTo(dlg_SaveTTW)
+                .GetInstance<IPrompts>();
 
             //Progress<T> maintains SynchronizationContext
             Log.DisplayMessage = new Progress<string>(UpdateLog);
             var uiMinor = new Progress<InstallStatus>(m => UpdateProgressBar(m, prgCurrent));
             var uiMajor = new Progress<InstallStatus>(m => UpdateProgressBar(m, prgOverall));
 
-            _prompts = new Prompts(dlg_FindGame, dlg_SaveTTW);
-            _install = new Installer(uiMinor, uiMajor, _prompts);
+            _install = DependencyRegistry.Container.GetInstance<IInstaller>();
+            _install.ProgressMajorOperation = uiMajor;
+            _install.ProgressMinorOperation = uiMinor;
 
             txt_FO3Location.Text = _prompts.Fallout3Path;
             txt_FNVLocation.Text = _prompts.FalloutNVPath;
