@@ -21,7 +21,7 @@ namespace TaleOfTwoWastelands
     public class Installer : IInstaller
     {
         #region Set-once fields (statics and constants)
-        public static readonly string PatchDir = Path.Combine(Localization.AssetsDir, "TTW Data", "TTW Patches");
+        public static readonly string PatchDir = Path.Combine(Paths.AssetsDir, "TTW Data", "TTW Patches");
         #endregion
 
         #region Instance private
@@ -36,12 +36,12 @@ namespace TaleOfTwoWastelands
 
         private string DirTTWMain
         {
-            get { return Path.Combine(Prompts.TTWSavePath, Localization.MainDir); }
+            get { return Path.Combine(Prompts.TTWSavePath, Paths.MainDir); }
         }
 
         private string DirTTWOptional
         {
-            get { return Path.Combine(Prompts.TTWSavePath, Localization.OptDir); }
+            get { return Path.Combine(Prompts.TTWSavePath, Paths.OptDir); }
         }
 
         private CancellationTokenSource LinkedSource { get; set; }
@@ -142,7 +142,7 @@ namespace TaleOfTwoWastelands
                     Log.File(curOp);
 
                     string
-                        srcFolder = Path.Combine(Localization.AssetsDir, "TTW Data", "TTW Files"),
+                        srcFolder = Path.Combine(Paths.AssetsDir, "TTW Data", "TTW Files"),
                         tarFolder = Prompts.TTWSavePath;
 
                     Util.CopyFolder(srcFolder, tarFolder);
@@ -186,7 +186,7 @@ namespace TaleOfTwoWastelands
                     opProg.CurrentOperation = "Copying " + ttwArchive;
 
                     if (!File.Exists(Path.Combine(DirTTWMain, ttwArchive)))
-                        File.Copy(Path.Combine(Localization.AssetsDir, "TTW Data", ttwArchive), Path.Combine(DirTTWMain, ttwArchive));
+                        File.Copy(Path.Combine(Paths.AssetsDir, "TTW Data", ttwArchive), Path.Combine(DirTTWMain, ttwArchive));
                 }
                 finally
                 {
@@ -206,11 +206,11 @@ namespace TaleOfTwoWastelands
                         opB = "Fallout3 video files";
 
                     opProg.CurrentOperation = prefix + opA;
-                    FalloutLineCopy(opA, Path.Combine(Localization.AssetsDir, "TTW Data", "FO3_MusicCopy.txt"));
+                    FalloutLineCopy(opA, Path.Combine(Paths.AssetsDir, "TTW Data", "FO3_MusicCopy.txt"));
                     opProg.Step();
 
                     opProg.CurrentOperation = prefix + opB;
-                    FalloutLineCopy(opB, Path.Combine(Localization.AssetsDir, "TTW Data", "FO3_VideoCopy.txt"));
+                    FalloutLineCopy(opB, Path.Combine(Paths.AssetsDir, "TTW Data", "FO3_VideoCopy.txt"));
                     opProg.Step();
                 }
 
@@ -339,7 +339,7 @@ namespace TaleOfTwoWastelands
 
                 var fxuiPath = Path.Combine("sound", "fx", "ui");
 
-                var includedFilenames = new HashSet<string>(File.ReadLines(Path.Combine(Localization.AssetsDir, "TTW Data", "TTW_SFXCopy.txt")));
+                var includedFilenames = new HashSet<string>(File.ReadLines(Path.Combine(Paths.AssetsDir, "TTW Data", "TTW_SFXCopy.txt")));
 
                 var includedGroups =
                     from folder in inBsa.Where(folder => folder.Path.StartsWith(fxuiPath))

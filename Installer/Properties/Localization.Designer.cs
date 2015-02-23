@@ -70,15 +70,6 @@ namespace TaleOfTwoWastelands.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to resources.
-        /// </summary>
-        internal static string AssetsDir {
-            get {
-                return ResourceManager.GetString("AssetsDir", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to {0} is easiest to install via a mod manager like {1}. Manual installation is possible but not suggested.
         ///
         ///Would like the installer to automatically build FOMODs?.
@@ -145,6 +136,33 @@ namespace TaleOfTwoWastelands.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Extracting {0}.
+        /// </summary>
+        internal static string Extracting {
+            get {
+                return ResourceManager.GetString("Extracting", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Failed to download NVSE..
+        /// </summary>
+        internal static string FailedDownloadNvse {
+            get {
+                return ResourceManager.GetString("FailedDownloadNvse", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Failed to extract NVSE..
+        /// </summary>
+        internal static string FailedExtractNvse {
+            get {
+                return ResourceManager.GetString("FailedExtractNvse", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Fallout 3.
         /// </summary>
         internal static string Fallout3 {
@@ -181,6 +199,15 @@ namespace TaleOfTwoWastelands.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Install cancelled due to NVSE requirement.
+        /// </summary>
+        internal static string InstallCancelledNvse {
+            get {
+                return ResourceManager.GetString("InstallCancelledNvse", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to {0} has been installed successfully..
         /// </summary>
         internal static string InstalledSuccessfully {
@@ -190,20 +217,11 @@ namespace TaleOfTwoWastelands.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Main Files.
+        ///   Looks up a localized string similar to {0} is an invalid 7z archive..
         /// </summary>
-        internal static string MainDir {
+        internal static string Invalid7zArchive {
             get {
-                return ResourceManager.GetString("MainDir", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to TaleOfTwoWastelands_Main.fomod.
-        /// </summary>
-        internal static string MainFOMOD {
-            get {
-                return ResourceManager.GetString("MainFOMOD", resourceCulture);
+                return ResourceManager.GetString("Invalid7zArchive", resourceCulture);
             }
         }
         
@@ -217,58 +235,49 @@ namespace TaleOfTwoWastelands.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to NVSE found.
+        /// </summary>
+        internal static string NvseFound {
+            get {
+                return ResourceManager.GetString("NvseFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to New Vegas Script Extender (NVSE) was not found, but is required to play A Tale of Two Wastelands.
         ///
         ///Would you like to install NVSE?.
         /// </summary>
-        internal static string NVSE_InstallPrompt {
+        internal static string NvseInstallPrompt {
             get {
-                return ResourceManager.GetString("NVSE_InstallPrompt", resourceCulture);
+                return ResourceManager.GetString("NvseInstallPrompt", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to nvse_loader.exe.
+        ///   Looks up a localized string similar to NVSE was installed successfully..
         /// </summary>
-        internal static string NvseFile {
+        internal static string NvseInstallSuccessful {
             get {
-                return ResourceManager.GetString("NvseFile", resourceCulture);
+                return ResourceManager.GetString("NvseInstallSuccessful", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to http://nvse.silverlock.org/.
+        ///   Looks up a localized string similar to NVSE missing.
         /// </summary>
-        internal static string NvseLink {
+        internal static string NvseMissing {
             get {
-                return ResourceManager.GetString("NvseLink", resourceCulture);
+                return ResourceManager.GetString("NvseMissing", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to http://nvse.silverlock.org/download/*.7z.
+        ///   Looks up a localized string similar to NVSE must be installed before playing!.
         /// </summary>
-        internal static string NvseSearchPattern {
+        internal static string NvseMustBeInstalled {
             get {
-                return ResourceManager.GetString("NvseSearchPattern", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Optional Files.
-        /// </summary>
-        internal static string OptDir {
-            get {
-                return ResourceManager.GetString("OptDir", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to TaleOfTwoWastelands_Options.fomod.
-        /// </summary>
-        internal static string OptFOMOD {
-            get {
-                return ResourceManager.GetString("OptFOMOD", resourceCulture);
+                return ResourceManager.GetString("NvseMustBeInstalled", resourceCulture);
             }
         }
         
@@ -282,11 +291,38 @@ namespace TaleOfTwoWastelands.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Parsed NVSE link: {0}.
+        /// </summary>
+        internal static string ParsedNvseLink {
+            get {
+                return ResourceManager.GetString("ParsedNvseLink", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Proceeding without NVSE..
+        /// </summary>
+        internal static string ProceedingWithoutNvse {
+            get {
+                return ResourceManager.GetString("ProceedingWithoutNvse", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to {0} already exists. Rebuild?.
         /// </summary>
         internal static string RebuildPrompt {
             get {
                 return ResourceManager.GetString("RebuildPrompt", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Requesting NVSE page at {0}.
+        /// </summary>
+        internal static string RequestingNvsePage {
+            get {
+                return ResourceManager.GetString("RequestingNvsePage", resourceCulture);
             }
         }
         

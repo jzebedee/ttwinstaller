@@ -13,16 +13,15 @@ namespace TaleOfTwoWastelands.Install
         internal FOMOD(ILog log)
         {
             Log = log;
-            SevenZipCompressor.SetLibraryPath(Path.Combine(Localization.AssetsDir, "7Zip", "7z" + (Environment.Is64BitProcess ? "64.dll" : ".dll")));
+            SevenZipCompressor.SetLibraryPath(Path.Combine(Paths.AssetsDir, Paths.SevenZipBinaries, Environment.Is64BitProcess ? Paths.SevenZipX64 : Paths.SevenZipX32));
         }
 
         public void BuildAll(InstallStatus status, string mainBuildFolder, string optBuildFolder, string saveFolder)
         {
-            Log.File("Building FOMODs.");
-            Log.Display("Building FOMODs...");
+            Log.Dual("Building FOMODs...");
             Log.Display("This can take some time.");
-            Build(status, mainBuildFolder, Path.Combine(saveFolder, Localization.MainFOMOD));
-            Build(status, optBuildFolder, Path.Combine(saveFolder, Localization.OptFOMOD));
+            Build(status, mainBuildFolder, Path.Combine(saveFolder, Paths.MainFOMOD));
+            Build(status, optBuildFolder, Path.Combine(saveFolder, Paths.OptFOMOD));
             Log.File("\tDone.");
             Log.Display("\tFOMODs built.");
         }

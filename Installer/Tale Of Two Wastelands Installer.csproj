@@ -104,6 +104,11 @@
     <Compile Include="Patching\PatchDict.cs" />
     <Compile Include="Patching\PatchInfo.cs" />
     <Compile Include="Patching\FileValidation.cs" />
+    <Compile Include="Properties\Paths.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Paths.resx</DependentUpon>
+    </Compile>
     <Compile Include="Progress\InstallStatus.cs" />
     <Compile Include="Progress\Progress.cs" Condition="!$(TargetFrameworkVersion.Contains('v4.5'))" />
     <Compile Include="Properties\Game.cs" />
@@ -133,6 +138,10 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Util.cs" />
+    <EmbeddedResource Include="Properties\Paths.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Paths.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
     <EmbeddedResource Include="Properties\Game.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Game.Designer.cs</LastGenOutput>
