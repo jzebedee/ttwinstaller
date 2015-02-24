@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using Microsoft.Win32;
+using TaleOfTwoWastelands.Properties;
 
 namespace TaleOfTwoWastelands
 {
@@ -8,12 +9,13 @@ namespace TaleOfTwoWastelands
 	{
         public string GetPathFromKey(string keyName)
         {
-			throw new NotImplementedException();
-        }
-
-        public void SetPathFromKey(string keyName, string path)
-        {
-			throw new NotImplementedException();
+			return (string)Settings.Default[keyName];
 		}
-    }
+
+		public void SetPathFromKey(string keyName, string path)
+        {
+			Settings.Default[keyName] = path;
+			Settings.Default.Save();
+		}
+	}
 }

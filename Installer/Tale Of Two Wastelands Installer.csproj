@@ -123,7 +123,7 @@
       <DependentUpon>Game.resx</DependentUpon>
     </Compile>
     <Compile Include="SettingsPathStore.cs" />
-    <Compile Include="RegistryPathStore.cs" />
+    <Compile Include="RegistryPathStore.cs" Condition="'$(Configuration)'=='Debug'" />
     <Compile Include="Properties\Localization.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
