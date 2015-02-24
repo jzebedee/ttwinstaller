@@ -92,18 +92,22 @@
     <Compile Include="FinalizedTextWriter.cs" />
     <Compile Include="IInstaller.cs" />
     <Compile Include="ILog.cs" />
-    <Compile Include="Install\BSA.cs" />
+    <Compile Include="Install\BsaInstaller.cs" />
+    <Compile Include="Install\BuildBsasStep.cs" />
     <Compile Include="Install\FOMOD.cs" />
+    <Compile Include="Install\IInstallStep.cs" />
     <Compile Include="Install\NVSE.cs" />
     <Compile Include="Log.cs" />
     <Compile Include="Patching\Diff.cs" />
-    <Compile Include="Patching\BSADiff.cs" />
+    <Compile Include="Patching\BsaDiff.cs" />
     <Compile Include="Patching\Extensions.cs" />
+    <Compile Include="Patching\IBsaDiff.cs" />
     <Compile Include="Patching\Murmur\Murmur128.cs" />
     <Compile Include="Patching\Murmur\Murmur128UnmanagedX64.cs" />
     <Compile Include="Patching\PatchDict.cs" />
     <Compile Include="Patching\PatchInfo.cs" />
     <Compile Include="Patching\FileValidation.cs" />
+    <Compile Include="Progress\IInstallStatus.cs" />
     <Compile Include="Properties\Paths.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -123,6 +127,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Localization.resx</DependentUpon>
     </Compile>
+    <Compile Include="UI\ErrorPromptResult.cs" />
     <Compile Include="UI\frm_Main.cs">
       <SubType>Form</SubType>
     </Compile>

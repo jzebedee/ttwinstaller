@@ -10,7 +10,7 @@ namespace TaleOfTwoWastelands.Install
     {
         private readonly ILog Log;
 
-        internal FOMOD(ILog log)
+        public FOMOD(ILog log)
         {
             Log = log;
             SevenZipCompressor.SetLibraryPath(Path.Combine(Paths.AssetsDir, Paths.SevenZipBinaries, Environment.Is64BitProcess ? Paths.SevenZipX64 : Paths.SevenZipX32));

@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Windows.Forms;
 using StructureMap;
+using TaleOfTwoWastelands.Patching;
 using TaleOfTwoWastelands.UI;
 
 namespace TaleOfTwoWastelands
@@ -25,7 +26,8 @@ namespace TaleOfTwoWastelands
             {
                 x.ForSingletonOf<ILog>().Use<Log>();
                 x.ForSingletonOf<IInstaller>().Use<Installer>();
-				x.For<IPrompts>().Use<Prompts>();
+				x.ForSingletonOf<IPrompts>().Use<Prompts>();
+				x.For<IBsaDiff>().Use<BsaDiff>();
 			});
         }
     }

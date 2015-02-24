@@ -85,7 +85,7 @@ namespace PatchMaker
             using (var inBSA = new BSA(inBSAPath))
             using (var outBSA = new BSA(outBSAPath))
             {
-                BSADiff
+                BsaDiff
                     .CreateRenameQuery(inBSA, renameDict)
                     .ToList(); // execute query
 
@@ -114,7 +114,7 @@ namespace PatchMaker
                     var newChk = join.patch;
 
                     var oldFilename = oldBsaFile.Filename;
-                    if (oldFilename.StartsWith(BSADiff.VoicePrefix))
+                    if (oldFilename.StartsWith(Game.VoicePrefix))
                     {
                         patchDict.Add(join.file, new Patch(newChk, null));
                         continue;

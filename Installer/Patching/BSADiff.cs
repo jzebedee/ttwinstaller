@@ -13,27 +13,37 @@ using Patch = System.Tuple<TaleOfTwoWastelands.Patching.FileValidation, TaleOfTw
 
 namespace TaleOfTwoWastelands.Patching
 {
-    using PatchJoin = Tuple<BSAFile, BSAFile, Patch>;
-    public class BSADiff
-    {
-        public const string VoicePrefix = @"sound\voice";
-
-        protected IProgress<InstallStatus> Progress { get; set; }
-        protected CancellationToken Token { get; set; }
-        protected InstallStatus Op { get; set; }
+	using TaleOfTwoWastelands.Properties;
+	using PatchJoin = Tuple<BSAFile, BSAFile, Patch>;
+	public class BsaDiff : IBsaDiff
+	{
+        protected IProgress<InstallStatus> Progress
+		{
+			get
+			{
+				return _installer.ProgressMinorOperation;
+			}
+		}
+        protected CancellationToken Token
+		{
+			get
+			{
+				return _installer.Token;
+			}
+		}
 
         private readonly ILog Log;
+		private readonly IInstaller _installer;
 
-        public BSADiff(IProgress<InstallStatus> progress, CancellationToken token, ILog log)
+        public BsaDiff(IInstaller installer, ILog log)
         {
+			_installer = installer;
             Log = log;
-            Progress = progress;
-            Token = token;
         }
 
-        public bool PatchBSA(CompressionOptions bsaOptions, string oldBSA, string newBSA, bool simulate = false)
+        public bool PatchBsa(CompressionOptions bsaOptions, string oldBSA, string newBSA, bool simulate = false)
         {
-            Op = new InstallStatus(Progress, Token) { ItemsTotal = 7 };
+            var Op = new InstallStatus(Progress, Token) { ItemsTotal = 7 };
 
             var outBsaFilename = Path.GetFileNameWithoutExtension(newBSA);
 
@@ -228,7 +238,7 @@ namespace TaleOfTwoWastelands.Patching
                 var newChk = patchTuple.Item1;
                 var patches = patchTuple.Item2;
 
-                if (filepath.StartsWith(VoicePrefix) && (patches == null || patches.Length == 0))
+                if (filepath.StartsWith(Game.VoicePrefix) && (patches == null || patches.Length == 0))
                 {
                     opChk.CurrentOperation = "Skipping " + filename;
                     //Log.File("Skipping voice file: " + filepath);

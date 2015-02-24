@@ -129,4 +129,7 @@
   <data name="VoicePaths" xml:space="preserve">
     <value>{"sound\\voice\\fallout3.esm\\playervoicemale":"PlayerVoice\\sound\\voice\\falloutnv.esm\\playervoicemale","sound\\voice\\fallout3.esm\\playervoicefemale":"PlayerVoice\\sound\\voice\\falloutnv.esm\\playervoicefemale"}</value>
   </data>
+  <data name="VoicePrefix" xml:space="preserve">
+    <value>sound\voice</value>
+  </data>
 </root>

@@ -28,24 +28,21 @@ namespace TaleOfTwoWastelands.UI
             Util.AssertElevated();
 
             Log = DependencyRegistry.Container.GetInstance<ILog>();
-
-            _prompts = DependencyRegistry.Container
-                .With("openDialog").EqualTo(dlg_FindGame)
-                .With("saveDialog").EqualTo(dlg_SaveTTW)
-                .GetInstance<IPrompts>();
-
-            //Progress<T> maintains SynchronizationContext
             Log.DisplayMessage = new Progress<string>(UpdateLog);
-            var uiMinor = new Progress<InstallStatus>(m => UpdateProgressBar(m, prgCurrent));
-            var uiMajor = new Progress<InstallStatus>(m => UpdateProgressBar(m, prgOverall));
 
-            _install = DependencyRegistry.Container.GetInstance<IInstaller>();
-            _install.ProgressMajorOperation = uiMajor;
-            _install.ProgressMinorOperation = uiMinor;
+			_prompts = DependencyRegistry.Container
+			  .With("openDialog").EqualTo(dlg_FindGame)
+			  .With("saveDialog").EqualTo(dlg_SaveTTW)
+			  .GetInstance<IPrompts>();
+			DependencyRegistry.Container.Inject(_prompts);
 
-            txt_FO3Location.Text = _prompts.Fallout3Path;
-            txt_FNVLocation.Text = _prompts.FalloutNVPath;
-            txt_TTWLocation.Text = _prompts.TTWSavePath;
+			txt_FO3Location.Text = _prompts.Fallout3Path;
+			txt_FNVLocation.Text = _prompts.FalloutNVPath;
+			txt_TTWLocation.Text = _prompts.TTWSavePath;
+
+			_install = DependencyRegistry.Container.GetInstance<IInstaller>();
+            _install.ProgressMajorOperation = new Progress<InstallStatus>(m => UpdateProgressBar(m, prgOverall));
+            _install.ProgressMinorOperation = new Progress<InstallStatus>(m => UpdateProgressBar(m, prgCurrent));
         }
 
         private void UpdateProgressBar(InstallStatus opProg, TextProgressBar bar)

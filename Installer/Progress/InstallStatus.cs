@@ -3,8 +3,8 @@ using System.Threading;
 
 namespace TaleOfTwoWastelands.Progress
 {
-    public class InstallStatus
-    {
+    public class InstallStatus : IInstallStatus
+	{
         private readonly CancellationToken _token;
         private readonly IProgress<InstallStatus> _progress;
 

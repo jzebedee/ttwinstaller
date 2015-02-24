@@ -7,18 +7,12 @@ using System.Windows.Forms;
 using BSAsharp;
 using TaleOfTwoWastelands.Patching;
 using TaleOfTwoWastelands.Properties;
+using TaleOfTwoWastelands.UI;
 
 namespace TaleOfTwoWastelands.Install
 {
-    public class BSA
+    public class BsaInstaller
     {
-        public enum BuildResult
-        {
-            Continue,
-            Retry,
-            Abort
-        }
-
         const CompressionStrategy
             FastStrategy = CompressionStrategy.Unsafe | CompressionStrategy.Speed,
             GoodStrategy = CompressionStrategy.Unsafe | CompressionStrategy.Size;
@@ -40,58 +34,14 @@ namespace TaleOfTwoWastelands.Install
         };
 
         private readonly ILog Log;
+		private readonly IPrompts Prompts;
+		private readonly IBsaDiff _bsaDiff;
 
-        public BSA(ILog log)
+        public BsaInstaller(ILog log, IPrompts prompts, IBsaDiff bsaDiff)
         {
             Log = log;
-        }
-
-        private bool OverwritePrompt(string bsaName, string bsaPath)
-        {
-            if (!File.Exists(bsaPath))
-                return true;
-
-            Log.File("BSA \"{0}\" does not exist", bsaPath);
-
-            var promptResult = MessageBox.Show(String.Format(Localization.RebuildPrompt, bsaName), Localization.FileAlreadyExists, MessageBoxButtons.YesNo);
-            switch (promptResult)
-            {
-                case DialogResult.Yes:
-                    File.Delete(bsaPath);
-                    Log.File("Rebuilding {0}", bsaName);
-                    return true;
-                case DialogResult.No:
-                    Log.Dual("{0} has already been built. Skipping.", bsaName);
-                    break;
-            }
-
-            return false;
-        }
-
-        public bool BuildPrompt(string bsaName, string bsaPath)
-        {
-            if (!OverwritePrompt(bsaName, bsaPath))
-                return false;
-
-            Log.Dual("Building {0}", bsaName);
-            return true;
-        }
-
-        private BuildResult ErrorPrompt(string bsaFile)
-        {
-            var promptResult = MessageBox.Show(String.Format(Localization.ErrorWhilePatching, bsaFile), Localization.Error, MessageBoxButtons.AbortRetryIgnore);
-            switch (promptResult)
-            {
-                //case DialogResult.Abort: //Quit install
-                case DialogResult.Retry:   //Start over from scratch
-                    Log.Dual("Retrying build.");
-                    return BuildResult.Retry;
-                case DialogResult.Ignore:  //Ignore errors and move on
-                    Log.Dual("Ignoring errors.");
-                    return BuildResult.Continue;
-            }
-
-            return BuildResult.Abort;
+			Prompts = prompts;
+			_bsaDiff = bsaDiff;
         }
 
         public CompressionOptions GetOptionsOrDefault(string inBsa)
@@ -108,7 +58,7 @@ namespace TaleOfTwoWastelands.Install
             return bsaOptions ?? DefaultBSAOptions;
         }
 
-        public BuildResult Patch(BSADiff diff, CompressionOptions options, string inBsaFile, string inBsaPath, string outBsaPath)
+        public ErrorPromptResult Patch(CompressionOptions options, string inBsaFile, string inBsaPath, string outBsaPath)
         {
             bool patchSuccess;
 
@@ -118,7 +68,7 @@ namespace TaleOfTwoWastelands.Install
             {
                 watch.Start();
 #endif
-                patchSuccess = diff.PatchBSA(options, inBsaPath, outBsaPath);
+                patchSuccess = _bsaDiff.PatchBsa(options, inBsaPath, outBsaPath);
                 if (!patchSuccess)
                     Log.Dual("Patching BSA {0} failed", inBsaFile);
 #if DEBUG
@@ -133,10 +83,10 @@ namespace TaleOfTwoWastelands.Install
             if (patchSuccess)
             {
                 Log.Dual("Build successful.");
-                return BuildResult.Continue;
+                return ErrorPromptResult.Continue;
             }
 
-            return ErrorPrompt(inBsaFile);
+            return Prompts.PatchingErrorPrompt(inBsaFile);
         }
 
         public void Extract(CancellationToken token, IEnumerable<BSAFolder> folders, string outBsa, string outBsaPath, bool skipExisting)
