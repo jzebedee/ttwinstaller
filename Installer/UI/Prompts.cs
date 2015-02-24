@@ -7,24 +7,27 @@ namespace TaleOfTwoWastelands.UI
     public class Prompts : IPrompts
 	{
         private readonly FileDialog openDialog, saveDialog;
+		
         private readonly ILog Log;
+		private readonly IPathStore _store;
 
-        public string Fallout3Path { get; private set; }
+		public string Fallout3Path { get; private set; }
         public string FalloutNVPath { get; private set; }
         public string TTWSavePath { get; private set; }
 
-        public Prompts(OpenFileDialog openDialog, SaveFileDialog saveDialog, ILog log)
+        public Prompts(OpenFileDialog openDialog, SaveFileDialog saveDialog, ILog log, IPathStore store)
         {
             Log = log;
+			_store = store;
 
             this.openDialog = openDialog;
             this.saveDialog = saveDialog;
 
             if (Program.IsElevated)
             {
-                Fallout3Path = RegistryHelper.GetPathFromKey("Fallout3");
-                FalloutNVPath = RegistryHelper.GetPathFromKey("FalloutNV");
-                TTWSavePath = RegistryHelper.GetPathFromKey("TaleOfTwoWastelands");
+                Fallout3Path = store.GetPathFromKey("Fallout3");
+                FalloutNVPath = store.GetPathFromKey("FalloutNV");
+                TTWSavePath = store.GetPathFromKey("TaleOfTwoWastelands");
             }
         }
 
@@ -72,7 +75,7 @@ namespace TaleOfTwoWastelands.UI
                 var path = Path.GetDirectoryName(dialog.FileName);
                 Log.File("User {2}changed {0} directory to '{1}'", name, path, manual ? "manually " : " ");
 
-                RegistryHelper.SetPathFromKey(keyName, path);
+                _store.SetPathFromKey(keyName, path);
 
                 return path;
             }

@@ -97,6 +97,7 @@
     <Compile Include="Install\FOMOD.cs" />
     <Compile Include="Install\IInstallStep.cs" />
     <Compile Include="Install\NVSE.cs" />
+    <Compile Include="IPathStore.cs" />
     <Compile Include="Log.cs" />
     <Compile Include="Patching\Diff.cs" />
     <Compile Include="Patching\BsaDiff.cs" />
@@ -121,7 +122,8 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Game.resx</DependentUpon>
     </Compile>
-    <Compile Include="RegistryHelper.cs" />
+    <Compile Include="SettingsPathStore.cs" />
+    <Compile Include="RegistryPathStore.cs" />
     <Compile Include="Properties\Localization.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>

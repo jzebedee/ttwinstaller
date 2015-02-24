@@ -4,9 +4,9 @@ using Microsoft.Win32;
 
 namespace TaleOfTwoWastelands
 {
-    public static class RegistryHelper
-    {
-        public static RegistryKey GetBethKey()
+    public class RegistryPathStore : IPathStore
+	{
+        public RegistryKey GetBethKey()
         {
             using (var bethKey =
                 Registry.LocalMachine.OpenSubKey(
@@ -19,7 +19,7 @@ namespace TaleOfTwoWastelands
             }
         }
 
-        public static string GetPathFromKey(string keyName)
+        public string GetPathFromKey(string keyName)
         {
             using (var bethKey = GetBethKey())
             using (var subKey = bethKey.CreateSubKey(keyName))
@@ -29,7 +29,7 @@ namespace TaleOfTwoWastelands
             }
         }
 
-        public static void SetPathFromKey(string keyName, string path)
+        public void SetPathFromKey(string keyName, string path)
         {
             using (var bethKey = GetBethKey())
             using (var subKey = bethKey.CreateSubKey(keyName))
