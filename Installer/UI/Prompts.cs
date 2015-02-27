@@ -4,112 +4,115 @@ using TaleOfTwoWastelands.Properties;
 
 namespace TaleOfTwoWastelands.UI
 {
-    public class Prompts : IPrompts
+	public class Prompts : IPrompts
 	{
-        private readonly FileDialog openDialog, saveDialog;
-		
-        private readonly ILog Log;
+		private readonly FileDialog openDialog, saveDialog;
+
+		private readonly ILog Log;
 		private readonly IPathStore _store;
 
 		public string Fallout3Path { get; private set; }
-        public string FalloutNVPath { get; private set; }
-        public string TTWSavePath { get; private set; }
+		public string FalloutNVPath { get; private set; }
+		public string TTWSavePath { get; private set; }
 
-        public Prompts(OpenFileDialog openDialog, SaveFileDialog saveDialog, ILog log, IPathStore store)
-        {
-            Log = log;
+		public Prompts(OpenFileDialog openDialog, SaveFileDialog saveDialog, ILog log, IPathStore store)
+		{
+			Log = log;
 			_store = store;
 
-            this.openDialog = openDialog;
-            this.saveDialog = saveDialog;
+			this.openDialog = openDialog;
+			this.saveDialog = saveDialog;
 
-            if (Program.IsElevated)
-            {
-                Fallout3Path = store.GetPathFromKey("Fallout3");
-                FalloutNVPath = store.GetPathFromKey("FalloutNV");
-                TTWSavePath = store.GetPathFromKey("TaleOfTwoWastelands");
-            }
-        }
+			if (Program.IsElevated)
+			{
+				Fallout3Path = store.GetPathFromKey("Fallout3");
+				FalloutNVPath = store.GetPathFromKey("FalloutNV");
+				TTWSavePath = store.GetPathFromKey("TaleOfTwoWastelands");
+			}
+		}
 
-        public void PromptPaths()
-        {
-            Log.File("Looking for Fallout3.exe");
-            if (File.Exists(Path.Combine(Fallout3Path, "Fallout3.exe")))
-            {
-                Log.File("\tFound.");
-            }
-            else
-            {
-                Fallout3Path = Fallout3Prompt();
-            }
+		public void PromptPaths()
+		{
+			Log.File("Looking for Fallout3.exe");
+			if (File.Exists(Path.Combine(Fallout3Path, "Fallout3.exe")))
+			{
+				Log.File("\tFound.");
+			}
+			else
+			{
+				Fallout3Path = Fallout3Prompt();
+			}
 
-            Log.File("Looking for FalloutNV.exe");
-            if (File.Exists(Path.Combine(FalloutNVPath, "FalloutNV.exe")))
-            {
-                Log.File("\tFound.");
-            }
-            else
-            {
-                FalloutNVPath = FalloutNVPrompt();
-            }
+			Log.File("Looking for FalloutNV.exe");
+			if (File.Exists(Path.Combine(FalloutNVPath, "FalloutNV.exe")))
+			{
+				Log.File("\tFound.");
+			}
+			else
+			{
+				FalloutNVPath = FalloutNVPrompt();
+			}
 
-            Log.File("Looking for Tale of Two Wastelands");
-            if (TTWSavePath != null && TTWSavePath != "\\")
-            {
-                Log.File("\tDefault path found.");
-            }
-            else
-            {
-                TTWSavePath = TTWPrompt();
-            }
-        }
+			Log.File("Looking for Tale of Two Wastelands");
+			if (TTWSavePath != null && TTWSavePath != "\\")
+			{
+				Log.File("\tDefault path found.");
+			}
+			else
+			{
+				TTWSavePath = TTWPrompt();
+			}
+		}
 
-        private string FindByUserPrompt(FileDialog dialog, string name, string keyName, bool manual = false)
-        {
-            Log.File("Prompting user for {0}'s path.", name);
-            MessageBox.Show(string.Format("Please select {0}'s location.", name));
+		private string FindByUserPrompt(FileDialog dialog, string name, string keyName, bool manual = false)
+		{
+			Log.File("Prompting user for {0}'s path.", name);
+			MessageBox.Show(string.Format("Please select {0}'s location.", name));
 
-            var dlgResult = dialog.ShowDialog();
-            if (dlgResult == DialogResult.OK)
-            {
-                var path = Path.GetDirectoryName(dialog.FileName);
-                Log.File("User {2}changed {0} directory to '{1}'", name, path, manual ? "manually " : " ");
+			var dlgResult = dialog.ShowDialog();
+			if (dlgResult == DialogResult.OK)
+			{
+				var path = Path.GetDirectoryName(dialog.FileName);
+				Log.File("User {2}changed {0} directory to '{1}'", name, path, manual ? "manually " : " ");
 
-                _store.SetPathFromKey(keyName, path);
+				_store.SetPathFromKey(keyName, path);
 
-                return path;
-            }
+				return path;
+			}
 
-            return null;
-        }
+			return null;
+		}
 
-        public string Fallout3Prompt(bool manual = false)
-        {
-            openDialog.FilterIndex = 1;
-            openDialog.Title = Localization.Fallout3;
-            return (Fallout3Path = FindByUserPrompt(openDialog, Localization.Fallout3, "Fallout3", manual));
-        }
+		public string Fallout3Prompt(bool manual = false)
+		{
+			openDialog.FilterIndex = 1;
+			openDialog.Title = Localization.Fallout3;
+			return (Fallout3Path = FindByUserPrompt(openDialog, Localization.Fallout3, "Fallout3", manual));
+		}
 
-        public string FalloutNVPrompt(bool manual = false)
-        {
-            openDialog.FilterIndex = 2;
-            openDialog.Title = Localization.FalloutNewVegas;
-            return (FalloutNVPath = FindByUserPrompt(openDialog, Localization.FalloutNewVegas, "FalloutNV", manual));
-        }
+		public string FalloutNVPrompt(bool manual = false)
+		{
+			openDialog.FilterIndex = 2;
+			openDialog.Title = Localization.FalloutNewVegas;
+			return (FalloutNVPath = FindByUserPrompt(openDialog, Localization.FalloutNewVegas, "FalloutNV", manual));
+		}
 
-        public string TTWPrompt(bool manual = false)
-        {
-            return (TTWSavePath = FindByUserPrompt(saveDialog, "Tale of Two Wastelands", "TaleOfTwoWastelands", manual));
-        }
+		public string TTWPrompt(bool manual = false)
+		{
+			return (TTWSavePath = FindByUserPrompt(saveDialog, "Tale of Two Wastelands", "TaleOfTwoWastelands", manual));
+		}
 
 		public bool OverwritePrompt(string name, string path)
 		{
 			if (!File.Exists(path))
+			{
+				Log.File(Localization.FileDoesNotExist, path);
 				return true;
+			}
 
-			Log.File("File \"{0}\" does not exist", path);
+			Log.File(Localization.FileAlreadyExists, path);
 
-			var promptResult = MessageBox.Show(string.Format(Localization.RebuildPrompt, name), Localization.FileAlreadyExists, MessageBoxButtons.YesNo);
+			var promptResult = MessageBox.Show(string.Format(Localization.RebuildPrompt, name), Localization.FileAlreadyExistsTitle, MessageBoxButtons.YesNo);
 			switch (promptResult)
 			{
 				case DialogResult.Yes:

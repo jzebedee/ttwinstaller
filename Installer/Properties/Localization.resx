@@ -160,7 +160,7 @@ Would like the installer to automatically build FOMODs?</value>
     <value>{0} already exists. Rebuild?</value>
     <comment>{0} = out BSA filename</comment>
   </data>
-  <data name="FileAlreadyExists" xml:space="preserve">
+  <data name="FileAlreadyExistsTitle" xml:space="preserve">
     <value>File Already Exists</value>
   </data>
   <data name="ErrorWhileInstalling" xml:space="preserve">
@@ -227,5 +227,11 @@ Would you like to install NVSE?</value>
   </data>
   <data name="RequestingNvsePage" xml:space="preserve">
     <value>Requesting NVSE page at {0}</value>
+  </data>
+  <data name="FileDoesNotExist" xml:space="preserve">
+    <value>File "{0}" does not exist</value>
+  </data>
+  <data name="FileAlreadyExists" xml:space="preserve">
+    <value>File "{0}" already exists</value>
   </data>
 </root>

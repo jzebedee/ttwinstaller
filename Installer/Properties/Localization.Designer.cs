@@ -181,11 +181,29 @@ namespace TaleOfTwoWastelands.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to File Already Exists.
+        ///   Looks up a localized string similar to File &quot;{0}&quot; already exists.
         /// </summary>
         internal static string FileAlreadyExists {
             get {
                 return ResourceManager.GetString("FileAlreadyExists", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to File Already Exists.
+        /// </summary>
+        internal static string FileAlreadyExistsTitle {
+            get {
+                return ResourceManager.GetString("FileAlreadyExistsTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to File &quot;{0}&quot; does not exist.
+        /// </summary>
+        internal static string FileDoesNotExist {
+            get {
+                return ResourceManager.GetString("FileDoesNotExist", resourceCulture);
             }
         }
         
