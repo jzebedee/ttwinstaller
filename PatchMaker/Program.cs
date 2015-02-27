@@ -11,9 +11,10 @@ using BSAsharp;
 
 namespace PatchMaker
 {
-    using Patch = Tuple<FileValidation, PatchInfo[]>;
+	using TaleOfTwoWastelands.Properties;
+	using Patch = Tuple<FileValidation, PatchInfo[]>;
 
-    class Program
+	class Program
     {
         const string
             InDir = "BuildDB",
@@ -42,10 +43,11 @@ namespace PatchMaker
 
             Directory.CreateDirectory(OutDir);
 
-            _dirTTWMain = Path.Combine(InDir, Installer.MainDir);
-            _dirTTWOptional = Path.Combine(InDir, Installer.OptDir);
+            _dirTTWMain = Path.Combine(InDir, "Main Files");
+            _dirTTWOptional = Path.Combine(InDir, "Optional Files");
 
-            var bethKey = Installer.GetBethKey();
+			var helper = new RegistryPathStore();
+            var bethKey = helper.GetBethKey();
 
             var fo3Key = bethKey.CreateSubKey("Fallout3");
             Debug.Assert(fo3Key != null, "fo3Key != null");
@@ -55,13 +57,13 @@ namespace PatchMaker
 
             SevenZipCompressor.LzmaDictionarySize = 1024 * 1024 * 64; //64MiB, 7z 'Ultra'
 
-            Parallel.ForEach(Installer.BuildableBSAs, new ParallelOptions { MaxDegreeOfParallelism = 2 }, kvpBsa => BuildBsaPatch(kvpBsa.Key, kvpBsa.Value));
+            Parallel.ForEach(Game.BuildableBSAs, new ParallelOptions { MaxDegreeOfParallelism = 2 }, kvpBsa => BuildBsaPatch(kvpBsa.Key, kvpBsa.Value));
 
             var knownEsmVersions =
                 Directory.EnumerateFiles(Path.Combine(InDir, "Versions"), "*.esm", SearchOption.AllDirectories)
                 .ToLookup(Path.GetFileName, esm => esm);
 
-            Parallel.ForEach(Installer.CheckedESMs, new ParallelOptions { MaxDegreeOfParallelism = 2 }, esm => BuildMasterPatch(esm, knownEsmVersions));
+            Parallel.ForEach(Game.CheckedESMs, new ParallelOptions { MaxDegreeOfParallelism = 2 }, esm => BuildMasterPatch(esm, knownEsmVersions));
         }
 
         private static void BuildBsaPatch(string inBsaName, string outBsaName)
@@ -84,7 +86,7 @@ namespace PatchMaker
             using (var inBSA = new BSA(inBSAPath))
             using (var outBSA = new BSA(outBSAPath))
             {
-                BSADiff
+                BsaDiff
                     .CreateRenameQuery(inBSA, renameDict)
                     .ToList(); // execute query
 
@@ -113,7 +115,7 @@ namespace PatchMaker
                     var newChk = join.patch;
 
                     var oldFilename = oldBsaFile.Filename;
-                    if (oldFilename.StartsWith(BSADiff.VoicePrefix))
+                    if (oldFilename.StartsWith(Game.VoicePrefix))
                     {
                         patchDict.Add(join.file, new Patch(newChk, null));
                         continue;

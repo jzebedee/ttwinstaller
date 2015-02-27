@@ -50,7 +50,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
-    <ApplicationIcon>Installer_Icon.ico</ApplicationIcon>
+    <ApplicationIcon>Resources\Installer_Icon.ico</ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationManifest>app.manifest</ApplicationManifest>
@@ -62,8 +62,18 @@
     <Reference Include="ICSharpCode.SharpZipLib">
       <HintPath>..\packages\SharpZipLib.0.86.0\lib\20\ICSharpCode.SharpZipLib.dll</HintPath>
     </Reference>
+    <Reference Include="Newtonsoft.Json, Version=7.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\Newtonsoft.Json.7.0.1-beta1\lib\net40\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="SevenZipSharp">
       <HintPath>..\packages\SevenZipSharp.0.64\lib\SevenZipSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="StructureMap">
+      <HintPath>..\packages\structuremap.3.1.4.143\lib\net40\StructureMap.dll</HintPath>
+    </Reference>
+    <Reference Include="StructureMap.Net4">
+      <HintPath>..\packages\structuremap.3.1.4.143\lib\net40\StructureMap.Net4.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -78,17 +88,48 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DependencyRegistry.cs" />
     <Compile Include="FinalizedTextWriter.cs" />
+    <Compile Include="IInstaller.cs" />
+    <Compile Include="ILog.cs" />
+    <Compile Include="Install\BsaInstaller.cs" />
+    <Compile Include="Install\BuildBsasStep.cs" />
+    <Compile Include="Install\FOMOD.cs" />
+    <Compile Include="Install\IInstallStep.cs" />
+    <Compile Include="Install\NVSE.cs" />
+    <Compile Include="IPathStore.cs" />
+    <Compile Include="Log.cs" />
     <Compile Include="Patching\Diff.cs" />
-    <Compile Include="Patching\BSADiff.cs" />
+    <Compile Include="Patching\BsaDiff.cs" />
     <Compile Include="Patching\Extensions.cs" />
+    <Compile Include="Patching\IBsaDiff.cs" />
     <Compile Include="Patching\Murmur\Murmur128.cs" />
     <Compile Include="Patching\Murmur\Murmur128UnmanagedX64.cs" />
     <Compile Include="Patching\PatchDict.cs" />
     <Compile Include="Patching\PatchInfo.cs" />
     <Compile Include="Patching\FileValidation.cs" />
-    <Compile Include="ProgressTypes\InstallOperation.cs" />
-    <Compile Include="ProgressTypes\Progress.cs" Condition="!$(TargetFrameworkVersion.Contains('v4.5'))" />
+    <Compile Include="Progress\IInstallStatus.cs" />
+    <Compile Include="Properties\Paths.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Paths.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Progress\InstallStatus.cs" />
+    <Compile Include="Progress\Progress.cs" Condition="!$(TargetFrameworkVersion.Contains('v4.5'))" />
+    <Compile Include="Properties\Game.cs" />
+    <Compile Include="Properties\Game.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Game.resx</DependentUpon>
+    </Compile>
+    <Compile Include="SettingsPathStore.cs" />
+    <Compile Include="RegistryPathStore.cs" Condition="'$(Configuration)'=='Debug'" />
+    <Compile Include="Properties\Localization.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Localization.resx</DependentUpon>
+    </Compile>
+    <Compile Include="UI\ErrorPromptResult.cs" />
     <Compile Include="UI\frm_Main.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -98,23 +139,28 @@
     <Compile Include="Installer.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="UI\IPrompts.cs" />
+    <Compile Include="UI\Prompts.cs" />
     <Compile Include="UI\TextProgressBar.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Util.cs" />
+    <EmbeddedResource Include="Properties\Paths.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Paths.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Game.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Game.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
     <EmbeddedResource Include="UI\frm_Main.resx">
       <DependentUpon>frm_Main.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Properties\Resources.resx">
+    <EmbeddedResource Include="Properties\Localization.resx">
       <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
       <SubType>Designer</SubType>
+      <LastGenOutput>Localization.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-    <Compile Include="Properties\Resources.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Resources.resx</DependentUpon>
-      <DesignTime>True</DesignTime>
-    </Compile>
     <None Include="app.manifest" />
     <None Include="packages.config">
       <SubType>Designer</SubType>
@@ -133,7 +179,7 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Installer_Icon.ico" />
+    <Content Include="Resources\Installer_Icon.ico" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.0,Profile=Client,KB2468871">

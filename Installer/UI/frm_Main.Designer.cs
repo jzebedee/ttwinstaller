@@ -94,7 +94,6 @@
             // prgOverall
             // 
             this.prgOverall.CustomText = null;
-            this.prgOverall.DisplayStyle = TaleOfTwoWastelands.UI.ProgressBarDisplayText.CustomText;
             this.prgOverall.Dock = System.Windows.Forms.DockStyle.Fill;
             this.prgOverall.Location = new System.Drawing.Point(255, 534);
             this.prgOverall.Name = "prgOverall";
@@ -256,7 +255,6 @@
             // prgCurrent
             // 
             this.prgCurrent.CustomText = null;
-            this.prgCurrent.DisplayStyle = TaleOfTwoWastelands.UI.ProgressBarDisplayText.CustomText;
             this.prgCurrent.Dock = System.Windows.Forms.DockStyle.Fill;
             this.prgCurrent.Location = new System.Drawing.Point(255, 504);
             this.prgCurrent.Name = "prgCurrent";
@@ -296,7 +294,6 @@
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "frm_Main";
             this.Text = "Tale Of Two Wastelands Installer";
-            this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.frm_Main_FormClosed);
             this.Load += new System.EventHandler(this.frm_Main_Load);
             this.tbl_Main.ResumeLayout(false);
             this.tbl_Main.PerformLayout();

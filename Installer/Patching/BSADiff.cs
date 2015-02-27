@@ -7,44 +7,43 @@ using System.IO;
 using System.Threading;
 using System.Diagnostics;
 using BSAsharp;
-using TaleOfTwoWastelands.ProgressTypes;
+using TaleOfTwoWastelands.Progress;
 using SevenZip;
 using Patch = System.Tuple<TaleOfTwoWastelands.Patching.FileValidation, TaleOfTwoWastelands.Patching.PatchInfo[]>;
 
 namespace TaleOfTwoWastelands.Patching
 {
-    using PatchJoin = Tuple<BSAFile, BSAFile, Patch>;
-    public class BSADiff
-    {
-        public const string VoicePrefix = @"sound\voice";
+	using TaleOfTwoWastelands.Properties;
+	using PatchJoin = Tuple<BSAFile, BSAFile, Patch>;
+	public class BsaDiff : IBsaDiff
+	{
+        protected IProgress<InstallStatus> Progress
+		{
+			get
+			{
+				return _installer.ProgressMinorOperation;
+			}
+		}
+        protected CancellationToken Token
+		{
+			get
+			{
+				return _installer.Token;
+			}
+		}
 
-        protected IProgress<string> ProgressDual { get; set; }
-        protected IProgress<string> ProgressFile { get; set; }
-        protected IProgress<InstallOperation> ProgressMinorUI { get; set; }
-        protected CancellationToken Token { get; set; }
-        protected InstallOperation Op { get; set; }
+        private readonly ILog Log;
+		private readonly IInstaller _installer;
 
-        private void Log(string msg)
+        public BsaDiff(IInstaller installer, ILog log)
         {
-            ProgressDual.Report('\t' + msg);
+			_installer = installer;
+            Log = log;
         }
 
-        private void LogFile(string msg)
+        public bool PatchBsa(CompressionOptions bsaOptions, string oldBSA, string newBSA, bool simulate = false)
         {
-            ProgressFile.Report('\t' + msg);
-        }
-
-        public BSADiff(Installer parent, CancellationToken token)
-        {
-            ProgressDual = parent.ProgressDual;
-            ProgressFile = parent.ProgressFile;
-            ProgressMinorUI = parent.ProgressMinorOperation;
-            Token = token;
-        }
-
-        public bool PatchBSA(CompressionOptions bsaOptions, string oldBSA, string newBSA, bool simulate = false)
-        {
-            Op = new InstallOperation(ProgressMinorUI, Token) { ItemsTotal = 7 };
+            var Op = new InstallStatus(Progress, Token) { ItemsTotal = 7 };
 
             var outBsaFilename = Path.GetFileNameWithoutExtension(newBSA);
 
@@ -112,7 +111,7 @@ namespace TaleOfTwoWastelands.Patching
                 }
                 else
                 {
-                    Log("\tNo patch database is available for: " + oldBSA);
+                    Log.Dual("\tNo patch database is available for: " + oldBSA);
                     return false;
                 }
 #endif
@@ -132,8 +131,8 @@ namespace TaleOfTwoWastelands.Patching
                     {
                         foreach (var kvp in renameDict)
                         {
-                            Log("File not found: " + kvp.Value);
-                            Log("\tCannot create: " + kvp.Key);
+                            Log.Dual("File not found: " + kvp.Value);
+                            Log.Dual("\tCannot create: " + kvp.Key);
                         }
                     }
                 }
@@ -145,7 +144,7 @@ namespace TaleOfTwoWastelands.Patching
                 var allFiles = bsa.SelectMany(folder => folder).ToList();
                 try
                 {
-                    var opChk = new InstallOperation(ProgressMinorUI, Token) { ItemsTotal = patchDict.Count };
+                    var opChk = new InstallStatus(Progress, Token) { ItemsTotal = patchDict.Count };
 
                     var joinedPatches = from patKvp in patchDict
                                         //if the join is not grouped, this will exclude missing files, and we can't find and fail on them
@@ -219,7 +218,7 @@ namespace TaleOfTwoWastelands.Patching
             return true;
         }
 
-        private void HandleFile(InstallOperation opChk, PatchJoin join)
+        private void HandleFile(InstallStatus opChk, PatchJoin join)
         {
             try
             {
@@ -231,7 +230,7 @@ namespace TaleOfTwoWastelands.Patching
 
                 if (oldFile == null)
                 {
-                    Log("ERROR: File not found: " + filepath);
+                    Log.Dual("ERROR: File not found: " + filepath);
                     return;
                 }
 
@@ -239,10 +238,10 @@ namespace TaleOfTwoWastelands.Patching
                 var newChk = patchTuple.Item1;
                 var patches = patchTuple.Item2;
 
-                if (filepath.StartsWith(VoicePrefix) && (patches == null || patches.Length == 0))
+                if (filepath.StartsWith(Game.VoicePrefix) && (patches == null || patches.Length == 0))
                 {
                     opChk.CurrentOperation = "Skipping " + filename;
-                    //LogFile("Skipping voice file: " + filepath);
+                    //Log.File("Skipping voice file: " + filepath);
                     return;
                 }
 
@@ -281,15 +280,15 @@ namespace TaleOfTwoWastelands.Patching
                             if (PatchBsaFile(newFile, patchInfo, newChk))
                                 return;
                             else
-                                Log("ERROR: Patching " + filepath + " failed");
+                                Log.Dual("ERROR: Patching " + filepath + " failed");
                         }
 
                         using (var patChk = FileValidation.FromBSAFile(newFile, newChk.Type))
                             if (newChk != patChk)
                             {
                                 //no patch exists for the file
-                                Log("WARNING: File is of an unexpected version: " + newFile.Filename + " - " + patChk);
-                                Log("This file cannot be patched. Errors may occur.");
+                                Log.Dual("WARNING: File is of an unexpected version: " + newFile.Filename + " - " + patChk);
+                                Log.Dual("This file cannot be patched. Errors may occur.");
                             }
                     }
             }
@@ -331,7 +330,7 @@ namespace TaleOfTwoWastelands.Patching
         {
             const string opPrefix = "Renaming BSA files";
 
-            var opRename = new InstallOperation(ProgressMinorUI, Token) { CurrentOperation = opPrefix };
+            var opRename = new InstallStatus(Progress, Token) { CurrentOperation = opPrefix };
 
             var renameFixes = CreateRenameQuery(bsa, renameDict);
             opRename.ItemsTotal = renameDict.Count;
@@ -365,16 +364,16 @@ namespace TaleOfTwoWastelands.Patching
 
             var success = patch.PatchBytes(inputBytes, targetChk, out outputBytes, out outputChk);
             using (outputChk)
+            {
                 if (success)
                 {
                     bsaFile.UpdateData(outputBytes, false);
                     return true;
                 }
-                else
-                {
-                    LogFile("ERROR: Patching " + bsaFile.Filename + " has failed - " + outputChk);
-                    return false;
-                }
+
+                Log.File("ERROR: Patching " + bsaFile.Filename + " has failed - " + outputChk);
+                return false;
+            }
         }
     }
 }
