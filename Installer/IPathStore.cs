@@ -1,6 +1,4 @@
-﻿using Microsoft.Win32;
-
-namespace TaleOfTwoWastelands
+﻿namespace TaleOfTwoWastelands
 {
 	public interface IPathStore
 	{

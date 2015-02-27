@@ -1,13 +1,12 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Drawing;
 using System.Windows.Forms;
 
 namespace TaleOfTwoWastelands.UI
 {
-    //thanks Barry
-    //http://stackoverflow.com/a/3529945
-    sealed class TextProgressBar : ProgressBar
+	//thanks Barry
+	//http://stackoverflow.com/a/3529945
+	sealed class TextProgressBar : ProgressBar
     {
         //Property to hold the custom text
         private string _customText;

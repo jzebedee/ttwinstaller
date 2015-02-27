@@ -1,16 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Windows.Forms;
 using StructureMap;
 using TaleOfTwoWastelands.Patching;
 using TaleOfTwoWastelands.UI;
 
 namespace TaleOfTwoWastelands
 {
-    internal static class DependencyRegistry
+	internal static class DependencyRegistry
     {
         private static readonly Lazy<Container> _container =
             new Lazy<Container>(defaultContainer, LazyThreadSafetyMode.ExecutionAndPublication);

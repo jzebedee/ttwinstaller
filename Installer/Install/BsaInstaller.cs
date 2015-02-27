@@ -1,17 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
-using System.Windows.Forms;
 using BSAsharp;
 using TaleOfTwoWastelands.Patching;
-using TaleOfTwoWastelands.Properties;
 using TaleOfTwoWastelands.UI;
 
 namespace TaleOfTwoWastelands.Install
 {
-    public class BsaInstaller
+	public class BsaInstaller
     {
         const CompressionStrategy
             FastStrategy = CompressionStrategy.Unsafe | CompressionStrategy.Speed,

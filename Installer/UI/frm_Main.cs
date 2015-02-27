@@ -5,11 +5,10 @@ using System.Windows.Forms;
 using System.Threading;
 using TaleOfTwoWastelands.Progress;
 using TaleOfTwoWastelands.Properties;
-using StructureMap;
 
 namespace TaleOfTwoWastelands.UI
 {
-    public partial class frm_Main : Form
+	public partial class frm_Main : Form
     {
         private CancellationTokenSource _installCts;
         private Task _installTask;

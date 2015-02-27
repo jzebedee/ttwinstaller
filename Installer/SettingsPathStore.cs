@@ -1,11 +1,8 @@
-﻿using System;
-using System.Diagnostics;
-using Microsoft.Win32;
-using TaleOfTwoWastelands.Properties;
+﻿using TaleOfTwoWastelands.Properties;
 
 namespace TaleOfTwoWastelands
 {
-    public class SettingsPathStore : IPathStore
+	public class SettingsPathStore : IPathStore
 	{
         public string GetPathFromKey(string keyName)
         {
