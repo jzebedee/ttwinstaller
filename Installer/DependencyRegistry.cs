@@ -28,7 +28,9 @@ namespace TaleOfTwoWastelands
                 x.ForSingletonOf<IInstaller>().Use<Installer>();
 				x.ForSingletonOf<IPrompts>().Use<Prompts>();
 				x.For<IBsaDiff>().Use<BsaDiff>();
-				x.For<IPathStore>().Use<SettingsPathStore>();
+
+				x.For<IPathStore>().Add<SettingsPathStore>();
+				x.For<IPathStore>().Add<RegistryPathStore>();
 			});
         }
     }

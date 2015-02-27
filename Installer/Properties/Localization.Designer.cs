@@ -163,6 +163,15 @@ namespace TaleOfTwoWastelands.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Failed to save path &quot;{0}&quot; to {1}.
+        /// </summary>
+        internal static string FailedToSavePath {
+            get {
+                return ResourceManager.GetString("FailedToSavePath", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Fallout 3.
         /// </summary>
         internal static string Fallout3 {

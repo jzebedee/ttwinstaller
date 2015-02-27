@@ -31,13 +31,7 @@ namespace TaleOfTwoWastelands
 
         public void SetPathFromKey(string keyName, string path)
         {
-            using (var bethKey = GetBethKey())
-            using (var subKey = bethKey.CreateSubKey(keyName))
-            {
-                Debug.Assert(subKey != null, "subKey != null");
-                subKey.SetValue("Installed Path", path, RegistryValueKind.String);
-            }
+			throw new InvalidOperationException("Registry writes are disabled");
         }
-
     }
 }

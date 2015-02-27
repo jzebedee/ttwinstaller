@@ -1,6 +1,9 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using System.Windows.Forms;
+using System.Linq;
 using TaleOfTwoWastelands.Properties;
+using System;
 
 namespace TaleOfTwoWastelands.UI
 {
@@ -9,26 +12,49 @@ namespace TaleOfTwoWastelands.UI
 		private readonly FileDialog openDialog, saveDialog;
 
 		private readonly ILog Log;
-		private readonly IPathStore _store;
+		private readonly IEnumerable<IPathStore> Stores;
 
 		public string Fallout3Path { get; private set; }
 		public string FalloutNVPath { get; private set; }
 		public string TTWSavePath { get; private set; }
 
-		public Prompts(OpenFileDialog openDialog, SaveFileDialog saveDialog, ILog log, IPathStore store)
+		public Prompts(OpenFileDialog openDialog, SaveFileDialog saveDialog, ILog log, IEnumerable<IPathStore> store)
 		{
 			Log = log;
-			_store = store;
+			Stores = store;
 
 			this.openDialog = openDialog;
 			this.saveDialog = saveDialog;
 
-			if (Program.IsElevated)
+			Fallout3Path = TryAllStoresGetPath("Fallout3");
+			FalloutNVPath = TryAllStoresGetPath("FalloutNV");
+			TTWSavePath = TryAllStoresGetPath("TaleOfTwoWastelands");
+		}
+
+		private string TryAllStoresGetPath(string key)
+		{
+			return (from store in Stores
+					let val = store.GetPathFromKey(key)
+					select val)
+					.FirstOrDefault(v => !string.IsNullOrEmpty(v));
+		}
+
+		private bool TryAllStoresSetPath(string key, string path)
+		{
+			foreach (var store in Stores)
 			{
-				Fallout3Path = store.GetPathFromKey("Fallout3");
-				FalloutNVPath = store.GetPathFromKey("FalloutNV");
-				TTWSavePath = store.GetPathFromKey("TaleOfTwoWastelands");
+				try
+				{
+					store.SetPathFromKey(key, path);
+					return true;
+				}
+				catch (InvalidOperationException)
+				{
+					continue;
+				}
 			}
+
+			return false;
 		}
 
 		public void PromptPaths()
@@ -75,7 +101,8 @@ namespace TaleOfTwoWastelands.UI
 				var path = Path.GetDirectoryName(dialog.FileName);
 				Log.File("User {2}changed {0} directory to '{1}'", name, path, manual ? "manually " : " ");
 
-				_store.SetPathFromKey(keyName, path);
+				if (!TryAllStoresSetPath(keyName, path))
+					Log.Dual(Localization.FailedToSavePath, path, keyName);
 
 				return path;
 			}
