@@ -17,7 +17,7 @@ namespace TaleOfTwoWastelands.Install
 			_prompts = prompts;
 		}
 
-		public bool? Run(InstallStatus status, CancellationToken token)
+        public bool? Run(IInstallStatusUpdate status, CancellationToken token)
 		{
 			foreach (var kvp in Game.BuildableBSAs)
 			{

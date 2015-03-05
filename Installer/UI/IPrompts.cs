@@ -10,6 +10,7 @@
 		string Fallout3Prompt(bool manual = false);
 		string FalloutNVPrompt(bool manual = false);
 		bool OverwritePrompt(string name, string path);
+	    bool BuildFOMODsPrompt();
 		ErrorPromptResult PatchingErrorPrompt(string file);
 		void PromptPaths();
 		string TTWPrompt(bool manual = false);

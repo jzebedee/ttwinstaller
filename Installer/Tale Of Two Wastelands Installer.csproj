@@ -93,6 +93,8 @@
     <Compile Include="IInstaller.cs" />
     <Compile Include="ILog.cs" />
     <Compile Include="Install\BsaInstaller.cs" />
+    <Compile Include="Install\BuildFOMODsStep.cs" />
+    <Compile Include="Install\CheckingRequiredFilesStep.cs" />
     <Compile Include="Install\BuildBsasStep.cs" />
     <Compile Include="Install\FOMOD.cs" />
     <Compile Include="Install\IInstallStep.cs" />
@@ -109,6 +111,7 @@
     <Compile Include="Patching\PatchInfo.cs" />
     <Compile Include="Patching\FileValidation.cs" />
     <Compile Include="Progress\IInstallStatus.cs" />
+    <Compile Include="Progress\IInstallStatusUpdate.cs" />
     <Compile Include="Properties\Paths.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>

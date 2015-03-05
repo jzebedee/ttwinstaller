@@ -163,6 +163,14 @@ namespace TaleOfTwoWastelands.UI
 			return true;
 		}
 
+	    public bool BuildFOMODsPrompt()
+	    {
+	        return
+	            MessageBox.Show(
+	                string.Format(Localization.BuildFOMODsPrompt, Localization.TTW, Localization.SuggestedModManager),
+	                Localization.BuildFOMODsQuestion, MessageBoxButtons.YesNo) == DialogResult.Yes;
+	    }
+
 		public ErrorPromptResult PatchingErrorPrompt(string file)
 		{
 			var promptResult = MessageBox.Show(string.Format(Localization.ErrorWhilePatching, file), Localization.Error, MessageBoxButtons.AbortRetryIgnore);

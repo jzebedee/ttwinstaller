@@ -108,6 +108,15 @@ namespace TaleOfTwoWastelands.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Checking for required files.
+        /// </summary>
+        internal static string CheckingRequiredFiles {
+            get {
+                return ResourceManager.GetString("CheckingRequiredFiles", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Error.
         /// </summary>
         internal static string Error {

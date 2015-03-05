@@ -237,4 +237,7 @@ Would you like to install NVSE?</value>
   <data name="FailedToSavePath" xml:space="preserve">
     <value>Failed to save path "{0}" to {1}</value>
   </data>
+  <data name="CheckingRequiredFiles" xml:space="preserve">
+    <value>Checking for required files</value>
+  </data>
 </root>
