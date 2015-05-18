@@ -8,10 +8,16 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace Resources.Properties {
-    using System;
-    
-    
+using System.CodeDom.Compiler;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Resources;
+using System.Runtime.CompilerServices;
+
+namespace Resources.Properties
+{
     /// <summary>
     ///   A strongly-typed resource class, for looking up localized strings, etc.
     /// </summary>
@@ -19,142 +25,172 @@ namespace Resources.Properties {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "4.0.0.0")]
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-    [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    public class Paths {
-        
-        private static global::System.Resources.ResourceManager resourceMan;
-        
-        private static global::System.Globalization.CultureInfo resourceCulture;
-        
-        [global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
-        internal Paths() {
+    [GeneratedCode("System.Resources.Tools.StronglyTypedResourceBuilder", "4.0.0.0")]
+    [DebuggerNonUserCode()]
+    [CompilerGenerated()]
+    public class Paths
+    {
+
+        private static ResourceManager resourceMan;
+
+        private static CultureInfo resourceCulture;
+
+        [SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
+        internal Paths()
+        {
         }
-        
+
         /// <summary>
         ///   Returns the cached ResourceManager instance used by this class.
         /// </summary>
-        [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-        public static global::System.Resources.ResourceManager ResourceManager {
-            get {
-                if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Resources.Properties.Paths", typeof(Paths).Assembly);
+        [EditorBrowsable(EditorBrowsableState.Advanced)]
+        public static ResourceManager ResourceManager
+        {
+            get
+            {
+                if (ReferenceEquals(resourceMan, null))
+                {
+                    ResourceManager temp = new ResourceManager("Resources.Properties.Paths", typeof(Paths).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
             }
         }
-        
+
         /// <summary>
         ///   Overrides the current thread's CurrentUICulture property for all
         ///   resource lookups using this strongly typed resource class.
         /// </summary>
-        [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-        public static global::System.Globalization.CultureInfo Culture {
-            get {
+        [EditorBrowsable(EditorBrowsableState.Advanced)]
+        public static CultureInfo Culture
+        {
+            get
+            {
                 return resourceCulture;
             }
-            set {
+            set
+            {
                 resourceCulture = value;
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to resources.
         /// </summary>
-        public static string AssetsDir {
-            get {
+        public static string AssetsDir
+        {
+            get
+            {
                 return ResourceManager.GetString("AssetsDir", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to Main Files.
         /// </summary>
-        public static string MainDir {
-            get {
+        public static string MainDir
+        {
+            get
+            {
                 return ResourceManager.GetString("MainDir", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to TaleOfTwoWastelands_Main.fomod.
         /// </summary>
-        public static string MainFOMOD {
-            get {
+        public static string MainFOMOD
+        {
+            get
+            {
                 return ResourceManager.GetString("MainFOMOD", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to nvse_loader.exe.
         /// </summary>
-        public static string NvseFile {
-            get {
+        public static string NvseFile
+        {
+            get
+            {
                 return ResourceManager.GetString("NvseFile", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to http://nvse.silverlock.org/.
         /// </summary>
-        public static string NvseLink {
-            get {
+        public static string NvseLink
+        {
+            get
+            {
                 return ResourceManager.GetString("NvseLink", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to http://nvse.silverlock.org/download/*.7z.
         /// </summary>
-        public static string NvseSearchPattern {
-            get {
+        public static string NvseSearchPattern
+        {
+            get
+            {
                 return ResourceManager.GetString("NvseSearchPattern", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to Optional Files.
         /// </summary>
-        public static string OptDir {
-            get {
+        public static string OptDir
+        {
+            get
+            {
                 return ResourceManager.GetString("OptDir", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to TaleOfTwoWastelands_Options.fomod.
         /// </summary>
-        public static string OptFOMOD {
-            get {
+        public static string OptFOMOD
+        {
+            get
+            {
                 return ResourceManager.GetString("OptFOMOD", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to 7Zip.
         /// </summary>
-        public static string SevenZipBinaries {
-            get {
+        public static string SevenZipBinaries
+        {
+            get
+            {
                 return ResourceManager.GetString("SevenZipBinaries", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to 7z.dll.
         /// </summary>
-        public static string SevenZipX32 {
-            get {
+        public static string SevenZipX32
+        {
+            get
+            {
                 return ResourceManager.GetString("SevenZipX32", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to 7z64.dll.
         /// </summary>
-        public static string SevenZipX64 {
-            get {
+        public static string SevenZipX64
+        {
+            get
+            {
                 return ResourceManager.GetString("SevenZipX64", resourceCulture);
             }
         }

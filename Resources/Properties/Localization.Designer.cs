@@ -8,10 +8,16 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace Resources.Properties {
-    using System;
-    
-    
+using System.CodeDom.Compiler;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Resources;
+using System.Runtime.CompilerServices;
+
+namespace Resources.Properties
+{
     /// <summary>
     ///   A strongly-typed resource class, for looking up localized strings, etc.
     /// </summary>
@@ -19,381 +25,463 @@ namespace Resources.Properties {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "4.0.0.0")]
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-    [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    public class Localization {
-        
-        private static global::System.Resources.ResourceManager resourceMan;
-        
-        private static global::System.Globalization.CultureInfo resourceCulture;
-        
-        [global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
-        internal Localization() {
+    [GeneratedCode("System.Resources.Tools.StronglyTypedResourceBuilder", "4.0.0.0")]
+    [DebuggerNonUserCode()]
+    [CompilerGenerated()]
+    public class Localization
+    {
+
+        private static ResourceManager resourceMan;
+
+        private static CultureInfo resourceCulture;
+
+        [SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
+        internal Localization()
+        {
         }
-        
+
         /// <summary>
         ///   Returns the cached ResourceManager instance used by this class.
         /// </summary>
-        [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-        public static global::System.Resources.ResourceManager ResourceManager {
-            get {
-                if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Resources.Properties.Localization", typeof(Localization).Assembly);
+        [EditorBrowsable(EditorBrowsableState.Advanced)]
+        public static ResourceManager ResourceManager
+        {
+            get
+            {
+                if (ReferenceEquals(resourceMan, null))
+                {
+                    ResourceManager temp = new ResourceManager("Resources.Properties.Localization", typeof(Localization).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
             }
         }
-        
+
         /// <summary>
         ///   Overrides the current thread's CurrentUICulture property for all
         ///   resource lookups using this strongly typed resource class.
         /// </summary>
-        [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-        public static global::System.Globalization.CultureInfo Culture {
-            get {
+        [EditorBrowsable(EditorBrowsableState.Advanced)]
+        public static CultureInfo Culture
+        {
+            get
+            {
                 return resourceCulture;
             }
-            set {
+            set
+            {
                 resourceCulture = value;
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to {0} already exist. Would you like to overwrite them?.
         /// </summary>
-        public static string AlreadyExistOverwritePrompt {
-            get {
+        public static string AlreadyExistOverwritePrompt
+        {
+            get
+            {
                 return ResourceManager.GetString("AlreadyExistOverwritePrompt", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to {0} is easiest to install via a mod manager like {1}. Manual installation is possible but not suggested.
         ///
         ///Would like the installer to automatically build FOMODs?.
         /// </summary>
-        public static string BuildFOMODsPrompt {
-            get {
+        public static string BuildFOMODsPrompt
+        {
+            get
+            {
                 return ResourceManager.GetString("BuildFOMODsPrompt", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to Build FOMODs?.
         /// </summary>
-        public static string BuildFOMODsQuestion {
-            get {
+        public static string BuildFOMODsQuestion
+        {
+            get
+            {
                 return ResourceManager.GetString("BuildFOMODsQuestion", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to Cancel.
         /// </summary>
-        public static string Cancel {
-            get {
+        public static string Cancel
+        {
+            get
+            {
                 return ResourceManager.GetString("Cancel", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to Canceling....
         /// </summary>
-        public static string CancelingWait {
-            get {
+        public static string CancelingWait
+        {
+            get
+            {
                 return ResourceManager.GetString("CancelingWait", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to Checking for required files.
         /// </summary>
-        public static string CheckingRequiredFiles {
-            get {
+        public static string CheckingRequiredFiles
+        {
+            get
+            {
                 return ResourceManager.GetString("CheckingRequiredFiles", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to Error.
         /// </summary>
-        public static string Error {
-            get {
+        public static string Error
+        {
+            get
+            {
                 return ResourceManager.GetString("Error", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to An error occurred while installing:
         ///{0}.
         /// </summary>
-        public static string ErrorWhileInstalling {
-            get {
+        public static string ErrorWhileInstalling
+        {
+            get
+            {
                 return ResourceManager.GetString("ErrorWhileInstalling", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to Errors occurred while patching {0}.
         /// </summary>
-        public static string ErrorWhilePatching {
-            get {
+        public static string ErrorWhilePatching
+        {
+            get
+            {
                 return ResourceManager.GetString("ErrorWhilePatching", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to Extracting {0}.
         /// </summary>
-        public static string Extracting {
-            get {
+        public static string Extracting
+        {
+            get
+            {
                 return ResourceManager.GetString("Extracting", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to Failed to download NVSE..
         /// </summary>
-        public static string FailedDownloadNvse {
-            get {
+        public static string FailedDownloadNvse
+        {
+            get
+            {
                 return ResourceManager.GetString("FailedDownloadNvse", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to Failed to extract NVSE..
         /// </summary>
-        public static string FailedExtractNvse {
-            get {
+        public static string FailedExtractNvse
+        {
+            get
+            {
                 return ResourceManager.GetString("FailedExtractNvse", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to Failed to save path &quot;{0}&quot; to {1}.
         /// </summary>
-        public static string FailedToSavePath {
-            get {
+        public static string FailedToSavePath
+        {
+            get
+            {
                 return ResourceManager.GetString("FailedToSavePath", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to Fallout 3.
         /// </summary>
-        public static string Fallout3 {
-            get {
+        public static string Fallout3
+        {
+            get
+            {
                 return ResourceManager.GetString("Fallout3", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to Fallout New Vegas.
         /// </summary>
-        public static string FalloutNewVegas {
-            get {
+        public static string FalloutNewVegas
+        {
+            get
+            {
                 return ResourceManager.GetString("FalloutNewVegas", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to File &quot;{0}&quot; already exists.
         /// </summary>
-        public static string FileAlreadyExists {
-            get {
+        public static string FileAlreadyExists
+        {
+            get
+            {
                 return ResourceManager.GetString("FileAlreadyExists", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to File Already Exists.
         /// </summary>
-        public static string FileAlreadyExistsTitle {
-            get {
+        public static string FileAlreadyExistsTitle
+        {
+            get
+            {
                 return ResourceManager.GetString("FileAlreadyExistsTitle", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to File &quot;{0}&quot; does not exist.
         /// </summary>
-        public static string FileDoesNotExist {
-            get {
+        public static string FileDoesNotExist
+        {
+            get
+            {
                 return ResourceManager.GetString("FileDoesNotExist", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to Install.
         /// </summary>
-        public static string Install {
-            get {
+        public static string Install
+        {
+            get
+            {
                 return ResourceManager.GetString("Install", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to Install cancelled due to NVSE requirement.
         /// </summary>
-        public static string InstallCancelledNvse {
-            get {
+        public static string InstallCancelledNvse
+        {
+            get
+            {
                 return ResourceManager.GetString("InstallCancelledNvse", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to {0} has been installed successfully..
         /// </summary>
-        public static string InstalledSuccessfully {
-            get {
+        public static string InstalledSuccessfully
+        {
+            get
+            {
                 return ResourceManager.GetString("InstalledSuccessfully", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to {0} is an invalid 7z archive..
         /// </summary>
-        public static string Invalid7zArchive {
-            get {
+        public static string Invalid7zArchive
+        {
+            get
+            {
                 return ResourceManager.GetString("Invalid7zArchive", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to {0} must be run as Administrator..
         /// </summary>
-        public static string MustBeElevated {
-            get {
+        public static string MustBeElevated
+        {
+            get
+            {
                 return ResourceManager.GetString("MustBeElevated", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to NVSE found.
         /// </summary>
-        public static string NvseFound {
-            get {
+        public static string NvseFound
+        {
+            get
+            {
                 return ResourceManager.GetString("NvseFound", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to New Vegas Script Extender (NVSE) was not found, but is required to play A Tale of Two Wastelands.
         ///
         ///Would you like to install NVSE?.
         /// </summary>
-        public static string NvseInstallPrompt {
-            get {
+        public static string NvseInstallPrompt
+        {
+            get
+            {
                 return ResourceManager.GetString("NvseInstallPrompt", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to NVSE was installed successfully..
         /// </summary>
-        public static string NvseInstallSuccessful {
-            get {
+        public static string NvseInstallSuccessful
+        {
+            get
+            {
                 return ResourceManager.GetString("NvseInstallSuccessful", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to NVSE missing.
         /// </summary>
-        public static string NvseMissing {
-            get {
+        public static string NvseMissing
+        {
+            get
+            {
                 return ResourceManager.GetString("NvseMissing", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to NVSE must be installed before playing!.
         /// </summary>
-        public static string NvseMustBeInstalled {
-            get {
+        public static string NvseMustBeInstalled
+        {
+            get
+            {
                 return ResourceManager.GetString("NvseMustBeInstalled", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to Overwrite Files.
         /// </summary>
-        public static string OverwriteFiles {
-            get {
+        public static string OverwriteFiles
+        {
+            get
+            {
                 return ResourceManager.GetString("OverwriteFiles", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to Parsed NVSE link: {0}.
         /// </summary>
-        public static string ParsedNvseLink {
-            get {
+        public static string ParsedNvseLink
+        {
+            get
+            {
                 return ResourceManager.GetString("ParsedNvseLink", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to Proceeding without NVSE..
         /// </summary>
-        public static string ProceedingWithoutNvse {
-            get {
+        public static string ProceedingWithoutNvse
+        {
+            get
+            {
                 return ResourceManager.GetString("ProceedingWithoutNvse", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to {0} already exists. Rebuild?.
         /// </summary>
-        public static string RebuildPrompt {
-            get {
+        public static string RebuildPrompt
+        {
+            get
+            {
                 return ResourceManager.GetString("RebuildPrompt", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to Requesting NVSE page at {0}.
         /// </summary>
-        public static string RequestingNvsePage {
-            get {
+        public static string RequestingNvsePage
+        {
+            get
+            {
                 return ResourceManager.GetString("RequestingNvsePage", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to Impossible.
         /// </summary>
-        public static string RightSaidFred {
-            get {
+        public static string RightSaidFred
+        {
+            get
+            {
                 return ResourceManager.GetString("RightSaidFred", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to FOMM.
         /// </summary>
-        public static string SuggestedModManager {
-            get {
+        public static string SuggestedModManager
+        {
+            get
+            {
                 return ResourceManager.GetString("SuggestedModManager", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to Tale of Two Wastelands.
         /// </summary>
-        public static string TTW {
-            get {
+        public static string TTW
+        {
+            get
+            {
                 return ResourceManager.GetString("TTW", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to An uncaught exception occurred and the program will now exit. Please submit a crash report with your installation log..
         /// </summary>
-        public static string UncaughtExceptionMessage {
-            get {
+        public static string UncaughtExceptionMessage
+        {
+            get
+            {
                 return ResourceManager.GetString("UncaughtExceptionMessage", resourceCulture);
             }
         }
