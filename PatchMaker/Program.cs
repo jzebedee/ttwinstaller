@@ -8,6 +8,7 @@ using TaleOfTwoWastelands;
 using TaleOfTwoWastelands.Patching;
 using SevenZip;
 using BSAsharp;
+using Resources;
 
 namespace PatchMaker
 {
@@ -115,7 +116,7 @@ namespace PatchMaker
                     var newChk = join.patch;
 
                     var oldFilename = oldBsaFile.Filename;
-                    if (oldFilename.StartsWith(Game.VoicePrefix))
+                    if (oldFilename.StartsWith(Resources.Properties.Resources.VoicePrefix))
                     {
                         patchDict.Add(join.file, new Patch(newChk, null));
                         continue;
