@@ -1,11 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.30723.0
+VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tale Of Two Wastelands Installer", "Installer\Tale Of Two Wastelands Installer.csproj", "{437B7DE8-3FBA-44AC-87B0-CE3501532D5F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PatchMaker", "PatchMaker\PatchMaker.csproj", "{BFFD5411-8B00-41D2-A7CD-D773D8AE2769}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Resources", "Resources\Resources.csproj", "{8D3C9B17-26F6-489C-B84E-91D096DFF93A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -20,6 +22,10 @@ Global
 		{BFFD5411-8B00-41D2-A7CD-D773D8AE2769}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{BFFD5411-8B00-41D2-A7CD-D773D8AE2769}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BFFD5411-8B00-41D2-A7CD-D773D8AE2769}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8D3C9B17-26F6-489C-B84E-91D096DFF93A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8D3C9B17-26F6-489C-B84E-91D096DFF93A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8D3C9B17-26F6-489C-B84E-91D096DFF93A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8D3C9B17-26F6-489C-B84E-91D096DFF93A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

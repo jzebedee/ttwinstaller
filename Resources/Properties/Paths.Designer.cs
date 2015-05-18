@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace TaleOfTwoWastelands.Properties {
+namespace Resources.Properties {
     using System;
     
     
@@ -22,7 +22,7 @@ namespace TaleOfTwoWastelands.Properties {
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "4.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    internal class Paths {
+    public class Paths {
         
         private static global::System.Resources.ResourceManager resourceMan;
         
@@ -36,10 +36,10 @@ namespace TaleOfTwoWastelands.Properties {
         ///   Returns the cached ResourceManager instance used by this class.
         /// </summary>
         [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-        internal static global::System.Resources.ResourceManager ResourceManager {
+        public static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("TaleOfTwoWastelands.Properties.Paths", typeof(Paths).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Resources.Properties.Paths", typeof(Paths).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
@@ -51,7 +51,7 @@ namespace TaleOfTwoWastelands.Properties {
         ///   resource lookups using this strongly typed resource class.
         /// </summary>
         [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-        internal static global::System.Globalization.CultureInfo Culture {
+        public static global::System.Globalization.CultureInfo Culture {
             get {
                 return resourceCulture;
             }
@@ -63,7 +63,7 @@ namespace TaleOfTwoWastelands.Properties {
         /// <summary>
         ///   Looks up a localized string similar to resources.
         /// </summary>
-        internal static string AssetsDir {
+        public static string AssetsDir {
             get {
                 return ResourceManager.GetString("AssetsDir", resourceCulture);
             }
@@ -72,7 +72,7 @@ namespace TaleOfTwoWastelands.Properties {
         /// <summary>
         ///   Looks up a localized string similar to Main Files.
         /// </summary>
-        internal static string MainDir {
+        public static string MainDir {
             get {
                 return ResourceManager.GetString("MainDir", resourceCulture);
             }
@@ -81,7 +81,7 @@ namespace TaleOfTwoWastelands.Properties {
         /// <summary>
         ///   Looks up a localized string similar to TaleOfTwoWastelands_Main.fomod.
         /// </summary>
-        internal static string MainFOMOD {
+        public static string MainFOMOD {
             get {
                 return ResourceManager.GetString("MainFOMOD", resourceCulture);
             }
@@ -90,7 +90,7 @@ namespace TaleOfTwoWastelands.Properties {
         /// <summary>
         ///   Looks up a localized string similar to nvse_loader.exe.
         /// </summary>
-        internal static string NvseFile {
+        public static string NvseFile {
             get {
                 return ResourceManager.GetString("NvseFile", resourceCulture);
             }
@@ -99,7 +99,7 @@ namespace TaleOfTwoWastelands.Properties {
         /// <summary>
         ///   Looks up a localized string similar to http://nvse.silverlock.org/.
         /// </summary>
-        internal static string NvseLink {
+        public static string NvseLink {
             get {
                 return ResourceManager.GetString("NvseLink", resourceCulture);
             }
@@ -108,7 +108,7 @@ namespace TaleOfTwoWastelands.Properties {
         /// <summary>
         ///   Looks up a localized string similar to http://nvse.silverlock.org/download/*.7z.
         /// </summary>
-        internal static string NvseSearchPattern {
+        public static string NvseSearchPattern {
             get {
                 return ResourceManager.GetString("NvseSearchPattern", resourceCulture);
             }
@@ -117,7 +117,7 @@ namespace TaleOfTwoWastelands.Properties {
         /// <summary>
         ///   Looks up a localized string similar to Optional Files.
         /// </summary>
-        internal static string OptDir {
+        public static string OptDir {
             get {
                 return ResourceManager.GetString("OptDir", resourceCulture);
             }
@@ -126,7 +126,7 @@ namespace TaleOfTwoWastelands.Properties {
         /// <summary>
         ///   Looks up a localized string similar to TaleOfTwoWastelands_Options.fomod.
         /// </summary>
-        internal static string OptFOMOD {
+        public static string OptFOMOD {
             get {
                 return ResourceManager.GetString("OptFOMOD", resourceCulture);
             }
@@ -135,7 +135,7 @@ namespace TaleOfTwoWastelands.Properties {
         /// <summary>
         ///   Looks up a localized string similar to 7Zip.
         /// </summary>
-        internal static string SevenZipBinaries {
+        public static string SevenZipBinaries {
             get {
                 return ResourceManager.GetString("SevenZipBinaries", resourceCulture);
             }
@@ -144,7 +144,7 @@ namespace TaleOfTwoWastelands.Properties {
         /// <summary>
         ///   Looks up a localized string similar to 7z.dll.
         /// </summary>
-        internal static string SevenZipX32 {
+        public static string SevenZipX32 {
             get {
                 return ResourceManager.GetString("SevenZipX32", resourceCulture);
             }
@@ -153,7 +153,7 @@ namespace TaleOfTwoWastelands.Properties {
         /// <summary>
         ///   Looks up a localized string similar to 7z64.dll.
         /// </summary>
-        internal static string SevenZipX64 {
+        public static string SevenZipX64 {
             get {
                 return ResourceManager.GetString("SevenZipX64", resourceCulture);
             }

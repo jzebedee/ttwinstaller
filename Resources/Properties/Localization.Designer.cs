@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace TaleOfTwoWastelands.Properties {
+namespace Resources.Properties {
     using System;
     
     
@@ -22,7 +22,7 @@ namespace TaleOfTwoWastelands.Properties {
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "4.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    internal class Localization {
+    public class Localization {
         
         private static global::System.Resources.ResourceManager resourceMan;
         
@@ -36,10 +36,10 @@ namespace TaleOfTwoWastelands.Properties {
         ///   Returns the cached ResourceManager instance used by this class.
         /// </summary>
         [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-        internal static global::System.Resources.ResourceManager ResourceManager {
+        public static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("TaleOfTwoWastelands.Properties.Localization", typeof(Localization).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Resources.Properties.Localization", typeof(Localization).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
@@ -51,7 +51,7 @@ namespace TaleOfTwoWastelands.Properties {
         ///   resource lookups using this strongly typed resource class.
         /// </summary>
         [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-        internal static global::System.Globalization.CultureInfo Culture {
+        public static global::System.Globalization.CultureInfo Culture {
             get {
                 return resourceCulture;
             }
@@ -63,7 +63,7 @@ namespace TaleOfTwoWastelands.Properties {
         /// <summary>
         ///   Looks up a localized string similar to {0} already exist. Would you like to overwrite them?.
         /// </summary>
-        internal static string AlreadyExistOverwritePrompt {
+        public static string AlreadyExistOverwritePrompt {
             get {
                 return ResourceManager.GetString("AlreadyExistOverwritePrompt", resourceCulture);
             }
@@ -74,7 +74,7 @@ namespace TaleOfTwoWastelands.Properties {
         ///
         ///Would like the installer to automatically build FOMODs?.
         /// </summary>
-        internal static string BuildFOMODsPrompt {
+        public static string BuildFOMODsPrompt {
             get {
                 return ResourceManager.GetString("BuildFOMODsPrompt", resourceCulture);
             }
@@ -83,7 +83,7 @@ namespace TaleOfTwoWastelands.Properties {
         /// <summary>
         ///   Looks up a localized string similar to Build FOMODs?.
         /// </summary>
-        internal static string BuildFOMODsQuestion {
+        public static string BuildFOMODsQuestion {
             get {
                 return ResourceManager.GetString("BuildFOMODsQuestion", resourceCulture);
             }
@@ -92,7 +92,7 @@ namespace TaleOfTwoWastelands.Properties {
         /// <summary>
         ///   Looks up a localized string similar to Cancel.
         /// </summary>
-        internal static string Cancel {
+        public static string Cancel {
             get {
                 return ResourceManager.GetString("Cancel", resourceCulture);
             }
@@ -101,7 +101,7 @@ namespace TaleOfTwoWastelands.Properties {
         /// <summary>
         ///   Looks up a localized string similar to Canceling....
         /// </summary>
-        internal static string CancelingWait {
+        public static string CancelingWait {
             get {
                 return ResourceManager.GetString("CancelingWait", resourceCulture);
             }
@@ -110,7 +110,7 @@ namespace TaleOfTwoWastelands.Properties {
         /// <summary>
         ///   Looks up a localized string similar to Checking for required files.
         /// </summary>
-        internal static string CheckingRequiredFiles {
+        public static string CheckingRequiredFiles {
             get {
                 return ResourceManager.GetString("CheckingRequiredFiles", resourceCulture);
             }
@@ -119,7 +119,7 @@ namespace TaleOfTwoWastelands.Properties {
         /// <summary>
         ///   Looks up a localized string similar to Error.
         /// </summary>
-        internal static string Error {
+        public static string Error {
             get {
                 return ResourceManager.GetString("Error", resourceCulture);
             }
@@ -129,7 +129,7 @@ namespace TaleOfTwoWastelands.Properties {
         ///   Looks up a localized string similar to An error occurred while installing:
         ///{0}.
         /// </summary>
-        internal static string ErrorWhileInstalling {
+        public static string ErrorWhileInstalling {
             get {
                 return ResourceManager.GetString("ErrorWhileInstalling", resourceCulture);
             }
@@ -138,7 +138,7 @@ namespace TaleOfTwoWastelands.Properties {
         /// <summary>
         ///   Looks up a localized string similar to Errors occurred while patching {0}.
         /// </summary>
-        internal static string ErrorWhilePatching {
+        public static string ErrorWhilePatching {
             get {
                 return ResourceManager.GetString("ErrorWhilePatching", resourceCulture);
             }
@@ -147,7 +147,7 @@ namespace TaleOfTwoWastelands.Properties {
         /// <summary>
         ///   Looks up a localized string similar to Extracting {0}.
         /// </summary>
-        internal static string Extracting {
+        public static string Extracting {
             get {
                 return ResourceManager.GetString("Extracting", resourceCulture);
             }
@@ -156,7 +156,7 @@ namespace TaleOfTwoWastelands.Properties {
         /// <summary>
         ///   Looks up a localized string similar to Failed to download NVSE..
         /// </summary>
-        internal static string FailedDownloadNvse {
+        public static string FailedDownloadNvse {
             get {
                 return ResourceManager.GetString("FailedDownloadNvse", resourceCulture);
             }
@@ -165,7 +165,7 @@ namespace TaleOfTwoWastelands.Properties {
         /// <summary>
         ///   Looks up a localized string similar to Failed to extract NVSE..
         /// </summary>
-        internal static string FailedExtractNvse {
+        public static string FailedExtractNvse {
             get {
                 return ResourceManager.GetString("FailedExtractNvse", resourceCulture);
             }
@@ -174,7 +174,7 @@ namespace TaleOfTwoWastelands.Properties {
         /// <summary>
         ///   Looks up a localized string similar to Failed to save path &quot;{0}&quot; to {1}.
         /// </summary>
-        internal static string FailedToSavePath {
+        public static string FailedToSavePath {
             get {
                 return ResourceManager.GetString("FailedToSavePath", resourceCulture);
             }
@@ -183,7 +183,7 @@ namespace TaleOfTwoWastelands.Properties {
         /// <summary>
         ///   Looks up a localized string similar to Fallout 3.
         /// </summary>
-        internal static string Fallout3 {
+        public static string Fallout3 {
             get {
                 return ResourceManager.GetString("Fallout3", resourceCulture);
             }
@@ -192,7 +192,7 @@ namespace TaleOfTwoWastelands.Properties {
         /// <summary>
         ///   Looks up a localized string similar to Fallout New Vegas.
         /// </summary>
-        internal static string FalloutNewVegas {
+        public static string FalloutNewVegas {
             get {
                 return ResourceManager.GetString("FalloutNewVegas", resourceCulture);
             }
@@ -201,7 +201,7 @@ namespace TaleOfTwoWastelands.Properties {
         /// <summary>
         ///   Looks up a localized string similar to File &quot;{0}&quot; already exists.
         /// </summary>
-        internal static string FileAlreadyExists {
+        public static string FileAlreadyExists {
             get {
                 return ResourceManager.GetString("FileAlreadyExists", resourceCulture);
             }
@@ -210,7 +210,7 @@ namespace TaleOfTwoWastelands.Properties {
         /// <summary>
         ///   Looks up a localized string similar to File Already Exists.
         /// </summary>
-        internal static string FileAlreadyExistsTitle {
+        public static string FileAlreadyExistsTitle {
             get {
                 return ResourceManager.GetString("FileAlreadyExistsTitle", resourceCulture);
             }
@@ -219,7 +219,7 @@ namespace TaleOfTwoWastelands.Properties {
         /// <summary>
         ///   Looks up a localized string similar to File &quot;{0}&quot; does not exist.
         /// </summary>
-        internal static string FileDoesNotExist {
+        public static string FileDoesNotExist {
             get {
                 return ResourceManager.GetString("FileDoesNotExist", resourceCulture);
             }
@@ -228,7 +228,7 @@ namespace TaleOfTwoWastelands.Properties {
         /// <summary>
         ///   Looks up a localized string similar to Install.
         /// </summary>
-        internal static string Install {
+        public static string Install {
             get {
                 return ResourceManager.GetString("Install", resourceCulture);
             }
@@ -237,7 +237,7 @@ namespace TaleOfTwoWastelands.Properties {
         /// <summary>
         ///   Looks up a localized string similar to Install cancelled due to NVSE requirement.
         /// </summary>
-        internal static string InstallCancelledNvse {
+        public static string InstallCancelledNvse {
             get {
                 return ResourceManager.GetString("InstallCancelledNvse", resourceCulture);
             }
@@ -246,7 +246,7 @@ namespace TaleOfTwoWastelands.Properties {
         /// <summary>
         ///   Looks up a localized string similar to {0} has been installed successfully..
         /// </summary>
-        internal static string InstalledSuccessfully {
+        public static string InstalledSuccessfully {
             get {
                 return ResourceManager.GetString("InstalledSuccessfully", resourceCulture);
             }
@@ -255,7 +255,7 @@ namespace TaleOfTwoWastelands.Properties {
         /// <summary>
         ///   Looks up a localized string similar to {0} is an invalid 7z archive..
         /// </summary>
-        internal static string Invalid7zArchive {
+        public static string Invalid7zArchive {
             get {
                 return ResourceManager.GetString("Invalid7zArchive", resourceCulture);
             }
@@ -264,7 +264,7 @@ namespace TaleOfTwoWastelands.Properties {
         /// <summary>
         ///   Looks up a localized string similar to {0} must be run as Administrator..
         /// </summary>
-        internal static string MustBeElevated {
+        public static string MustBeElevated {
             get {
                 return ResourceManager.GetString("MustBeElevated", resourceCulture);
             }
@@ -273,7 +273,7 @@ namespace TaleOfTwoWastelands.Properties {
         /// <summary>
         ///   Looks up a localized string similar to NVSE found.
         /// </summary>
-        internal static string NvseFound {
+        public static string NvseFound {
             get {
                 return ResourceManager.GetString("NvseFound", resourceCulture);
             }
@@ -284,7 +284,7 @@ namespace TaleOfTwoWastelands.Properties {
         ///
         ///Would you like to install NVSE?.
         /// </summary>
-        internal static string NvseInstallPrompt {
+        public static string NvseInstallPrompt {
             get {
                 return ResourceManager.GetString("NvseInstallPrompt", resourceCulture);
             }
@@ -293,7 +293,7 @@ namespace TaleOfTwoWastelands.Properties {
         /// <summary>
         ///   Looks up a localized string similar to NVSE was installed successfully..
         /// </summary>
-        internal static string NvseInstallSuccessful {
+        public static string NvseInstallSuccessful {
             get {
                 return ResourceManager.GetString("NvseInstallSuccessful", resourceCulture);
             }
@@ -302,7 +302,7 @@ namespace TaleOfTwoWastelands.Properties {
         /// <summary>
         ///   Looks up a localized string similar to NVSE missing.
         /// </summary>
-        internal static string NvseMissing {
+        public static string NvseMissing {
             get {
                 return ResourceManager.GetString("NvseMissing", resourceCulture);
             }
@@ -311,7 +311,7 @@ namespace TaleOfTwoWastelands.Properties {
         /// <summary>
         ///   Looks up a localized string similar to NVSE must be installed before playing!.
         /// </summary>
-        internal static string NvseMustBeInstalled {
+        public static string NvseMustBeInstalled {
             get {
                 return ResourceManager.GetString("NvseMustBeInstalled", resourceCulture);
             }
@@ -320,7 +320,7 @@ namespace TaleOfTwoWastelands.Properties {
         /// <summary>
         ///   Looks up a localized string similar to Overwrite Files.
         /// </summary>
-        internal static string OverwriteFiles {
+        public static string OverwriteFiles {
             get {
                 return ResourceManager.GetString("OverwriteFiles", resourceCulture);
             }
@@ -329,7 +329,7 @@ namespace TaleOfTwoWastelands.Properties {
         /// <summary>
         ///   Looks up a localized string similar to Parsed NVSE link: {0}.
         /// </summary>
-        internal static string ParsedNvseLink {
+        public static string ParsedNvseLink {
             get {
                 return ResourceManager.GetString("ParsedNvseLink", resourceCulture);
             }
@@ -338,7 +338,7 @@ namespace TaleOfTwoWastelands.Properties {
         /// <summary>
         ///   Looks up a localized string similar to Proceeding without NVSE..
         /// </summary>
-        internal static string ProceedingWithoutNvse {
+        public static string ProceedingWithoutNvse {
             get {
                 return ResourceManager.GetString("ProceedingWithoutNvse", resourceCulture);
             }
@@ -347,7 +347,7 @@ namespace TaleOfTwoWastelands.Properties {
         /// <summary>
         ///   Looks up a localized string similar to {0} already exists. Rebuild?.
         /// </summary>
-        internal static string RebuildPrompt {
+        public static string RebuildPrompt {
             get {
                 return ResourceManager.GetString("RebuildPrompt", resourceCulture);
             }
@@ -356,7 +356,7 @@ namespace TaleOfTwoWastelands.Properties {
         /// <summary>
         ///   Looks up a localized string similar to Requesting NVSE page at {0}.
         /// </summary>
-        internal static string RequestingNvsePage {
+        public static string RequestingNvsePage {
             get {
                 return ResourceManager.GetString("RequestingNvsePage", resourceCulture);
             }
@@ -365,7 +365,7 @@ namespace TaleOfTwoWastelands.Properties {
         /// <summary>
         ///   Looks up a localized string similar to Impossible.
         /// </summary>
-        internal static string RightSaidFred {
+        public static string RightSaidFred {
             get {
                 return ResourceManager.GetString("RightSaidFred", resourceCulture);
             }
@@ -374,7 +374,7 @@ namespace TaleOfTwoWastelands.Properties {
         /// <summary>
         ///   Looks up a localized string similar to FOMM.
         /// </summary>
-        internal static string SuggestedModManager {
+        public static string SuggestedModManager {
             get {
                 return ResourceManager.GetString("SuggestedModManager", resourceCulture);
             }
@@ -383,7 +383,7 @@ namespace TaleOfTwoWastelands.Properties {
         /// <summary>
         ///   Looks up a localized string similar to Tale of Two Wastelands.
         /// </summary>
-        internal static string TTW {
+        public static string TTW {
             get {
                 return ResourceManager.GetString("TTW", resourceCulture);
             }
@@ -392,7 +392,7 @@ namespace TaleOfTwoWastelands.Properties {
         /// <summary>
         ///   Looks up a localized string similar to An uncaught exception occurred and the program will now exit. Please submit a crash report with your installation log..
         /// </summary>
-        internal static string UncaughtExceptionMessage {
+        public static string UncaughtExceptionMessage {
             get {
                 return ResourceManager.GetString("UncaughtExceptionMessage", resourceCulture);
             }
