@@ -26,6 +26,7 @@
     IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     POSSIBILITY OF SUCH DAMAGE.
 */
+
 using System;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -329,7 +330,7 @@ namespace PatchMaker
                         // write compressed diff data
                         msDiff.Seek(0, SeekOrigin.Begin);
                         msDiff.CopyTo(output);
-                        
+
                         // compute size of compressed diff data
                         WriteInt64(msDiff.Length, &pHead[16]);
                     }
@@ -384,19 +385,13 @@ namespace PatchMaker
                     pos = I[start];
                     return startLength;
                 }
-                else
-                {
-                    pos = I[end];
-                    return endLength;
-                }
+                pos = I[end];
+                return endLength;
             }
-            else
-            {
-                int midPoint = start + (end - start) / 2;
-                return CompareBytes((oldData + I[midPoint]), oldLength, (newData + newOffset), newLength) < 0 ?
-                    Search(I, oldData, oldLength, newData, newLength, newOffset, midPoint, end, out pos) :
-                    Search(I, oldData, oldLength, newData, newLength, newOffset, start, midPoint, out pos);
-            }
+            int midPoint = start + (end - start) / 2;
+            return CompareBytes((oldData + I[midPoint]), oldLength, (newData + newOffset), newLength) < 0 ?
+                Search(I, oldData, oldLength, newData, newLength, newOffset, midPoint, end, out pos) :
+                Search(I, oldData, oldLength, newData, newLength, newOffset, start, midPoint, out pos);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

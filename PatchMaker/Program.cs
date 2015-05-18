@@ -1,21 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
-using TaleOfTwoWastelands;
-using TaleOfTwoWastelands.Patching;
-using SevenZip;
 using BSAsharp;
 using Resources;
+using SevenZip;
+using TaleOfTwoWastelands;
+using TaleOfTwoWastelands.Patching;
 
 namespace PatchMaker
 {
-	using TaleOfTwoWastelands.Properties;
-	using Patch = Tuple<FileValidation, PatchInfo[]>;
+    using Patch = Tuple<FileValidation, PatchInfo[]>;
 
-	class Program
+    class Program
     {
         const string
             InDir = "BuildDB",
@@ -47,7 +46,7 @@ namespace PatchMaker
             _dirTTWMain = Path.Combine(InDir, "Main Files");
             _dirTTWOptional = Path.Combine(InDir, "Optional Files");
 
-			var helper = new RegistryPathStore();
+            var helper = new RegistryPathStore();
             var bethKey = helper.GetBethKey();
 
             var fo3Key = bethKey.CreateSubKey("Fallout3");
@@ -102,7 +101,7 @@ namespace PatchMaker
                                     {
                                         newBsaFile,
                                         file = patKvp.Key,
-                                        patch = patKvp.Value,
+                                        patch = patKvp.Value
                                     };
                 var allJoinedPatches = joinedPatches.ToList();
 

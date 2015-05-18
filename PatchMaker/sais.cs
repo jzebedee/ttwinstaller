@@ -137,7 +137,7 @@ namespace PatchMaker
         private static void getBuckets(IList<int> C, IList<int> B, int k, bool end)
         {
             int i, sum = 0;
-            if (end != false)
+            if (end)
             {
                 for (i = 0; i < k; ++i)
                 {
@@ -277,7 +277,7 @@ namespace PatchMaker
                         diff = false;
                     }
                 }
-                if (diff != false)
+                if (diff)
                 {
                     ++name;
                     q = p;
