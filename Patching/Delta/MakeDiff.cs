@@ -30,11 +30,10 @@
 using System;
 using System.IO;
 using System.Runtime.CompilerServices;
-using TaleOfTwoWastelands.Patching;
 
-namespace PatchMaker
+namespace Patching.Delta
 {
-    internal static class MakeDiff
+    public static class MakeDiff
     {
         const int HEADER_SIZE = Diff.HEADER_SIZE;
         static unsafe long ReadInt64(byte* buf)
@@ -49,7 +48,7 @@ namespace PatchMaker
         /// <summary>
         /// Used only in PatchMaker
         /// </summary>
-        internal static unsafe byte[] ConvertPatch(byte* pPatch, long length, long inputSig, long outputSig)
+        public static unsafe byte[] ConvertPatch(byte* pPatch, long length, long inputSig, long outputSig)
         {
             if (inputSig == outputSig)
                 throw new ArgumentException("output must be different from input");

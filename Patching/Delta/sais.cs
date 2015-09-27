@@ -29,12 +29,12 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
-namespace PatchMaker
+namespace Patching.Delta
 {
     /// <summary>
     /// An implementation of the induced sorting based suffix array construction algorithm.
     /// </summary>
-    public static class SAIS
+    internal static class SAIS
     {
         private const int MINBUCKETSIZE = 256;
 

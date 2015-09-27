@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using BSAsharp;
+using Patching.Delta;
 using Resources;
 using SevenZip;
 using TaleOfTwoWastelands;
@@ -24,7 +25,7 @@ namespace PatchMaker
 
         static void Main()
         {
-            BenchmarkHash.Run();
+            //BenchmarkHash.Run();
 
             if (!Debugger.IsAttached)
                 Debugger.Launch();

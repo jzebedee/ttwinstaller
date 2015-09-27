@@ -13,7 +13,9 @@
 /// limitations under the License.
 */
 
-namespace TaleOfTwoWastelands.Patching.Murmur
+using System.Runtime.CompilerServices;
+
+namespace Patching.Murmur
 {
     internal class Murmur128UnmanagedX64 : Murmur128
     {
@@ -49,9 +51,7 @@ namespace TaleOfTwoWastelands.Patching.Murmur
             Body(array, ibStart, cbSize);
         }
 
-#if NET45
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
         private void Body(byte[] data, int start, int length)
         {
             if (length == 0)
@@ -82,9 +82,7 @@ namespace TaleOfTwoWastelands.Patching.Murmur
             }
         }
 
-#if NET45
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
         unsafe private void Tail(byte* tail, int remaining)
         {
             // create our keys and initialize to 0

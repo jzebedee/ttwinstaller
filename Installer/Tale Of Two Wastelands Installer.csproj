@@ -107,12 +107,8 @@
     <Compile Include="Install\NVSE.cs" />
     <Compile Include="IPathStore.cs" />
     <Compile Include="Log.cs" />
-    <Compile Include="Patching\Diff.cs" />
     <Compile Include="Patching\BsaDiff.cs" />
-    <Compile Include="Patching\Extensions.cs" />
     <Compile Include="Patching\IBsaDiff.cs" />
-    <Compile Include="Patching\Murmur\Murmur128.cs" />
-    <Compile Include="Patching\Murmur\Murmur128UnmanagedX64.cs" />
     <Compile Include="Patching\PatchDict.cs" />
     <Compile Include="Patching\PatchInfo.cs" />
     <Compile Include="Patching\FileValidation.cs" />
@@ -182,6 +178,10 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Patching\Patching.csproj">
+      <Project>{6ecd6d0b-7255-4fba-ab84-5a39092ec10c}</Project>
+      <Name>Patching</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Resources\Resources.csproj">
       <Project>{8D3C9B17-26F6-489C-B84E-91D096DFF93A}</Project>
       <Name>Resources</Name>

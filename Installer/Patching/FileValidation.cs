@@ -6,7 +6,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using BSAsharp;
-using TaleOfTwoWastelands.Patching.Murmur;
+using Patching.Murmur;
 
 namespace TaleOfTwoWastelands.Patching
 {

@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PatchMaker", "PatchMaker\Pa
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Resources", "Resources\Resources.csproj", "{8D3C9B17-26F6-489C-B84E-91D096DFF93A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Patching", "Patching\Patching.csproj", "{6ECD6D0B-7255-4FBA-AB84-5A39092EC10C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -26,6 +28,10 @@ Global
 		{8D3C9B17-26F6-489C-B84E-91D096DFF93A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8D3C9B17-26F6-489C-B84E-91D096DFF93A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8D3C9B17-26F6-489C-B84E-91D096DFF93A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6ECD6D0B-7255-4FBA-AB84-5A39092EC10C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6ECD6D0B-7255-4FBA-AB84-5A39092EC10C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6ECD6D0B-7255-4FBA-AB84-5A39092EC10C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6ECD6D0B-7255-4FBA-AB84-5A39092EC10C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

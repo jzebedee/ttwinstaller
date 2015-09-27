@@ -14,14 +14,13 @@
 */
 
 using System;
+using System.Runtime.CompilerServices;
 
-namespace TaleOfTwoWastelands.Patching
+namespace Patching
 {
     public static class Extensions
     {
-#if NET45
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
         internal static uint ToUInt32(this byte[] data, int start = 0)
         {
             return BitConverter.IsLittleEndian
@@ -29,9 +28,7 @@ namespace TaleOfTwoWastelands.Patching
                     : (uint)(data[start] << 24 | data[start + 1] << 16 | data[start + 2] << 8 | data[start + 3]);
         }
 
-#if NET45
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
         internal static ulong ToUInt64(this byte[] data, int start = 0)
         {
             if (BitConverter.IsLittleEndian)
@@ -52,25 +49,19 @@ namespace TaleOfTwoWastelands.Patching
             }
         }
 
-#if NET45
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
         internal static uint RotateLeft(this uint x, byte r)
         {
             return (x << r) | (x >> (32 - r));
         }
 
-#if NET45
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
         internal static ulong RotateLeft(this ulong x, byte r)
         {
             return (x << r) | (x >> (64 - r));
         }
 
-#if NET45
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
         internal static uint FMix(this uint h)
         {
             // pipelining friendly algorithm
@@ -79,9 +70,7 @@ namespace TaleOfTwoWastelands.Patching
             return h ^ (h >> 16);
         }
 
-#if NET45
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
         internal static ulong FMix(this ulong h)
         {
             // pipelining friendly algorithm

@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Security.Cryptography;
 using ICSharpCode.SharpZipLib.Checksums;
-using TaleOfTwoWastelands.Patching.Murmur;
+using Patching.Murmur;
 
 namespace PatchMaker
 {

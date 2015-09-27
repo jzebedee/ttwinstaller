@@ -15,17 +15,16 @@
 
 using System.Security.Cryptography;
 
-namespace TaleOfTwoWastelands.Patching.Murmur
+namespace Patching.Murmur
 {
     public abstract class Murmur128 : HashAlgorithm
     {
-        private readonly uint _seed;
         protected Murmur128(uint seed)
         {
-            _seed = seed;
+            Seed = seed;
         }
 
-        public uint Seed { get { return _seed; } }
+        public uint Seed { get; }
 
         public static Murmur128 CreateMurmur()
         {

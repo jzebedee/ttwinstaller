@@ -31,7 +31,7 @@ using System.IO;
 using ICSharpCode.SharpZipLib.BZip2;
 using SevenZip;
 
-namespace TaleOfTwoWastelands.Patching
+namespace Patching.Delta
 {
     public static class Diff
     {
