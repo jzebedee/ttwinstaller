@@ -238,7 +238,7 @@ namespace TaleOfTwoWastelands.Patching
                 var newChk = patchTuple.Item1;
                 var patches = patchTuple.Item2;
 
-                if (filepath.StartsWith(Game.VoicePrefix) && (patches == null || patches.Length == 0))
+                if (filepath.StartsWith(Resources.VoicePrefix) && (patches == null || patches.Length == 0))
                 {
                     opChk.CurrentOperation = "Skipping " + filename;
                     //Log.File("Skipping voice file: " + filepath);

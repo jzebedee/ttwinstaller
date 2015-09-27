@@ -24,7 +24,7 @@ namespace PatchMaker
 
         static void Main()
         {
-            //BenchmarkHash.Run();
+            BenchmarkHash.Run();
 
             if (!Debugger.IsAttached)
                 Debugger.Launch();
@@ -115,7 +115,7 @@ namespace PatchMaker
                     var newChk = join.patch;
 
                     var oldFilename = oldBsaFile.Filename;
-                    if (oldFilename.StartsWith(Resources.Properties.Resources.VoicePrefix))
+                    if (oldFilename.StartsWith(TaleOfTwoWastelands.Properties.Resources.VoicePrefix))
                     {
                         patchDict.Add(join.file, new Patch(newChk, null));
                         continue;

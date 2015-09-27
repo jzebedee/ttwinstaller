@@ -1,6 +1,4 @@
-﻿using System.Threading;
-
-namespace TaleOfTwoWastelands.Progress
+﻿namespace TaleOfTwoWastelands.Progress
 {
     public interface IInstallStatus : IInstallStatusUpdate
 	{

@@ -50,7 +50,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
-    <ApplicationIcon>Resources\Installer_Icon.ico</ApplicationIcon>
+    <ApplicationIcon>
+    </ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationManifest>app.manifest</ApplicationManifest>
@@ -112,26 +113,10 @@
     <Compile Include="Patching\FileValidation.cs" />
     <Compile Include="Progress\IInstallStatus.cs" />
     <Compile Include="Progress\IInstallStatusUpdate.cs" />
-    <Compile Include="Properties\Paths.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Paths.resx</DependentUpon>
-    </Compile>
     <Compile Include="Progress\InstallStatus.cs" />
     <Compile Include="Progress\Progress.cs" Condition="!$(TargetFrameworkVersion.Contains('v4.5'))" />
-    <Compile Include="Properties\Game.cs" />
-    <Compile Include="Properties\Game.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Game.resx</DependentUpon>
-    </Compile>
     <Compile Include="SettingsPathStore.cs" />
     <Compile Include="RegistryPathStore.cs" />
-    <Compile Include="Properties\Localization.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Localization.resx</DependentUpon>
-    </Compile>
     <Compile Include="UI\ErrorPromptResult.cs" />
     <Compile Include="UI\frm_Main.cs">
       <SubType>Form</SubType>
@@ -148,21 +133,8 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Util.cs" />
-    <EmbeddedResource Include="Properties\Paths.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Paths.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Properties\Game.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Game.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
     <EmbeddedResource Include="UI\frm_Main.resx">
       <DependentUpon>frm_Main.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Properties\Localization.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <SubType>Designer</SubType>
-      <LastGenOutput>Localization.Designer.cs</LastGenOutput>
     </EmbeddedResource>
     <None Include="app.manifest" />
     <None Include="packages.config">
@@ -182,9 +154,6 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Resources\Installer_Icon.ico" />
-  </ItemGroup>
-  <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.0,Profile=Client,KB2468871">
       <Visible>False</Visible>
       <ProductName>Microsoft .NET Framework 4 Client Profile %28x86 and x64%29 and Update for .NET Framework 4 %28KB2468871%29</ProductName>
@@ -201,7 +170,17 @@
       <Install>false</Install>
     </BootstrapperPackage>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Content Include="..\Resources\Installer_Icon.ico">
+      <Link>Resources\Installer_Icon.ico</Link>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Resources\Resources.csproj">
+      <Project>{8D3C9B17-26F6-489C-B84E-91D096DFF93A}</Project>
+      <Name>Resources</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

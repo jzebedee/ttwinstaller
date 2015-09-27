@@ -3,7 +3,7 @@ using System.Threading;
 using TaleOfTwoWastelands.Progress;
 using TaleOfTwoWastelands.Properties;
 using System.Linq;
-using TaleOfTwoWastelands.UI;
+using Resources;
 
 namespace TaleOfTwoWastelands.Install
 {

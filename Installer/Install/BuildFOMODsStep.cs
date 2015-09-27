@@ -1,8 +1,5 @@
-﻿using System.IO;
-using System.Threading;
+﻿using System.Threading;
 using TaleOfTwoWastelands.Progress;
-using TaleOfTwoWastelands.Properties;
-using System.Linq;
 using TaleOfTwoWastelands.UI;
 
 namespace TaleOfTwoWastelands.Install
