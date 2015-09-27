@@ -1,15 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Windows.Forms;
-using System.Diagnostics;
 using BSAsharp;
 using Resources;
 using TaleOfTwoWastelands.Install;
-using TaleOfTwoWastelands.Progress;
 using TaleOfTwoWastelands.Patching;
+using TaleOfTwoWastelands.Progress;
 using TaleOfTwoWastelands.Properties;
 using TaleOfTwoWastelands.UI;
 
@@ -30,25 +30,13 @@ namespace TaleOfTwoWastelands
         #endregion
 
         #region Instance public properties
-        public string DirFO3Data
-        {
-            get { return Path.Combine(Prompts.Fallout3Path, "Data"); }
-        }
+        public string DirFO3Data => Path.Combine(Prompts.Fallout3Path, "Data");
 
-        public string DirFNVData
-        {
-            get { return Path.Combine(Prompts.FalloutNVPath, "Data"); }
-        }
+        public string DirFNVData => Path.Combine(Prompts.FalloutNVPath, "Data");
 
-        public string DirTTWMain
-        {
-            get { return Path.Combine(Prompts.TTWSavePath, Paths.MainDir); }
-        }
+        public string DirTTWMain => Path.Combine(Prompts.TTWSavePath, Paths.MainDir);
 
-        public string DirTTWOptional
-        {
-            get { return Path.Combine(Prompts.TTWSavePath, Paths.OptDir); }
-        }
+        public string DirTTWOptional => Path.Combine(Prompts.TTWSavePath, Paths.OptDir);
 
         /// <summary>
         /// Provides progress updates for minor operations
@@ -359,11 +347,8 @@ namespace TaleOfTwoWastelands
                     {
                         if (skipExisting)
                             continue;
-                        else
-                        {
-                            asked = true;
-                            skipExisting = ShowSkipDialog(name);
-                        }
+                        asked = true;
+                        skipExisting = ShowSkipDialog(name);
                     }
 
                     try

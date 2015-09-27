@@ -33,7 +33,7 @@ namespace TaleOfTwoWastelands.Install
                 ArchiveFormat = OutArchiveFormat.SevenZip,
                 CompressionLevel = CompressionLevel.Fast,
                 CompressionMethod = CompressionMethod.Lzma2,
-                CompressionMode = CompressionMode.Create,
+                CompressionMode = CompressionMode.Create
             };
             compressor.CustomParameters.Add("mt", "on"); //enable multithreading
 

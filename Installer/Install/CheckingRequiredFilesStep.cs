@@ -1,9 +1,9 @@
 ﻿using System.IO;
+using System.Linq;
 using System.Threading;
+using Resources;
 using TaleOfTwoWastelands.Progress;
 using TaleOfTwoWastelands.Properties;
-using System.Linq;
-using Resources;
 
 namespace TaleOfTwoWastelands.Install
 {
@@ -28,12 +28,9 @@ namespace TaleOfTwoWastelands.Install
 				Log.Display("All files found. Proceeding with installation.");
 				return true;
 			}
-			else
-			{
-				Log.File("Missing files detected. Aborting install.");
-				Log.Display("The above files were not found. Make sure your Fallout 3 location is accurate and try again.\nInstallation failed.");
-				return false;
-			}
+		    Log.File("Missing files detected. Aborting install.");
+		    Log.Display("The above files were not found. Make sure your Fallout 3 location is accurate and try again.\nInstallation failed.");
+		    return false;
 		}
 
 		private bool CheckFiles()

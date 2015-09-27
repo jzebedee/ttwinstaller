@@ -26,12 +26,9 @@ namespace TaleOfTwoWastelands.UI
             }
         }
 
-        private float ValueF
-        {
-            get { return Value; }
-        }
+        private float ValueF => Value;
 
-        public TextProgressBar()
+	    public TextProgressBar()
         {
             // Modify the ControlStyles flags
             //http://msdn.microsoft.com/en-us/library/system.windows.forms.controlstyles.aspx

@@ -22,7 +22,7 @@ namespace TaleOfTwoWastelands.Patching
         }
 
         public uint Filesize { get; private set; }
-        public byte[] Checksum { get { return _computeChecksum.Value; } }
+        public byte[] Checksum => _computeChecksum.Value;
         public ChecksumType Type { get; private set; }
 
         readonly Stream _stream;

@@ -11,12 +11,9 @@ namespace TaleOfTwoWastelands
         private static readonly Lazy<Container> _container =
             new Lazy<Container>(defaultContainer, LazyThreadSafetyMode.ExecutionAndPublication);
 
-        public static IContainer Container
-        {
-            get { return _container.Value; }
-        }
+        public static IContainer Container => _container.Value;
 
-        private static Container defaultContainer()
+	    private static Container defaultContainer()
         {
             return new Container(x =>
             {

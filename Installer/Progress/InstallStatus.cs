@@ -5,13 +5,9 @@ namespace TaleOfTwoWastelands.Progress
 {
     public class InstallStatus : IInstallStatus
 	{
-        private readonly CancellationToken _token;
         private readonly IProgress<InstallStatus> _progress;
 
-        public CancellationToken Token
-        {
-            get { return _token; }
-        }
+        public CancellationToken Token { get; }
 
         private int _itemsDone;
         public int ItemsDone
@@ -66,7 +62,7 @@ namespace TaleOfTwoWastelands.Progress
 
         public InstallStatus(IProgress<InstallStatus> progress, CancellationToken? token = null)
         {
-            _token = token ?? CancellationToken.None;
+            Token = token ?? CancellationToken.None;
             _progress = progress;
         }
 
@@ -90,7 +86,7 @@ namespace TaleOfTwoWastelands.Progress
 
         private void Update()
         {
-            _token.ThrowIfCancellationRequested();
+            Token.ThrowIfCancellationRequested();
             _progress.Report(this);
         }
     }

@@ -1,38 +1,26 @@
 ﻿#define PARALLEL
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using System.IO;
-using System.Threading;
 using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using BSAsharp;
-using TaleOfTwoWastelands.Progress;
 using SevenZip;
+using TaleOfTwoWastelands.Progress;
 using Patch = System.Tuple<TaleOfTwoWastelands.Patching.FileValidation, TaleOfTwoWastelands.Patching.PatchInfo[]>;
 
 namespace TaleOfTwoWastelands.Patching
 {
-	using TaleOfTwoWastelands.Properties;
-	using PatchJoin = Tuple<BSAFile, BSAFile, Patch>;
+    using PatchJoin = Tuple<BSAFile, BSAFile, Patch>;
 	public class BsaDiff : IBsaDiff
 	{
-        protected IProgress<InstallStatus> Progress
-		{
-			get
-			{
-				return _installer.ProgressMinorOperation;
-			}
-		}
-        protected CancellationToken Token
-		{
-			get
-			{
-				return _installer.Token;
-			}
-		}
+        protected IProgress<InstallStatus> Progress => _installer.ProgressMinorOperation;
 
-        private readonly ILog Log;
+	    protected CancellationToken Token => _installer.Token;
+
+	    private readonly ILog Log;
 		private readonly IInstaller _installer;
 
         public BsaDiff(IInstaller installer, ILog log)
@@ -238,7 +226,7 @@ namespace TaleOfTwoWastelands.Patching
                 var newChk = patchTuple.Item1;
                 var patches = patchTuple.Item2;
 
-                if (filepath.StartsWith(Resources.VoicePrefix) && (patches == null || patches.Length == 0))
+                if (filepath.StartsWith(Properties.Resources.VoicePrefix) && (patches == null || patches.Length == 0))
                 {
                     opChk.CurrentOperation = "Skipping " + filename;
                     //Log.File("Skipping voice file: " + filepath);

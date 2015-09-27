@@ -14,10 +14,7 @@ namespace TaleOfTwoWastelands.Install
             FastStrategy = CompressionStrategy.Unsafe | CompressionStrategy.Speed,
             GoodStrategy = CompressionStrategy.Unsafe | CompressionStrategy.Size;
 
-        static readonly Dictionary<string, CompressionOptions> BSAOptions = new Dictionary<string, CompressionOptions>
-        {
-            //{"example",new CompressionOptions()}
-        };
+        static readonly Dictionary<string, CompressionOptions> BSAOptions = new Dictionary<string, CompressionOptions>();
         static readonly CompressionOptions DefaultBSAOptions = new CompressionOptions
         {
             Strategy = GoodStrategy,
@@ -26,7 +23,7 @@ namespace TaleOfTwoWastelands.Install
                 {".ogg", -1},
                 {".wav", -1},
                 {".mp3", -1},
-                {".lip", -1},
+                {".lip", -1}
             }
         };
 

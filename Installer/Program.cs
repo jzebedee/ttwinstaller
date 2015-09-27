@@ -2,8 +2,10 @@
 using System.Diagnostics;
 using System.IO;
 using System.Security.Principal;
+using System.Threading;
 using System.Windows.Forms;
 using TaleOfTwoWastelands.Properties;
+using TaleOfTwoWastelands.UI;
 
 namespace TaleOfTwoWastelands
 {
@@ -36,7 +38,7 @@ namespace TaleOfTwoWastelands
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new UI.frm_Main());
+            Application.Run(new frm_Main());
         }
 
         static void SetupTraceListeners()
@@ -50,7 +52,7 @@ namespace TaleOfTwoWastelands
             Trace.Listeners.Add(new TextWriterTraceListener(new FinalizedTextWriter(LogFilepath)));
         }
 
-        static void Application_ThreadException(object sender, System.Threading.ThreadExceptionEventArgs e)
+        static void Application_ThreadException(object sender, ThreadExceptionEventArgs e)
         {
             HandleCrashException(e.Exception);
         }

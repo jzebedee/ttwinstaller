@@ -1,24 +1,11 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Text;
-using TaleOfTwoWastelands.Progress;
 
 namespace TaleOfTwoWastelands
 {
     internal class Log : ILog
     {
-        private static StringBuilder Timestamp
-        {
-            get
-            {
-                return new StringBuilder()
-                    .Clear()
-                    .Append('[')
-                    .Append(DateTime.Now)
-                    .Append(']')
-                    .Append('\t');
-            }
-        }
+        private static IFormattable Timestamp => $"[{DateTime.Now}]\t";
 
         public IProgress<string> DisplayMessage { get; set; }
         
@@ -35,8 +22,8 @@ namespace TaleOfTwoWastelands
             var displayProg = DisplayMessage;
             if (displayProg != null)
             {
-                var sb = Timestamp.AppendFormat(msg, args);
-                displayProg.Report(sb.ToString());
+                var sb = Timestamp + string.Format(msg, args);
+                displayProg.Report(sb);
             }
         }
 

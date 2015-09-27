@@ -17,10 +17,7 @@ namespace TaleOfTwoWastelands
             _checksumSize = Encoding.GetByteCount(Checksum);
         }
 
-        private string Checksum
-        {
-            get { return _checksum.Value.ToString("X8"); }
-        }
+        private string Checksum => _checksum.Value.ToString("X8");
 
         private byte[] UpdateChecksum(char[] s)
         {
@@ -60,9 +57,6 @@ namespace TaleOfTwoWastelands
             }
         }
 
-        public override Encoding Encoding
-        {
-            get { return Encoding.UTF8; }
-        }
+        public override Encoding Encoding => Encoding.UTF8;
     }
 }

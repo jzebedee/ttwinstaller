@@ -1,11 +1,14 @@
-﻿namespace TaleOfTwoWastelands.UI
+﻿using System.ComponentModel;
+using System.Windows.Forms;
+
+namespace TaleOfTwoWastelands.UI
 {
     partial class frm_Main
     {
         /// <summary>
         /// Required designer variable.
         /// </summary>
-        private System.ComponentModel.IContainer components = null;
+        private IContainer components = null;
 
         /// <summary>
         /// Clean up any resources being used.
@@ -304,25 +307,25 @@
 
         #endregion
 
-        private System.Windows.Forms.TableLayoutPanel tbl_Main;
-        private System.Windows.Forms.PictureBox pic_Banner;
-        private System.Windows.Forms.RichTextBox txt_Progress;
-        private System.Windows.Forms.Button btn_Install;
-        private System.Windows.Forms.RichTextBox txt_Instructions;
-        private System.Windows.Forms.Button btn_FO3Browse;
-        private System.Windows.Forms.Button btn_FNVBrowse;
-        private System.Windows.Forms.Button btn_TTWBrowse;
-        private System.Windows.Forms.RichTextBox txt_FO3Location;
-        private System.Windows.Forms.RichTextBox txt_FNVLocation;
-        private System.Windows.Forms.RichTextBox txt_TTWLocation;
-        private System.Windows.Forms.Label label1;
-        private System.Windows.Forms.Label label2;
-        private System.Windows.Forms.Label label3;
-        private System.Windows.Forms.OpenFileDialog dlg_FindGame;
-        private System.Windows.Forms.SaveFileDialog dlg_SaveTTW;
+        private TableLayoutPanel tbl_Main;
+        private PictureBox pic_Banner;
+        private RichTextBox txt_Progress;
+        private Button btn_Install;
+        private RichTextBox txt_Instructions;
+        private Button btn_FO3Browse;
+        private Button btn_FNVBrowse;
+        private Button btn_TTWBrowse;
+        private RichTextBox txt_FO3Location;
+        private RichTextBox txt_FNVLocation;
+        private RichTextBox txt_TTWLocation;
+        private Label label1;
+        private Label label2;
+        private Label label3;
+        private OpenFileDialog dlg_FindGame;
+        private SaveFileDialog dlg_SaveTTW;
         private TextProgressBar prgCurrent;
         private TextProgressBar prgOverall;
-        private System.Windows.Forms.CheckBox chkYou;
+        private CheckBox chkYou;
 
     }
 }

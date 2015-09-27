@@ -93,15 +93,9 @@ namespace Patching.Delta
                 throw new NotImplementedException();
             }
 
-            public int Count
-            {
-                get { return _buffer.Length; }
-            }
+            public int Count => _buffer.Length;
 
-            public bool IsReadOnly
-            {
-                get { return false; }
-            }
+            public bool IsReadOnly => false;
 
             public bool Remove(int item)
             {

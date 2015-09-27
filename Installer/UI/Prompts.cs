@@ -1,9 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
-using System.Windows.Forms;
 using System.Linq;
+using System.Windows.Forms;
 using TaleOfTwoWastelands.Properties;
-using System;
 
 namespace TaleOfTwoWastelands.UI
 {
@@ -50,7 +50,6 @@ namespace TaleOfTwoWastelands.UI
 				}
 				catch (InvalidOperationException)
 				{
-					continue;
 				}
 			}
 
