@@ -32,11 +32,11 @@ namespace TaleOfTwoWastelands
                 return fileHash.ComputeHash(buf);
         }
 
-        public static string MakeMD5String(byte[] md5)
+        public static string MakeMd5String(byte[] md5)
         {
             return BitConverter.ToString(md5).Replace("-", "");
         }
-        public static byte[] FromMD5String(string md5Str)
+        public static byte[] FromMd5String(string md5Str)
         {
             byte[] data = new byte[md5Str.Length / 2];
             for (int i = 0; i < data.Length; i++)
@@ -47,48 +47,18 @@ namespace TaleOfTwoWastelands
 
         public static string GetMD5String(string file)
         {
-            return MakeMD5String(GetMD5(file));
+            return MakeMd5String(GetMD5(file));
         }
 
         public static string GetMD5String(Stream stream)
         {
-            return MakeMD5String(GetMD5(stream));
+            return MakeMd5String(GetMD5(stream));
         }
 
         public static string GetMD5String(byte[] buf)
         {
-            return MakeMD5String(GetMD5(buf));
+            return MakeMd5String(GetMD5(buf));
         }
-        #endregion
-
-        #region Legacy mode
-#if LEGACY || DEBUG
-        public static IDictionary<string, string> ReadOldDatabase(string path)
-        {
-            Debug.Assert(File.Exists(path));
-
-            using (var stream = File.OpenRead(path))
-                return (IDictionary<string, string>)new BinaryFormatter().Deserialize(stream);
-        }
-
-        public static IEnumerable<Tuple<string, byte[]>> FindAlternateVersions(string file)
-        {
-            var justName = Path.GetFileName(file);
-            var split = justName.Split('.');
-            split[split.Length - 3] = "*";
-            //combatshotgun.nif.8154C65E957F6A29B36ADA24CFBC1FDE.1389525E123CD0F8CD5BB47EF5FD1901.diff
-            //end[0] = diff, end[1] = newChk, end[2] = oldChk, end[3 ...] = fileName
-
-            var justDir = Path.GetDirectoryName(file);
-            if (!Directory.Exists(justDir))
-                return null;
-
-            return from other in Directory.EnumerateFiles(justDir, string.Join(".", split))
-                   where other != file
-                   let splitOther = Path.GetFileName(other).Split('.')
-                   select Tuple.Create(other, FromMD5String(splitOther[splitOther.Length - 3]));
-        }
-#endif
         #endregion
 
         public static string Truncate(this string value, int maxLength)
@@ -164,9 +134,9 @@ namespace TaleOfTwoWastelands
                 }
                 catch (UnauthorizedAccessException error)
                 {
-                    var Log = DependencyRegistry.Container.GetInstance<ILog>();
-                    Log.Dual("ERROR: " + file.Replace(inFolder, "") + " did not copy successfully");
-                    Log.File(error.ToString());
+                    var log = DependencyRegistry.Container.GetInstance<ILog>();
+                    log.Dual("ERROR: " + file.Replace(inFolder, "") + " did not copy successfully");
+                    log.File(error.ToString());
                 }
             }
         }
