@@ -28,6 +28,7 @@ CREATE TABLE `PatchData` (
 CREATE TABLE `Hashes` (
 	`id`	INTEGER NOT NULL UNIQUE,
 	`type`	INTEGER NOT NULL,
+	`size`	INTEGER NOT NULL,
 	`checksum`	BLOB NOT NULL,
 	PRIMARY KEY(id),
 	FOREIGN KEY(`type`) REFERENCES HashTypes_id
@@ -44,10 +45,11 @@ COMMIT;";
         {
             using (
                 var finalHashCmd =
-                    new SQLiteCommand("INSERT INTO Hashes(id, type, checksum) VALUES(@id, @type, @checksum)", conn))
+                    new SQLiteCommand("INSERT INTO Hashes(id, type, size, checksum) VALUES(@id, @type, @size, @checksum)", conn))
             {
                 finalHashCmd.Parameters.Add(new SQLiteParameter("@id", ++hashId));
                 finalHashCmd.Parameters.Add(new SQLiteParameter("@type", fv.Type + 1));
+                finalHashCmd.Parameters.Add(new SQLiteParameter("@size", fv.Filesize));
                 finalHashCmd.Parameters.Add(new SQLiteParameter("@checksum", fv.Checksum));
 
                 Console.WriteLine($"Inserting: hash {hashId}");
