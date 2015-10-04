@@ -14,18 +14,18 @@ using Patch = System.Tuple<TaleOfTwoWastelands.Patching.FileValidation, TaleOfTw
 namespace TaleOfTwoWastelands.Patching
 {
     using PatchJoin = Tuple<BSAFile, BSAFile, Patch>;
-	public class BsaDiff : IBsaDiff
-	{
+    public class BsaDiff
+    {
         protected IProgress<InstallStatus> Progress => _installer.ProgressMinorOperation;
 
-	    protected CancellationToken Token => _installer.Token;
+        protected CancellationToken Token => _installer.Token;
 
-	    private readonly ILog Log;
-		private readonly IInstaller _installer;
+        private readonly ILog Log;
+        private readonly IInstaller _installer;
 
         public BsaDiff(IInstaller installer, ILog log)
         {
-			_installer = installer;
+            _installer = installer;
             Log = log;
         }
 
@@ -52,16 +52,9 @@ namespace TaleOfTwoWastelands.Patching
             {
                 Op.CurrentOperation = "Opening rename database";
 
-#if LEGACY
-                var renamePath = Path.Combine(Installer.PatchDir, outBsaFilename, "RenameFiles.dict");
-#else
                 var renamePath = Path.Combine(Installer.PatchDir, Path.ChangeExtension(outBsaFilename, ".ren"));
-#endif
                 if (File.Exists(renamePath))
                 {
-#if LEGACY
-                    renameDict = new Dictionary<string, string>(Util.ReadOldDatabase(renamePath));
-#else
                     using (var fileStream = File.OpenRead(renamePath))
                     using (var lzmaStream = new LzmaDecodeStream(fileStream))
                     using (var reader = new BinaryReader(lzmaStream))
@@ -72,7 +65,6 @@ namespace TaleOfTwoWastelands.Patching
                         while (numPairs-- > 0)
                             renameDict.Add(reader.ReadString(), reader.ReadString());
                     }
-#endif
                 }
                 else
                     renameDict = new Dictionary<string, string>();
@@ -87,11 +79,6 @@ namespace TaleOfTwoWastelands.Patching
             {
                 Op.CurrentOperation = "Opening patch database";
 
-#if LEGACY
-                var chkPrefix = Path.Combine(Installer.PatchDir, outBsaFilename);
-                var chkPath = Path.Combine(chkPrefix, "CheckSums.dict");
-                patchDict = PatchDict.FromOldDatabase(Util.ReadOldDatabase(chkPath), chkPrefix, b => b);
-#else
                 var patchPath = Path.Combine(Installer.PatchDir, Path.ChangeExtension(outBsaFilename, ".pat"));
                 if (File.Exists(patchPath))
                 {
@@ -102,7 +89,6 @@ namespace TaleOfTwoWastelands.Patching
                     Log.Dual("\tNo patch database is available for: " + oldBSA);
                     return false;
                 }
-#endif
             }
             finally
             {
@@ -135,7 +121,7 @@ namespace TaleOfTwoWastelands.Patching
                     var opChk = new InstallStatus(Progress, Token) { ItemsTotal = patchDict.Count };
 
                     var joinedPatches = from patKvp in patchDict
-                                        //if the join is not grouped, this will exclude missing files, and we can't find and fail on them
+                                            //if the join is not grouped, this will exclude missing files, and we can't find and fail on them
                                         join oldFile in allFiles on patKvp.Key equals oldFile.Filename into foundOld
                                         join bsaFile in allFiles on patKvp.Key equals bsaFile.Filename
                                         select new PatchJoin(bsaFile, foundOld.SingleOrDefault(), patKvp.Value);
@@ -233,52 +219,52 @@ namespace TaleOfTwoWastelands.Patching
                     return;
                 }
 
-                using (var curChk = FileValidation.FromBSAFile(oldFile, newChk.Type))
-                    if (newChk == curChk)
+                var curChk = FileValidation.FromBSAFile(oldFile, newChk.Type);
+                if (newChk == curChk)
+                {
+                    opChk.CurrentOperation = "Compressing " + filename;
+                    newFile.Cache();
+                }
+                else
+                {
+                    //YOUR HANDY GUIDEBOOK FOR STRANGE CHECKSUM ACRONYMS!
+                    //newChk - the checksum for the expected final result (after patching)
+                    //oldChk - the checksum for the original file a diff is built against
+                    //curChk - the checksum for the current file being compared or patched
+                    //tstChk - the checksum for the current file, in the format of oldChk
+                    //patChk - the checksum for the current file, after patching or failure
+                    foreach (var patchInfo in patches)
                     {
-                        opChk.CurrentOperation = "Compressing " + filename;
-                        newFile.Cache();
-                    }
-                    else
-                    {
-                        //YOUR HANDY GUIDEBOOK FOR STRANGE CHECKSUM ACRONYMS!
-                        //newChk - the checksum for the expected final result (after patching)
-                        //oldChk - the checksum for the original file a diff is built against
-                        //curChk - the checksum for the current file being compared or patched
-                        //tstChk - the checksum for the current file, in the format of oldChk
-                        //patChk - the checksum for the current file, after patching or failure
-                        foreach (var patchInfo in patches)
-                        {
-                            var oldChk = patchInfo.Metadata;
+                        var oldChk = patchInfo.Hash;
 
-                            if (curChk.Type != oldChk.Type)
-                            {
-                                using (var tstChk = FileValidation.FromBSAFile(oldFile, oldChk.Type))
-                                    if (oldChk != tstChk)
-                                        //this is a patch for a different original
-                                        continue;
-                            }
-                            else if (oldChk != curChk)
+                        if (curChk.Type != oldChk.Type)
+                        {
+                            var tstChk = FileValidation.FromBSAFile(oldFile, oldChk.Type);
+                            if (oldChk != tstChk)
                                 //this is a patch for a different original
                                 continue;
-
-                            //patch is for this original
-                            opChk.CurrentOperation = "Patching " + filename;
-
-                            if (PatchBsaFile(newFile, patchInfo, newChk))
-                                return;
-                            else
-                                Log.Dual("ERROR: Patching " + filepath + " failed");
                         }
+                        else if (oldChk != curChk)
+                            //this is a patch for a different original
+                            continue;
 
-                        using (var patChk = FileValidation.FromBSAFile(newFile, newChk.Type))
-                            if (newChk != patChk)
-                            {
-                                //no patch exists for the file
-                                Log.Dual("WARNING: File is of an unexpected version: " + newFile.Filename + " - " + patChk);
-                                Log.Dual("This file cannot be patched. Errors may occur.");
-                            }
+                        //patch is for this original
+                        opChk.CurrentOperation = "Patching " + filename;
+
+                        if (PatchBsaFile(newFile, patchInfo, newChk))
+                            return;
+                        else
+                            Log.Dual("ERROR: Patching " + filepath + " failed");
                     }
+
+                    var patChk = FileValidation.FromBSAFile(newFile, newChk.Type);
+                    if (newChk != patChk)
+                    {
+                        //no patch exists for the file
+                        Log.Dual("WARNING: File is of an unexpected version: " + newFile.Filename + " - " + patChk);
+                        Log.Dual("This file cannot be patched. Errors may occur.");
+                    }
+                }
             }
             finally
             {
@@ -351,17 +337,14 @@ namespace TaleOfTwoWastelands.Patching
             FileValidation outputChk;
 
             var success = patch.PatchBytes(inputBytes, targetChk, out outputBytes, out outputChk);
-            using (outputChk)
+            if (success)
             {
-                if (success)
-                {
-                    bsaFile.UpdateData(outputBytes, false);
-                    return true;
-                }
-
-                Log.File("ERROR: Patching " + bsaFile.Filename + " has failed - " + outputChk);
-                return false;
+                bsaFile.UpdateData(outputBytes, false);
+                return true;
             }
+
+            Log.File("ERROR: Patching " + bsaFile.Filename + " has failed - " + outputChk);
+            return false;
         }
     }
 }

@@ -108,8 +108,6 @@
     <Compile Include="IPathStore.cs" />
     <Compile Include="Log.cs" />
     <Compile Include="Patching\BsaDiff.cs" />
-    <Compile Include="Patching\IBsaDiff.cs" />
-    <Compile Include="Patching\PatchDict.cs" />
     <Compile Include="Patching\PatchInfo.cs" />
     <Compile Include="Patching\FileValidation.cs" />
     <Compile Include="Progress\IInstallStatus.cs" />

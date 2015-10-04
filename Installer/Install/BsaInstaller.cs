@@ -29,9 +29,9 @@ namespace TaleOfTwoWastelands.Install
 
         private readonly ILog Log;
 		private readonly IPrompts Prompts;
-		private readonly IBsaDiff _bsaDiff;
+		private readonly BsaDiff _bsaDiff;
 
-        public BsaInstaller(ILog log, IPrompts prompts, IBsaDiff bsaDiff)
+        public BsaInstaller(ILog log, IPrompts prompts, BsaDiff bsaDiff)
         {
             Log = log;
 			Prompts = prompts;
