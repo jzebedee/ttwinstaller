@@ -565,7 +565,7 @@ namespace Patching.Delta
         public static int[] sufsort(byte[] T)
         {
             if (T == null)
-                throw new ArgumentNullException("T");
+                throw new ArgumentNullException(nameof(T));
 
             var SA = new int[T.Length];
 

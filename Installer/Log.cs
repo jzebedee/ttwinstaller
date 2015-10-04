@@ -5,7 +5,7 @@ namespace TaleOfTwoWastelands
 {
     internal class Log : ILog
     {
-        private static IFormattable Timestamp => $"[{DateTime.Now}]\t";
+        private static string Timestamp => $"[{DateTime.Now}]\t";
 
         public IProgress<string> DisplayMessage { get; set; }
         

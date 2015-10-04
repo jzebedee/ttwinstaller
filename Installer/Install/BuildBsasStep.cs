@@ -37,7 +37,7 @@ namespace TaleOfTwoWastelands.Install
                 ErrorPromptResult buildResult;
                 try
                 {
-                    status.CurrentOperation = string.Format("Building {0}", outBSA);
+                    status.CurrentOperation = $"Building {outBSA}";
 
                     if (!_prompts.BuildPrompt(outBSA, outBSAPath))
                         continue;

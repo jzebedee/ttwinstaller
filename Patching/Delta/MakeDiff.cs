@@ -162,11 +162,11 @@ namespace Patching.Delta
             if (newBuf == null)
                 throw new ArgumentNullException("newData");
             if (output == null)
-                throw new ArgumentNullException("output");
+                throw new ArgumentNullException(nameof(output));
             if (!output.CanSeek)
-                throw new ArgumentException("Output stream must be seekable.", "output");
+                throw new ArgumentException("Output stream must be seekable.", nameof(output));
             if (!output.CanWrite)
-                throw new ArgumentException("Output stream must be writable.", "output");
+                throw new ArgumentException("Output stream must be writable.", nameof(output));
 
             /* Header is
                 0	8	 "BSDIFF40"

@@ -92,7 +92,7 @@ namespace TaleOfTwoWastelands.UI
 		private string FindByUserPrompt(FileDialog dialog, string name, string keyName, bool manual = false)
 		{
 			Log.File("Prompting user for {0}'s path.", name);
-			MessageBox.Show(string.Format("Please select {0}'s location.", name));
+			MessageBox.Show($"Please select {name}'s location.");
 
 			var dlgResult = dialog.ShowDialog();
 			if (dlgResult == DialogResult.OK)
