@@ -121,6 +121,14 @@ COMMIT;";
                                 for (int j = 0; j < patchCount; j++)
                                 {
                                     var patch = new PatchInfo(reader);
+                                    unsafe
+                                    {
+                                        fixed (byte* pData = patch.Data)
+                                        {
+                                            patch.Data = MakeDiff.ConvertPatch(pData, patch.Data.LongLength, Diff.SIG_LZDIFF41,
+                                                Diff.SIG_NONONONO);
+                                        }
+                                    }
                                     InsertHash(conn, ref hashId, patch.Metadata);
                                     using (var blobCmd = new SQLiteCommand("INSERT INTO PatchData(id, patchId, hashId, data) VALUES(@id, @patchId, @hashId, @data)", conn))
                                     {
