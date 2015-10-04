@@ -374,23 +374,29 @@ namespace Patching.Delta
 
         private static unsafe int Search(int* I, byte* oldData, int oldLength, byte* newData, int newLength, int newOffset, int start, int end, out int pos)
         {
-            if (end - start < 2)
+            while (true)
             {
-                int startLength = MatchLength((oldData + I[start]), oldLength, (newData + newOffset), newLength);
-                int endLength = MatchLength((oldData + I[end]), oldLength, (newData + newOffset), newLength);
-
-                if (startLength > endLength)
+                if (end - start < 2)
                 {
-                    pos = I[start];
-                    return startLength;
+                    int startLength = MatchLength((oldData + I[start]), oldLength, (newData + newOffset), newLength);
+                    int endLength = MatchLength((oldData + I[end]), oldLength, (newData + newOffset), newLength);
+
+                    if (startLength > endLength)
+                    {
+                        pos = I[start];
+                        return startLength;
+                    }
+                    pos = I[end];
+                    return endLength;
                 }
-                pos = I[end];
-                return endLength;
+                int midPoint = start + (end - start)/2;
+                if (CompareBytes(oldData + I[midPoint], oldLength, newData + newOffset, newLength) < 0)
+                {
+                    start = midPoint;
+                    continue;
+                }
+                end = midPoint;
             }
-            int midPoint = start + (end - start) / 2;
-            return CompareBytes((oldData + I[midPoint]), oldLength, (newData + newOffset), newLength) < 0 ?
-                Search(I, oldData, oldLength, newData, newLength, newOffset, midPoint, end, out pos) :
-                Search(I, oldData, oldLength, newData, newLength, newOffset, start, midPoint, out pos);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
