@@ -31,7 +31,7 @@ namespace TaleOfTwoWastelands.Patching
         public FileValidation(byte[] data, ChecksumType type = ChecksumType.Murmur128)
         {
             if (data == null)
-                throw new ArgumentNullException("data");
+                throw new ArgumentNullException(nameof(data));
 
             SetContents(() =>
             {
@@ -42,7 +42,7 @@ namespace TaleOfTwoWastelands.Patching
         public FileValidation(Stream stream, ChecksumType type = ChecksumType.Murmur128)
         {
             if (stream == null)
-                throw new ArgumentNullException("stream");
+                throw new ArgumentNullException(nameof(stream));
 
             _stream = stream;
             SetContents(() =>
@@ -55,7 +55,7 @@ namespace TaleOfTwoWastelands.Patching
         public FileValidation(byte[] checksum, uint filesize, ChecksumType type = ChecksumType.Murmur128)
         {
             if (checksum == null)
-                throw new ArgumentNullException("checksum");
+                throw new ArgumentNullException(nameof(checksum));
             if (checksum.Length != 16)
                 throw new ArgumentException("checksum must be 128bit");
             if (filesize == 0)
@@ -84,8 +84,7 @@ namespace TaleOfTwoWastelands.Patching
         {
             if (disposing)
             {
-                if (_stream != null)
-                    _stream.Dispose();
+                _stream?.Dispose();
             }
         }
         public void Dispose()
@@ -123,7 +122,7 @@ namespace TaleOfTwoWastelands.Patching
 
         public override string ToString()
         {
-            return string.Format("({0}, {1} bytes, {2})", BitConverter.ToString(Checksum), Filesize, Enum.GetName(typeof(ChecksumType), Type));
+            return $"({BitConverter.ToString(Checksum)}, {Filesize} bytes, {Enum.GetName(typeof(ChecksumType), Type)})";
         }
 
         public override bool Equals(object obj)
@@ -174,7 +173,7 @@ namespace TaleOfTwoWastelands.Patching
             return new FileValidation(file.GetContents(true), asType);
         }
 
-        internal static FileValidation ReadFrom(BinaryReader reader)
+        public static FileValidation ReadFrom(BinaryReader reader)
         {
             var typeByte = reader.ReadByte();
             if (typeByte != byte.MaxValue)
