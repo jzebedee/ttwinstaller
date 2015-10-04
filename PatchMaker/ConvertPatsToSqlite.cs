@@ -57,7 +57,7 @@ COMMIT;";
             }
         }
 
-        private static void Convert(string patPath)
+        internal static void Convert(string patPath)
         {
             foreach (var file in Directory.EnumerateFiles(patPath, "*.pat"))
             {
