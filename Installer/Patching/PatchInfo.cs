@@ -6,40 +6,13 @@ namespace TaleOfTwoWastelands.Patching
 {
     public class PatchInfo
     {
-        public FileValidation Metadata { get; set; }
-        public byte[] Data { get; set; }
+        public byte[] Data { get; }
+        public FileValidation Hash { get; }
 
-        public PatchInfo() { }
-        /// <summary>
-        /// Deserialize a PatchInfo
-        /// </summary>
-        /// <param name="reader">A reader aligned to a serialized PatchInfo</param>
-        public PatchInfo(BinaryReader reader)
+        public PatchInfo(byte[] data, FileValidation hash)
         {
-            //reading a FV (metadata) now
-            Metadata = FileValidation.ReadFrom(reader);
-
-            //reading data now
-            var dataSize = reader.ReadUInt32();
-            Debug.Assert((int)dataSize == dataSize);
-            if (dataSize > 0)
-                Data = reader.ReadBytes((int)dataSize);
-        }
-
-        public void WriteTo(BinaryWriter writer)
-        {
-            FileValidation.WriteTo(writer, Metadata);
-
-            if (Data != null)
-            {
-                writer.Write((uint)Data.LongLength);
-                if (Data.Length > 0)
-                    writer.Write(Data);
-            }
-            else
-            {
-                writer.Write(0U);
-            }
+            Data = data;
+            Hash = hash;
         }
 
         public bool PatchBytes(byte[] inputBytes, FileValidation targetChk, out byte[] outputBytes, out FileValidation outputChk)
@@ -75,16 +48,5 @@ namespace TaleOfTwoWastelands.Patching
 
             return targetChk == outputChk;
         }
-
-#if LEGACY || DEBUG
-        public static PatchInfo FromOldDiff(byte[] diffData, FileValidation oldChk)
-        {
-            return new PatchInfo
-            {
-                Metadata = oldChk,
-                Data = diffData
-            };
-        }
-#endif
     }
 }

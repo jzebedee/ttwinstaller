@@ -199,7 +199,7 @@ namespace TaleOfTwoWastelands
             }
         }
 
-        private bool? HandleStep<T>(IInstallStatus status) where T: IInstallStep
+        private bool? HandleStep<T>(IInstallStatus status) where T : IInstallStep
         {
             var step = DependencyRegistry.Container.GetInstance<T>();
             try
@@ -213,7 +213,7 @@ namespace TaleOfTwoWastelands
             }
             finally
             {
-                status.Step();   
+                status.Step();
             }
         }
 
@@ -368,15 +368,15 @@ namespace TaleOfTwoWastelands
 
         private static bool CheckExisting(string path, FileValidation newChk)
         {
-            using (var existingChk = new FileValidation(path, newChk.Type))
-                return newChk == existingChk;
+            var existingChk = new FileValidation(path, newChk.Type);
+            return newChk == existingChk;
         }
 
         private bool PatchMaster(string esm)
         {
-            Log.Dual("Patching " + esm + "...");
+            Log.Dual($"Patching {esm}...");
 
-            var patchPath = Path.Combine(PatchDir, Path.ChangeExtension(esm, ".pat"));
+            var patchPath = Path.Combine(PatchDir, Path.ChangeExtension(esm, ".cdb3"));
             if (File.Exists(patchPath))
             {
                 var patchDict = new PatchDict(patchPath);
@@ -406,36 +406,34 @@ namespace TaleOfTwoWastelands
                 //make sure we didn't include old patches by mistake
                 Debug.Assert(patches.All(p => p.Metadata.Type == FileValidation.ChecksumType.Murmur128));
 
-                using (var dataChk = new FileValidation(dataPath))
+                var dataChk = new FileValidation(dataPath);
+                var matchPatch = patches.SingleOrDefault(p => p.Metadata == dataChk);
+                if (matchPatch == null)
                 {
-                    var matchPatch = patches.SingleOrDefault(p => p.Metadata == dataChk);
-                    if (matchPatch == null)
+                    Log.Display("\tA patch for your version of " + esm + " could not be found");
+                    Log.File("\tA patch for " + esm + " version " + dataChk + " could not be found");
+                }
+                else
+                {
+                    using (FileStream
+                        dataStream = File.OpenRead(dataPath),
+                        outputStream = File.Open(finalPath, FileMode.Create, FileAccess.ReadWrite))
                     {
-                        Log.Display("\tA patch for your version of " + esm + " could not be found");
-                        Log.File("\tA patch for " + esm + " version " + dataChk + " could not be found");
-                    }
-                    else
-                    {
-                        using (FileStream
-                            dataStream = File.OpenRead(dataPath),
-                            outputStream = File.Open(finalPath, FileMode.Create, FileAccess.ReadWrite))
+                        FileValidation outputChk;
+                        if (matchPatch.PatchStream(dataStream, newChk, outputStream, out outputChk))
                         {
-                            FileValidation outputChk;
-                            if (matchPatch.PatchStream(dataStream, newChk, outputStream, out outputChk))
-                            {
-                                Log.Dual("\tPatch successful");
-                                return true;
-                            }
-
-                            Log.File("\tPatch failed - " + outputChk);
+                            Log.Dual("\tPatch successful");
+                            return true;
                         }
+
+                        Log.File("\tPatch failed - " + outputChk);
                     }
                 }
             }
             else
                 Log.Dual("\t" + esm + " patch is missing from " + PatchDir);
 
-            Fail("Your version of " + esm + " cannot be patched. This is abnormal.");
+            Fail($"Your version of {esm} cannot be patched.");
 
             return false;
         }
