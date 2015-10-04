@@ -10,7 +10,7 @@ using Patching.Murmur;
 
 namespace TaleOfTwoWastelands.Patching
 {
-    public class FileValidation : IDisposable, IEquatable<FileValidation>
+    public class FileValidation : IEquatable<FileValidation>
     {
         [DllImport("msvcrt", CallingConvention = CallingConvention.Cdecl)]
         private static extern int memcmp(byte[] b1, byte[] b2, UIntPtr count);
@@ -21,36 +21,30 @@ namespace TaleOfTwoWastelands.Patching
             Md5
         }
 
-        public uint Filesize { get; private set; }
-        public byte[] Checksum => _computeChecksum.Value;
-        public ChecksumType Type { get; private set; }
-
-        readonly Stream _stream;
-        Lazy<byte[]> _computeChecksum;
+        public long Filesize { get; }
+        public byte[] Checksum { get; }
+        public ChecksumType Type { get; }
 
         public FileValidation(byte[] data, ChecksumType type = ChecksumType.Murmur128)
         {
             if (data == null)
                 throw new ArgumentNullException(nameof(data));
 
-            SetContents(() =>
-            {
-                using (var hash = GetHash())
-                    return hash.ComputeHash(data);
-            }, (uint)data.LongLength, type);
+            Filesize = data.LongLength;
+            Type = type;
+            using (var hash = GetHash())
+                Checksum = hash.ComputeHash(data);
         }
         public FileValidation(Stream stream, ChecksumType type = ChecksumType.Murmur128)
         {
             if (stream == null)
                 throw new ArgumentNullException(nameof(stream));
 
-            _stream = stream;
-            SetContents(() =>
-            {
-                using (stream)
-                using (var hash = GetHash())
-                    return hash.ComputeHash(stream);
-            }, (uint)stream.Length, type);
+            Filesize = stream.Length;
+            Type = type;
+            using (stream)
+            using (var hash = GetHash())
+                Checksum = hash.ComputeHash(stream);
         }
         public FileValidation(byte[] checksum, uint filesize, ChecksumType type = ChecksumType.Murmur128)
         {
@@ -62,48 +56,24 @@ namespace TaleOfTwoWastelands.Patching
                 filesize = uint.MaxValue;
             //throw new ArgumentException("filesize must have a value");
 
-            SetContents(() => checksum, filesize, type);
+            Filesize = filesize;
+            Type = type;
+            Checksum = checksum;
         }
         public FileValidation(string path, ChecksumType type = ChecksumType.Murmur128) : this(File.OpenRead(path), type) { }
         private FileValidation(BinaryReader reader, byte typeByte)
         {
             Debug.Assert(typeByte != byte.MaxValue);
 
-            var type = (ChecksumType)typeByte;
-            var filesize = reader.ReadUInt32();
-            var checksum = reader.ReadBytes(16);
-
-            SetContents(() => checksum, filesize, type);
-        }
-        ~FileValidation()
-        {
-            Dispose(false);
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                _stream?.Dispose();
-            }
-        }
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        private void SetContents(Func<byte[]> getChecksum, uint filesize, ChecksumType type)
-        {
-            _computeChecksum = new Lazy<byte[]>(getChecksum);
-            Filesize = filesize;
-            Type = type;
+            Type = (ChecksumType)typeByte;
+            Filesize = reader.ReadUInt32();
+            Checksum = reader.ReadBytes(16);
         }
 
         private void WriteTo(BinaryWriter writer)
         {
             writer.Write((byte)Type);
-            writer.Write(Filesize);
+            writer.Write((uint)Filesize);
             writer.Write(Checksum);
         }
 
@@ -116,7 +86,7 @@ namespace TaleOfTwoWastelands.Patching
                 case ChecksumType.Md5:
                     return MD5.Create();
                 default:
-                    throw new NotImplementedException("Unknown checksum type: " + Type);
+                    throw new NotImplementedException($"Unknown checksum type: {Type}");
             }
         }
 
