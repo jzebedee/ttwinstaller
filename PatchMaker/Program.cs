@@ -1,157 +1,30 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.SQLite;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using BSAsharp;
-using BSAsharp.Extensions;
 using Patching.Delta;
 using Resources;
 using SevenZip;
 using TaleOfTwoWastelands;
 using TaleOfTwoWastelands.Patching;
-using Util = TaleOfTwoWastelands.Util;
 
 namespace PatchMaker
 {
     using Patch = Tuple<FileValidation, PatchInfo[]>;
 
-    class Program
+    internal class Program
     {
-        const string
+        private const string
             InDir = "BuildDB",
-            OutDir = "OutDB",
-            SchemaSetup = @"BEGIN TRANSACTION;
-CREATE TABLE `Patches` (
-	`id`	INTEGER NOT NULL UNIQUE,
-	`hashId`	INTEGER NOT NULL,
-	`key`	TEXT NOT NULL UNIQUE,
-	PRIMARY KEY(id),
-	FOREIGN KEY(`hashId`) REFERENCES Hashes_id
-);
-CREATE TABLE `PatchData` (
-	`id`	INTEGER NOT NULL UNIQUE,
-	`patchId`	INTEGER NOT NULL,
-	`hashId`	INTEGER NOT NULL,
-	`data`	BLOB NOT NULL,
-	PRIMARY KEY(id),
-	FOREIGN KEY(`patchId`) REFERENCES Patches_id,
-	FOREIGN KEY(`hashId`) REFERENCES Hashes_id
-);
-CREATE TABLE `Hashes` (
-	`id`	INTEGER NOT NULL UNIQUE,
-	`type`	INTEGER NOT NULL,
-	`checksum`	BLOB NOT NULL,
-	PRIMARY KEY(id),
-	FOREIGN KEY(`type`) REFERENCES HashTypes_id
-);
-CREATE TABLE `HashTypes` (
-	`id`	INTEGER NOT NULL UNIQUE,
-	`name`	TEXT UNIQUE,
-	PRIMARY KEY(id)
-);
-INSERT INTO `HashTypes` (id,name) VALUES (0,'Murmur128'),(1,'Md5');
-COMMIT;";
+            OutDir = "OutDB";
 
         private static string _dirTTWMain, _dirTTWOptional, _dirFO3Data;
 
-        static void InsertHash(SQLiteConnection conn, ref int hashId, FileValidation fv)
+        private static void Main()
         {
-            using (var finalHashCmd = new SQLiteCommand("INSERT INTO Hashes(id, type, checksum) VALUES(@id, @type, @checksum)", conn))
-            {
-                finalHashCmd.Parameters.Add(new SQLiteParameter("@id", ++hashId));
-                finalHashCmd.Parameters.Add(new SQLiteParameter("@type", fv.Type + 1));
-                finalHashCmd.Parameters.Add(new SQLiteParameter("@checksum", fv.Checksum));
-
-                Console.WriteLine($"Inserting: hash {hashId}");
-                finalHashCmd.ExecuteNonQuery();
-            }
-        }
-
-        static void Main()
-        {
-            //BenchmarkHash.Run();
-
-            var path = @"C:\TTW-ME\resources\TTW Data\TTW Patches";
-            foreach (var file in Directory.EnumerateFiles(path, "*.pat"))
-            {
-                var dbName = Path.GetFileName(Path.ChangeExtension(file, ".db3"));
-
-                File.Delete(dbName);
-                SQLiteConnection.CreateFile(dbName);
-                using (var conn = new SQLiteConnection($"Data Source={dbName}"))
-                {
-                    conn.Open();
-                    using (var schemaCmd = new SQLiteCommand(SchemaSetup, conn))
-                    {
-                        schemaCmd.ExecuteNonQuery();
-                    }
-
-                    Console.WriteLine($"Parsing {dbName}");
-                    using (var fs = File.OpenRead(file))
-                    using (var reader = new BinaryReader(fs))
-                    {
-                        var size = reader.ReadInt32();
-                        using (var transaction = conn.BeginTransaction())
-                        {
-                            for (int i = 1, hashId = 0, patchId = 0, patchDataId = 0; i <= size; i++)
-                            {
-                                var key = reader.ReadString();
-                                Console.WriteLine($"Inserting {key}");
-
-                                var fv = FileValidation.ReadFrom(reader);
-
-                                InsertHash(conn, ref hashId, fv);
-
-                                using (var patchCmd = new SQLiteCommand("INSERT INTO Patches(id, hashId, key) VALUES(@id, @hashId, @key)", conn))
-                                {
-                                    patchCmd.Parameters.Add(new SQLiteParameter("@id", ++patchId));
-                                    patchCmd.Parameters.Add(new SQLiteParameter("@hashId", hashId));
-                                    patchCmd.Parameters.Add(new SQLiteParameter("@key", key));
-
-                                    Console.WriteLine($"Inserting patch {patchId}");
-                                    patchCmd.ExecuteNonQuery();
-                                }
-
-                                var patchCount = reader.ReadInt32();
-                                Console.WriteLine($"{patchCount} patches to insert");
-                                for (int j = 0; j < patchCount; j++)
-                                {
-                                    var patch = new PatchInfo(reader);
-                                    unsafe
-                                    {
-                                        fixed (byte* pData = patch.Data)
-                                        {
-                                            patch.Data = MakeDiff.ConvertPatch(pData, patch.Data.LongLength, Diff.SIG_LZDIFF41,
-                                                Diff.SIG_NONONONO);
-                                        }
-                                    }
-                                    InsertHash(conn, ref hashId, patch.Metadata);
-                                    using (var blobCmd = new SQLiteCommand("INSERT INTO PatchData(id, patchId, hashId, data) VALUES(@id, @patchId, @hashId, @data)", conn))
-                                    {
-                                        blobCmd.Parameters.Add(new SQLiteParameter("@id", ++patchDataId));
-                                        blobCmd.Parameters.Add(new SQLiteParameter("@patchId", patchId));
-                                        blobCmd.Parameters.Add(new SQLiteParameter("@hashId", hashId));
-                                        blobCmd.Parameters.Add(new SQLiteParameter("@data", patch.Data));
-
-                                        Console.WriteLine($"Inserting patchData {patchDataId}");
-                                        blobCmd.ExecuteNonQuery();
-                                    }
-                                }
-                            }
-
-                            transaction.Commit();
-                        }
-                    }
-                }
-            }
-            Console.WriteLine("Done");
-            Console.ReadKey();
-            return;
-
             if (!Debugger.IsAttached)
                 Debugger.Launch();
 
@@ -181,24 +54,26 @@ COMMIT;";
             var fallout3Path = fo3Key.GetValue("Installed Path", "").ToString();
             _dirFO3Data = Path.Combine(fallout3Path, "Data");
 
-            SevenZipCompressor.LzmaDictionarySize = 1024 * 1024 * 64; //64MiB, 7z 'Ultra'
+            SevenZipCompressor.LzmaDictionarySize = 1024*1024*64; //64MiB, 7z 'Ultra'
 
-            Parallel.ForEach(Game.BuildableBSAs, new ParallelOptions { MaxDegreeOfParallelism = 2 }, kvpBsa => BuildBsaPatch(kvpBsa.Key, kvpBsa.Value));
+            Parallel.ForEach(Game.BuildableBSAs, new ParallelOptions {MaxDegreeOfParallelism = 2},
+                kvpBsa => BuildBsaPatch(kvpBsa.Key, kvpBsa.Value));
 
             var knownEsmVersions =
                 Directory.EnumerateFiles(Path.Combine(InDir, "Versions"), "*.esm", SearchOption.AllDirectories)
-                .ToLookup(Path.GetFileName, esm => esm);
+                    .ToLookup(Path.GetFileName, esm => esm);
 
-            Parallel.ForEach(Game.CheckedESMs, new ParallelOptions { MaxDegreeOfParallelism = 2 }, esm => BuildMasterPatch(esm, knownEsmVersions));
+            Parallel.ForEach(Game.CheckedESMs, new ParallelOptions {MaxDegreeOfParallelism = 2},
+                esm => BuildMasterPatch(esm, knownEsmVersions));
         }
 
         private static void BuildBsaPatch(string inBsaName, string outBsaName)
         {
-            string outBSAFile = Path.ChangeExtension(outBsaName, ".bsa");
-            string outBSAPath = Path.Combine(_dirTTWMain, outBSAFile);
+            var outBSAFile = Path.ChangeExtension(outBsaName, ".bsa");
+            var outBSAPath = Path.Combine(_dirTTWMain, outBSAFile);
 
-            string inBSAFile = Path.ChangeExtension(inBsaName, ".bsa");
-            string inBSAPath = Path.Combine(_dirFO3Data, inBSAFile);
+            var inBSAFile = Path.ChangeExtension(inBsaName, ".bsa");
+            var inBSAPath = Path.Combine(_dirFO3Data, inBSAFile);
 
             var renameDict = BuildRenameDict(outBsaName);
             Debug.Assert(renameDict != null);
@@ -222,13 +97,13 @@ COMMIT;";
                 var newChkDict = FileValidation.FromBSA(outBSA);
 
                 var joinedPatches = from patKvp in newChkDict
-                                    join newBsaFile in newFiles on patKvp.Key equals newBsaFile.Filename
-                                    select new
-                                    {
-                                        newBsaFile,
-                                        file = patKvp.Key,
-                                        patch = patKvp.Value
-                                    };
+                    join newBsaFile in newFiles on patKvp.Key equals newBsaFile.Filename
+                    select new
+                    {
+                        newBsaFile,
+                        file = patKvp.Key,
+                        patch = patKvp.Value
+                    };
                 var allJoinedPatches = joinedPatches.ToList();
 
                 var patchDict = new PatchDict(allJoinedPatches.Count);
@@ -273,7 +148,7 @@ COMMIT;";
 
                     if (newChk != oldChk)
                     {
-                        byte[] diffData = GetDiff(diffPath, Diff.SIG_LZDIFF41);
+                        var diffData = GetDiff(diffPath, Diff.SIG_LZDIFF41);
 
                         var patchInfo = PatchInfo.FromOldDiff(diffData, oldChk);
                         Debug.Assert(patchInfo.Data != null);
@@ -289,7 +164,7 @@ COMMIT;";
             }
         }
 
-        static unsafe byte[] GetDiff(string diffPath, long convertSignature = -1, bool moveToUsed = false)
+        private static unsafe byte[] GetDiff(string diffPath, long convertSignature = -1, bool moveToUsed = false)
         {
             if (File.Exists(diffPath))
             {
@@ -368,8 +243,8 @@ COMMIT;";
                         Data = patchBytes
                     };
                 })
-                .AsParallel()
-                .ToArray();
+                    .AsParallel()
+                    .ToArray();
 
             var patchDict = new PatchDict(altVersions.Count);
             patchDict.Add(esm, new Patch(ttwChk, patches));
